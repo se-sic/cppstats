@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # modules from the std-library
@@ -183,13 +183,13 @@ __hexadec = \
 
 __integer = \
         pypa.Optional('~') + \
-        pypa.Word(pypa.nums+'-').setParseAction(lambda t: str(int(t[0]))) + \
+        pypa.Word(pypa.nums+'-') + \
         pypa.Optional(pypa.Suppress(pypa.Literal('U'))) + \
         pypa.Optional(pypa.Suppress(pypa.Literal('L'))) + \
         pypa.Optional(pypa.Suppress(pypa.Literal('L')))
 
 __identifier = \
-        pypa.Word(pypa.alphanums+'_'+'-').setParseAction(_collectDefines)
+        pypa.Word(pypa.alphanums+'_'+'-')
 __arg = pypa.Word(pypa.alphanums+'_')
 __args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + \
         __arg)
@@ -223,54 +223,17 @@ def _collapseSubElementsToList(node):
     return ''.join([it for it in itdesc])
 
 
-def _parseFeatureSignatureAndRewriteCSP(sig):
-    """This function parses a given feature-expresson and
-    rewrites the expression according to the given __pt mapping.
-    This one is used to make use of a csp solver without using
-    a predicate."""
-    __pt = {
-        #'defined' : 'defined_',
-        'defined' : '',
-        '!' : '!',
-        '&&': '&',
-        '||': '|',
-        '<' : '_lt_',
-        '>' : '_gt_',
-        '<=': '_le_',
-        '>=': '_ge_',
-        '==': '_eq_',
-        '!=': '_ne_',
-        '*' : '_mu_',
-        '/' : '_di_',
-        '%' : '_mo_',
-        '+' : '_pl_',
-        '-' : '_mi_',
-        '&' : '_ba_',
-        '|' : '_bo_',
-        '>>': '_sr_',
-        '<<': '_sl_',
-    }
-    mal = list()
 
-    def _rewriteOne(param):
-        """This function returns each one parameter function
-        representation for csp."""
-        op, ma = param[0]
-        mal.append(ma)
-        if op == '!': ret = __pt[op] + '(' + ma + ')'
-        if op == 'defined': ret = ma
-        return  ret
+def _parseFeatureSignature(sig):
+    """This function parses a given feature-signature."""
+    mal = set()
 
-    def _rewriteTwo(param):
-        """This function returns each two parameter function
-        representation for csp."""
-        mal.extend(param[0][0::2])
-        ret = __pt[param[0][1]]
-        ret = '(' + ret.join(map(str, param[0][0::2])) + ')'
-        return ret
+    def _rewriteOne(p): return ''
+    def _rewriteTwo(p): return ''
+    def _addIdentifier2Mal(p): mal.add(p[0])
 
     operand = __string | __hexadec | __integer | \
-            __function | __identifier
+            __function | __identifier.setParseAction(_addIdentifier2Mal)
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / & | << >>')
     expr = pypa.operatorPrecedence(operand, [
@@ -292,89 +255,6 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
         print('ERROR (time): cannot parse sig (%s)' % (sig))
         return sig
     return (mal, ''.join(rsig))
-
-
-def _parseFeatureSignatureAndRewrite(sig):
-    """This function parses a given feature-signature and rewrites
-    the signature according to the given __pt mapping.
-    """
-    # this dictionary holds all transformations of operators from
-    # the origin (cpp) to the compare (language)
-    # e.g. in cpp && stands for the 'and'-operator.
-    # the equivalent in maple (which is used for comparison)
-    # is '&and'
-    # if no equivalence can be found a name rewriting is done
-    # e.g. 'defined'
-    __pt = {
-        #'defined' : 'defined_',
-        'defined' : '',
-        '!' : '&not',
-        '&&': '&and',
-        '||': '&or',
-        '<' : '<',
-        '>' : '>',
-        '<=': '<=',
-        '>=': '>=',
-        '==': '=',
-        '!=': '!=',
-        '*' : '*',        # needs rewriting with parenthesis
-        '/' : '/',
-        '%' : '',        # needs rewriting a % b => modp(a, b)
-        '+' : '+',
-        '-' : '-',
-        '&' : '',        # needs rewriting a & b => BitAnd(a, b)
-        '|' : '',        # needs rewriting a | b => BitOr(a, b)
-        '>>': '>>',        # needs rewriting a >> b => a / (2^b)
-        '<<': '<<',        # needs rewriting a << b => a * (2^b)
-    }
-
-    def _rewriteOne(param):
-        """This function returns each one parameter function
-        representation for maple."""
-        if param[0][0] == '!':
-            ret = __pt[param[0][0]] + '(' + str(param[0][1]) + ')'
-        if param[0][0] == 'defined':
-            ret = __pt[param[0][0]] + str(param[0][1])
-        return  ret
-
-
-    def _rewriteTwo(param):
-        """This function returns each two parameter function
-        representation for maple."""
-        # rewriting rules
-        if param[0][1] == '%':
-            return 'modp(' + param[0][0] + ',' + param[0][2] + ')'
-
-        ret = ' ' + __pt[param[0][1]] + ' '
-        ret = '(' + ret.join(map(str, param[0][0::2])) + ')'
-
-        if param[0][1] in ['<', '>', '<=', '>=', '!=', '==']:
-            ret = '(true &and ' + ret + ')'
-        return ret
-
-    operand = __string | __hexadec | __integer | \
-            __function | __identifier
-    compoperator = pypa.oneOf('< > <= >= == !=')
-    calcoperator = pypa.oneOf('+ - * / & | << >>')
-    expr = pypa.operatorPrecedence(operand, [
-        ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
-        ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
-        (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
-        (compoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
-        ('&&', 2, pypa.opAssoc.LEFT, _rewriteTwo),
-        ('||', 2, pypa.opAssoc.LEFT, _rewriteTwo),
-    ])
-
-    try:
-        rsig = expr.parseString(sig)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-                (sig, e.col))
-        return sig
-    except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (sig))
-        return sig
-    return ''.join(rsig)
 
 
 def _getMacroSignature(ifdefnode):
@@ -538,13 +418,13 @@ def _getFeatures(root):
     feature elements: Every feature element reflects one part of a
     feature withing the whole source-code, that is framed by contional
     and endif-macros.
-    
+
     featuresgrinner: All tags from the feature elements (see above).
     featuresgrouter: All tags from the elements arround the feature.
     """
 
     def _wrapGrOuterUp(fouter, featuresgrouter, eelem):
-        itouter = fouter[-1]                # feature surround tags
+        itouter = fouter[-1]             # feature surround tags
         fouter = fouter[:-1]
 
         selem = itouter[0][1]
@@ -559,11 +439,11 @@ def _getFeatures(root):
             raise IfdefEndifMismatchError()
         itsig = flist[-1]                # feature signature
         flist = flist[:-1]
-        itcode = fcode[-1]                # feature code
+        itcode = fcode[-1]               # feature code
         itcode = itcode.replace('\n\n', '\n')
-        itcode = itcode[1:]                # itcode starts with '\n'; del
+        itcode = itcode[1:]              # itcode starts with '\n'; del
         fcode = fcode[:-1]
-        itinner = finner[-1]                # feature enclosed tags
+        itinner = finner[-1]             # feature enclosed tags
         finner = finner[:-1]
 
         # handle the feature code
@@ -576,26 +456,26 @@ def _getFeatures(root):
         featuresgrinner.append((itsig, itinner))
         return (features, featuresgrinner, fcode, flist, finner)
 
-    features = {}            # see above; return value
+    features = {}           # see above; return value
     featuresgrinner = []    # see above; return value
     featuresgrouter = []    # see above; return value
-    flist = []                # holds the features in order
+    flist = []              # holds the features in order
                             # list empty -> no features to parse
                             # list used as a stack
                             # last element = top of stack;
                             # and the element we currently
                             # collecting source-code lines for
-    fouter = []                # holds the xml-nodes of the ifdefs/endifs
+    fouter = []             # holds the xml-nodes of the ifdefs/endifs
                             # in order like flist
-    fcode = []                # holds the code of the features in
+    fcode = []              # holds the code of the features in
                             # order like flist
-    finner = []                # holds the tags of the features in
+    finner = []             # holds the tags of the features in
                             # order like flist
-    condinhist = []            # order of the conditional includes
+    condinhist = []         # order of the conditional includes
                             # with feature names
-    parcon = False            # parse-conditional-flag
-    parend = False            # parse-endif-flag
-    _ = 0                    # else and elif depth
+    parcon = False          # parse-conditional-flag
+    parend = False          # parse-endif-flag
+    _ = 0                   # else and elif depth
 
     # iterate over all tags separately <start>- and <end>-tag
     for event, elem in etree.iterwalk(root, events=("start", "end")):
@@ -756,12 +636,12 @@ def _getOuterGranularityStats(lgran):
                 gostmbgr += 1
             elif gran[1] in ['condition', 'return']:    # test_condition.c
                 goexpbgr += 1
-            elif gran[1] in ['argument']:                # test_call.c
+            elif gran[1] in ['argument']:               # test_call.c
                 gostmbgr += 1
             elif gran[1] in ['block']:
                 if 'function' in gran[2:]: gostrbrl += 1
                 else: gostrbrg += 1
-            elif gran[1] in ['init', 'index']:            # test_stmt.c
+            elif gran[1] in ['init', 'index']:          # test_stmt.c
                 gostmbgr += 1
             else:
                 print('ERROR: gran (%s) at this level'
@@ -1007,7 +887,7 @@ def _getScatteringTanglingDegrees(sigs, defines):
         of lists pairwise. See below for more information."""
         return x+y
 
-    scat = list()            # relation define to signatures
+    scat = list()           # relation define to signatures
     tang = [0]*len(sigs)    # signatures overall
     for d in defines:
         dre = re.compile(r'\b'+d+r'\b')        # using word boundaries
@@ -1121,28 +1001,28 @@ def apply(folder):
     are getting written into the fdcsv-file."""
     # overall status variables
     sigmap = {}                # {<converted sig>: [<equivalent sigs>]}
-    afeatures = {}            # identified features; {<sig>: (depth, [code])}
+    afeatures = {}            # identified features; {<sig>: ([flag], depth, [code])}
 
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
         for (sig, (depth, code)) in ffeatures.iteritems():
-            psig = _parseFeatureSignatureAndRewrite(sig)
+            (mal, psig) = _parseFeatureSignature(sig)
 
             try:
                 sigmatch = _checkForEquivalentSig(sigmap.keys(), psig)
-                (tmpdepth, tmpcode) = afeatures[sigmap[sigmatch][0]]
+                (tmpflag, tmpdepth, tmpcode) = afeatures[sigmap[sigmatch][0]]
 #                if (tmpdepth != depth):
 #                    print("INFO: depths of feature fragments do not" +
 #                            " match (%s, %s)!" % (str(tmpdepth), str(depth)))
                 tmpdepth = min(tmpdepth, depth)
                 tmpcode += code
-                afeatures[sigmap[sigmatch][0]] = (tmpdepth, tmpcode)
+                afeatures[sigmap[sigmatch][0]] = (tmpflag, tmpdepth, tmpcode)
                 sigmap[sigmatch].append(sig)
             except NoEquivalentSigError:
                 # mergedfeatures get the depth of minus one
                 # so this way need to make less amount of changes here
-                afeatures[sig] = (depth, list(code))
+                afeatures[sig] = (mal, depth, list(code))
                 sigmap[psig] = [sig]
 
     # outputfile
@@ -1177,132 +1057,10 @@ def apply(folder):
             continue
         _mergeFeatures(features)
 
-        # granularity stats
-        grouter = _getOuterGranularity(featuresgrouter)
-        (gotopbgr, gofunbgr, gostrbrl, gostrbrg,
-        goinnbgr, goexpbgr, gostmbgr, gopambgr, goerror) = \
-                _getOuterGranularityStats(grouter)
-        fstats[__statsorder.GRANGL.index] = gotopbgr
-        fstats[__statsorder.GRANFL.index] = gofunbgr+gostrbrl+gostrbrg
-        fstats[__statsorder.GRANBL.index] = goinnbgr
-        fstats[__statsorder.GRANEL.index] = goexpbgr
-        fstats[__statsorder.GRANSL.index] = gostmbgr
-        fstats[__statsorder.GRANML.index] = gopambgr
-        fstats[__statsorder.GRANERR.index] = goerror
+    # code for checking interactions
+    for (sig, (flag, depth, code)) in afeatures.items():
+        print flag, sig
 
-        # general stats
-        fstats[__statsorder.FILENAME.index] = file
-        (ndmax, andavg, andstdev) = _countNestedIfdefs(root)
-        fstats[__statsorder.ANDAVG.index] = andavg
-        fstats[__statsorder.ANDSTDEV.index] = andstdev
-        fstats[__statsorder.NDMAX.index] = ndmax
-        tmp = [it for it in root.iterdescendants()]
-
-        if (len(tmp)): floc = tmp[-1].sourceline
-        else: floc = 0
-
-        fstats[__statsorder.LOC.index] = floc
-
-        # feature-amount
-        (_, _, lof, _, _, _, _) = \
-                _getFeatureStats(features)
-        if __defsetf.has_key(__curfile):
-            fstats[__statsorder.NOFC.index] = \
-                    _getNumOfDefines(__defsetf[__curfile])
-        else:
-            fstats[__statsorder.NOFC.index] = 0
-        fstats[__statsorder.LOF.index] = lof
-
-        # scattering and tangling
-        # not useful to compute the scattering per file, since a feature names
-        # may be defined later
-
-        fdcsv.writerow(fstats)
-
-    # writing convinience functions
-    fnum = len(files)+1            # +1 for the header of the table
-    excelcols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-            'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
-            'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE',
-            'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
-            'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW',
-            'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF',
-            'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO',
-            'BP', 'BQ', 'BR', 'BS', 'BT', 'BU', 'BV', 'BW', 'BX',
-            'BY', 'BZ']
-    excelfunc = [None]*len(__statsorder._keys)
-    excelfunc[__statsorder.FILENAME.index] = "FUNCTIONS"
-    excelfunc[__statsorder.LOC.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.LOC.index], \
-            excelcols[__statsorder.LOC.index], fnum)
-    excelfunc[__statsorder.LOF.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.LOF.index], \
-            excelcols[__statsorder.LOF.index], fnum)
-    excelfunc[__statsorder.ANDAVG.index] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
-            (excelcols[__statsorder.ANDAVG.index], \
-            excelcols[__statsorder.ANDAVG.index], fnum, \
-            excelcols[__statsorder.ANDAVG.index], \
-            excelcols[__statsorder.ANDAVG.index], fnum)
-    excelfunc[__statsorder.ANDSTDEV.index] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
-            (excelcols[__statsorder.ANDSTDEV.index], \
-            excelcols[__statsorder.ANDSTDEV.index], fnum, \
-            excelcols[__statsorder.ANDAVG.index],          # it might be that mean 1 std 0
-            excelcols[__statsorder.ANDAVG.index], fnum)    # therefore we use mean here
-    excelfunc[__statsorder.GRANGL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANGL.index], \
-            excelcols[__statsorder.GRANGL.index], fnum)
-    excelfunc[__statsorder.GRANFL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANFL.index], \
-            excelcols[__statsorder.GRANFL.index], fnum)
-    excelfunc[__statsorder.GRANBL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANBL.index], \
-            excelcols[__statsorder.GRANBL.index], fnum)
-    excelfunc[__statsorder.GRANEL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANEL.index], \
-            excelcols[__statsorder.GRANEL.index], fnum)
-    excelfunc[__statsorder.GRANSL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANSL.index], \
-            excelcols[__statsorder.GRANSL.index], fnum)
-    excelfunc[__statsorder.GRANML.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANML.index], \
-            excelcols[__statsorder.GRANML.index], fnum)
-    excelfunc[__statsorder.GRANERR.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANERR.index], \
-            excelcols[__statsorder.GRANERR.index], fnum)
-    excelfunc[__statsorder.NDMAX.index] = "=MAX(%s2:%s%s)" % \
-            (excelcols[__statsorder.NDMAX.index], \
-            excelcols[__statsorder.NDMAX.index], fnum)
-    fdcsv.writerow(excelfunc)
-
-    # overall - stats
-    astats = [None]*len(__statsorder._keys)
-    (_, _, lof, _, _, _, _) = \
-            _getFeatureStats(afeatures)
-    (sdegmean, sdegstd, tdegmean, tdegstd) = \
-            _getScatteringTanglingDegrees(_flatten(sigmap.values()),
-            list(__defset))
-
-    (_, _, _, het, hom, hethom) = _distinguishFeatures(afeatures)
-
-    astats[__statsorder.FILENAME.index] = "ALL - MERGED"
-    astats[__statsorder.NOFC.index] = _getNumOfDefines(__defset)
-    astats[__statsorder.LOF.index] = lof
-    astats[__statsorder.HET.index] = len(het.keys())
-    astats[__statsorder.HOM.index] = len(hom.keys())
-    astats[__statsorder.HOHE.index] = len(hethom.keys())
-    astats[__statsorder.SDEGMEAN.index] = sdegmean
-    astats[__statsorder.SDEGSTD.index] = sdegstd
-    astats[__statsorder.TDEGMEAN.index] = tdegmean
-    astats[__statsorder.TDEGSTD.index] = tdegstd
-
-    fdcsv.writerow(astats)
-    fd.close()
-    if options.maple:
-        print('feature expressions: not equal '
-            'string to maple (%s)' % str(__errorfexp))
-        print('feature expressions: found error '
-            'in (%s) expressions' % str(len(__errormatch)))
-        print(__errormatch)
 
 
 ##################################################

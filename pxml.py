@@ -3,6 +3,7 @@
 
 # modules from the std-library
 import csv
+import itertools
 import os
 import re
 import sys
@@ -1057,10 +1058,19 @@ def apply(folder):
             continue
         _mergeFeatures(features)
 
-    # code for checking interactions
-    for (sig, (flag, depth, code)) in afeatures.items():
-        print flag, sig
+    # get flags that may interact
+    annotations = map(lambda (a, (flag, b, c)): flag, afeatures.items())
 
+    # create all combinations of features from 2 to len(annotations)-1
+    for annotation in annotations:
+        for limit in range(2, len(annotation)):
+            combinations = list(itertools.combinations(annotation, limit))
+            lencombinations = len(combinations)
+            numoccurringcombinations = 0
+            for combination in combinations:
+                if set(combination) in annotations: numoccurringcombinations += 1
+            if numoccurringcombinations > 0:
+                print "scale ", numoccurringcombinations/(1.0 * lencombinations)
 
 
 ##################################################

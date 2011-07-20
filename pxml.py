@@ -83,29 +83,10 @@ __defsetf = dict()      # macro-objects per file
 # collected statistics
 __statsorder = Enum(
     'FILENAME',          # name of the file
-    'LOC',               # lines of code
-    'NOFC',              # number of feature constants
-    'LOF',               # number of feature code lines
-    'ANDAVG',            # average nested ifdefs depth
-    'ANDSTDEV',          # standard deviation for ifdefs
-    'SDEGMEAN',          # shared code degree: mean
-    'SDEGSTD',           # shared code degree: standard-deviation
-    'TDEGMEAN',          # tangled code degree: mean
-    'TDEGSTD',           # tangled code degree: standard-deviation
-    # type metrics
-    'HOM',               # homogenous features
-    'HET',               # heterogenous features
-    'HOHE',              # combination of het and hom features
-    # gran metrics
-    'GRANGL',            # global level (compilation unit)
-    'GRANFL',            # function and type level
-    'GRANBL',            # if/while/for/do block extension
-    'GRANSL',            # statement extension - includes string concat
-    'GRANEL',            # condition block extension - includes return
-    'GRANML',            # function parameter extension
-    'GRANERR',           # not determined granularity
-    
-    'NDMAX',             # maximum nesting depth in a file
+    'NUMANNOTATIONS',    # number of all annotations
+    'NOIANNOTATIONS',    # number of interacting annotations
+                         # example: A&B&C&D --> A&B, B&C, B&D
+                         # example: A&B&C&D -/> A&B, B&C, A&C
 )
 ##################################################
 
@@ -134,6 +115,10 @@ parser.add_option("--maplep", dest="maplep",
 
 ##################################################
 # helper functions, constants and errors
+def uniqueItems(l):
+    l = sorted(l)
+    return list(k for k, _ in itertools.groupby(l))
+
 def _flatten(l):
     """This function takes a list as input and returns a flatten version
     of the list. So all nested lists are unpacked and moved up to the
@@ -1012,13 +997,12 @@ def apply(folder):
 
             try:
                 sigmatch = _checkForEquivalentSig(sigmap.keys(), psig)
-                (tmpflag, tmpdepth, tmpcode) = afeatures[sigmap[sigmatch][0]]
-#                if (tmpdepth != depth):
-#                    print("INFO: depths of feature fragments do not" +
-#                            " match (%s, %s)!" % (str(tmpdepth), str(depth)))
+                (tmpflag, tmpdepth, tmpcode) = \
+                    afeatures[sigmap[sigmatch][0]]
                 tmpdepth = min(tmpdepth, depth)
                 tmpcode += code
-                afeatures[sigmap[sigmatch][0]] = (tmpflag, tmpdepth, tmpcode)
+                afeatures[sigmap[sigmatch][0]] = \
+                    (tmpflag, tmpdepth, tmpcode)
                 sigmap[sigmatch].append(sig)
             except NoEquivalentSigError:
                 # mergedfeatures get the depth of minus one
@@ -1028,7 +1012,6 @@ def apply(folder):
 
     # outputfile
     fd, fdcsv = _prologCSV(folder)
-    # fdfeat = open(os.path.join(folder, __outputfexp), 'w')
 
     global __curfile
     fcount = 0
@@ -1045,40 +1028,46 @@ def apply(folder):
         try:
             tree = etree.parse(file)
         except etree.XMLSyntaxError:
-            print("ERROR: cannot parse (%s). Skipping this file." % os.path.join(folder, file))
+            print("ERROR: cannot parse (%s). Skipping this file." %
+                os.path.join(folder, file))
             continue
 
-        print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
+        print('INFO: parsing file (%5d) of (%5d) -- (%s).' %
+            (fcount, ftotal, os.path.join(folder, file)))
 
         root = tree.getroot()
         try:
             (features, _, featuresgrouter) = _getFeatures(root)
         except IfdefEndifMismatchError:
-            print("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file)))
+            print("ERROR: ifdef-endif mismatch in file (%s)" %
+                (os.path.join(folder, file)))
             continue
         _mergeFeatures(features)
 
-    # get flags that may interact
+    # filter annotations that do not have any c-code
+    # filter annotations with less than 3 features
     afeatureitems = filter(lambda (a, (f, d, c)):
             c != [''], afeatures.items())
     annotations = map(lambda (a, (flag, b, c)): flag, afeatureitems)
     annotations3andmore = filter(lambda a: len(a) > 2, annotations)
-    scalelist = list()
+    annotations3andmore = uniqueItems(annotations3andmore)
+    annotations3andmore = map(lambda s: set(s), annotations3andmore)
+    intannotations = list()
 
     # create all pairwise combinations of features
     for annotation in annotations3andmore:
         combinations = map(lambda s:
             set(s), list(itertools.combinations(annotation, 2)))
         allcomb = len(combinations)
-        occcomb = 0
-        occcomblist = list()
+        occcomblist = list(set())
         for combination in combinations:
             if combination in annotations:
-                occcomb += 1
                 occcomblist.append(combination)
-        if occcomb > 0:
-            scalelist.append(occcomb/1.0*allcomb)
-        print annotation, occcomblist
+        combfeatset = reduce(set.union, occcomblist, set())
+        if combfeatset.issuperset(annotation):
+            intannotations.append((annotation, occcomblist))
+    for i in intannotations: print i
+    print "relevant annotations: ", "%5d" % len(intannotations)
 
 ##################################################
 if __name__ == '__main__':

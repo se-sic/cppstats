@@ -1059,19 +1059,26 @@ def apply(folder):
         _mergeFeatures(features)
 
     # get flags that may interact
-    annotations = map(lambda (a, (flag, b, c)): flag, afeatures.items())
+    afeatureitems = filter(lambda (a, (f, d, c)):
+            c != [''], afeatures.items())
+    annotations = map(lambda (a, (flag, b, c)): flag, afeatureitems)
+    annotations3andmore = filter(lambda a: len(a) > 2, annotations)
+    scalelist = list()
 
-    # create all combinations of features from 2 to len(annotations)-1
-    for annotation in annotations:
-        for limit in range(2, len(annotation)):
-            combinations = list(itertools.combinations(annotation, limit))
-            lencombinations = len(combinations)
-            numoccurringcombinations = 0
-            for combination in combinations:
-                if set(combination) in annotations: numoccurringcombinations += 1
-            if numoccurringcombinations > 0:
-                print "scale ", numoccurringcombinations/(1.0 * lencombinations)
-
+    # create all pairwise combinations of features
+    for annotation in annotations3andmore:
+        combinations = map(lambda s:
+            set(s), list(itertools.combinations(annotation, 2)))
+        allcomb = len(combinations)
+        occcomb = 0
+        occcomblist = list()
+        for combination in combinations:
+            if combination in annotations:
+                occcomb += 1
+                occcomblist.append(combination)
+        if occcomb > 0:
+            scalelist.append(occcomb/1.0*allcomb)
+        print annotation, occcomblist
 
 ##################################################
 if __name__ == '__main__':

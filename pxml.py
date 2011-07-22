@@ -41,7 +41,7 @@ except ImportError:
 try:
     import pyparsing as pypa
     pypa.ParserElement.enablePackrat()        # speed up parsing
-    sys.setrecursionlimit(2000)               # handle larger expressions
+    sys.setrecursionlimit(4000)               # handle larger expressions
 except ImportError:
     print("pyparsing module not found! (python-pyparsing)")
     print("see http://pyparsing.wikispaces.com/")
@@ -156,30 +156,32 @@ def _collectDefines(d):
 #   - identifier
 #   - macro function, which is basically expanded via #define
 #     to an expression
-__string = \
-        pypa.Literal('\'').suppress() + \
-        pypa.Word(pypa.alphanums+'_\\') + \
-        pypa.Literal('\'').suppress()
+__numlitl = pypa.Literal('l').suppress() | pypa.Literal('L').suppress()
+__numlitu = pypa.Literal('u').suppress() | pypa.Literal('U').suppress()
+
+__string = pypa.QuotedString('\'')
 
 __hexadec = \
         pypa.Literal('0x').suppress() + \
         pypa.Word(pypa.hexnums).\
         setParseAction(lambda t: str(int(t[0], 16))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L')))
+        pypa.Optional(__numlitu) + \
+        pypa.Optional(__numlitl) + \
+        pypa.Optional(__numlitl)
 
 __integer = \
         pypa.Optional('~') + \
         pypa.Word(pypa.nums+'-') + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('U'))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L'))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L')))
+        pypa.Optional(__numlitu) + \
+        pypa.Optional(__numlitl) + \
+        pypa.Optional(__numlitl)
 
 __identifier = \
-        pypa.Word(pypa.alphanums+'_'+'-')
+        pypa.Word(pypa.alphanums+'_'+'-', pypa.alphanums+'_'+'-'+'$')
 __arg = pypa.Word(pypa.alphanums+'_')
 __args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + \
         __arg)
-__fname = pypa.Word(pypa.alphas, pypa.alphanums + '_')
+__fname = pypa.Word(pypa.alphas + '_' + '#', pypa.alphanums + '_' + '#')
 __function = pypa.Group(__fname + pypa.Literal('(').suppress() + \
         __args + pypa.Literal(')').suppress())
 
@@ -221,7 +223,7 @@ def _parseFeatureSignature(sig):
     operand = __string | __hexadec | __integer | \
             __function | __identifier.setParseAction(_addIdentifier2Mal)
     compoperator = pypa.oneOf('< > <= >= == !=')
-    calcoperator = pypa.oneOf('+ - * / & | << >>')
+    calcoperator = pypa.oneOf('+ - * / % & | << >>')
     expr = pypa.operatorPrecedence(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
@@ -1077,3 +1079,4 @@ if __name__ == '__main__':
         apply(folder)
     else:
         sys.exit(-1)
+

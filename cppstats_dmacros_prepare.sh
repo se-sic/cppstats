@@ -100,19 +100,19 @@ do
 		${bin}/move_multiple_macros.py tmp.txt ${j}
 		rm -f tmp.txt
 
-		# format source-code
+		# delete comments
 		cp ${j} ${j}.bak02
+		${bin}/src2srcml --language=C ${j} -o tmp.xml
+		xsltproc ${bin}/delete_comments.xsl tmp.xml > tmp_out.xml
+		${bin}/srcml2src tmp_out.xml -o ${j}
+		rm -f tmp.xml tmp_out.xml
+
+		# format source-code
+		cp ${j} ${j}.bak03
 		astyle --style=java ${j}
 		if [ -e ${j}.orig ]; then
 			rm -f ${j}.orig
 		fi
-
-		# delete comments
-		cp ${j} ${j}.bak03
-		${bin}/src2srcml2009 --language=C ${j} tmp.xml
-		xsltproc ${bin}/delete_comments.xsl tmp.xml > tmp_out.xml
-		${bin}/srcml2src2009 tmp_out.xml ${j}
-		rm -f tmp.xml tmp_out.xml
 
 		# delete leading, trailing and inter (# ... if) whitespaces
 		cp ${j} ${j}.bak04

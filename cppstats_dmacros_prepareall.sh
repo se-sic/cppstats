@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOGFILE=/work/joliebig/cppstats/cppstats_disciplined_preparation_log_`date +%Y%m%d`_$RANDOM.txt
-INPUTFILE=/home/joliebig/workspace/reverse_cpp/src/cppstats_input.txt
+INPUTFILE=/home/joliebig/workspace/reverse_cpp/src/cppstats_all.txt
 
 if [ -e $LOGFILE ]; then
 	rm $LOGFILE

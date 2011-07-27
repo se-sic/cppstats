@@ -177,7 +177,7 @@ __integer = \
         pypa.Optional(__numlitl)
 
 __identifier = \
-        pypa.Word(pypa.alphanums+'_'+'-', pypa.alphanums+'_'+'-'+'$')
+        pypa.Word(pypa.alphanums+'_'+'-'+'@'+'$')   # @ not allowed but they do occur
 __arg = pypa.Word(pypa.alphanums+'_')
 __args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + \
         __arg)
@@ -220,8 +220,8 @@ def _parseFeatureSignature(sig):
     def _rewriteTwo(p): return ''
     def _addIdentifier2Mal(p): mal.add(p[0])
 
-    operand = __string | __hexadec | __integer | \
-            __function | __identifier.setParseAction(_addIdentifier2Mal)
+    operand = __string | __hexadec | __function | __integer | \
+    __identifier.setParseAction(_addIdentifier2Mal)
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / % & | << >>')
     expr = pypa.operatorPrecedence(operand, [

@@ -159,7 +159,7 @@ do
 	for j in `ls *${i}`;
 	do
 		echo "create representation for ${j}"
-		${bin}/src2srcml2009 --cpp_markup_if0 --language=C ${j} ${j}.xml || rm ${j}.xml
+		${bin}/src2srcml --cpp-markup-if0 --language=C ${j} -o ${j}.xml || rm ${j}.xml
 	done
 done
 

@@ -1054,7 +1054,9 @@ def apply(folder):
     annotations3andmore = filter(lambda a: len(a) > 2, annotations)
     annotations3andmore = uniqueItems(annotations3andmore)
     annotations3andmore = map(lambda s: set(s), annotations3andmore)
-    intannotations = list()
+    relevantannotations = list()
+    missingannotations = list()
+    noneannotations = list()
 
     # create all pairwise combinations of features
     for annotation in annotations3andmore:
@@ -1067,9 +1069,21 @@ def apply(folder):
                 occcomblist.append(combination)
         combfeatset = reduce(set.union, occcomblist, set())
         if combfeatset.issuperset(annotation):
-            intannotations.append((annotation, occcomblist))
-    for i in intannotations: print i
-    print "relevant annotations: ", "%5d" % len(intannotations)
+            relevantannotations.append((annotation, occcomblist))
+        else:
+            if len(combfeatset) > 0:
+                missingannotations.append((annotation, combfeatset))
+            else:
+                noneannotations.append((annotation, combfeatset))
+    for i in relevantannotations: print i
+    print "total annotations: ", "%5d" % len(annotations3andmore)
+    print "relevant pairwise annotations: ", \
+        "%5d" % len(relevantannotations)
+    print "missing pairwise annotations: ", \
+        "%5d" % len(missingannotations)
+    print "none pairwise annotations: ", \
+        "%5d" % len(noneannotations)
+
 
 ##################################################
 if __name__ == '__main__':

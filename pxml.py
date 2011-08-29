@@ -983,6 +983,14 @@ def _checkForEquivalentSig(l, sig):
     raise NoEquivalentSigError()
 
 
+def prettyPrintSet(s):
+    h = s.pop()
+    r = str(h)
+
+    for e in s: r += ','+str(e)
+    return r
+
+
 def apply(folder):
     """This function applies the analysis to all xml-files in that
     directory and take the results and joins them together. Results
@@ -1047,43 +1055,29 @@ def apply(folder):
         _mergeFeatures(features)
 
     # filter annotations that do not have any c-code
-    # filter annotations with less than 3 features
+    # filter annotations with less than 2 features
     afeatureitems = filter(lambda (a, (f, d, c)):
             c != [''], afeatures.items())
-    annotations = map(lambda (a, (flag, b, c)): flag, afeatureitems)
-    annotations3andmore = filter(lambda a: len(a) > 2, annotations)
-    annotations3andmore = uniqueItems(annotations3andmore)
-    annotations3andmore = map(lambda s: set(s), annotations3andmore)
-    relevantannotations = list()
-    missingannotations = list()
-    noneannotations = list()
+    annotations = map(lambda (a, (f, b, c)): (a, f), afeatureitems)
+    annotations2andmore = filter(lambda (a, f): len(f) > 1, annotations)
+    annotationmap = dict()
+    for (a, f) in annotations2andmore: annotationmap[a] = f
 
-    # create all pairwise combinations of features
-    for annotation in annotations3andmore:
-        combinations = map(lambda s:
-            set(s), list(itertools.combinations(annotation, 2)))
-        allcomb = len(combinations)
-        occcomblist = list(set())
-        for combination in combinations:
-            if combination in annotations:
-                occcomblist.append(combination)
-        combfeatset = reduce(set.union, occcomblist, set())
-        if combfeatset.issuperset(annotation):
-            relevantannotations.append((annotation, occcomblist))
-        else:
-            if len(combfeatset) > 0:
-                missingannotations.append((annotation, combfeatset))
-            else:
-                noneannotations.append((annotation, combfeatset))
-    for i in relevantannotations: print i
-    print "total annotations: ", "%5d" % len(annotations3andmore)
-    print "relevant pairwise annotations: ", \
-        "%5d" % len(relevantannotations)
-    print "missing pairwise annotations: ", \
-        "%5d" % len(missingannotations)
-    print "none pairwise annotations: ", \
-        "%5d" % len(noneannotations)
+    annotations2andmore = map(lambda s: set(s), annotationmap.values())
 
+    projectname = os.path.basename(os.path.dirname(os.getcwd()))
+    fd = open(
+        os.path.join(
+            os.getcwd(),
+            'derivan_' + projectname + '.txt'
+        )
+        , 'w')
+    featurenames = reduce(set.union, annotations2andmore, set([]))
+    for i in featurenames:
+        fd.write(i + '\n')
+    for (a,f) in annotationmap.iteritems():
+        fd.write(prettyPrintSet(f)+';'+a+'\n')
+    fd.close()
 
 ##################################################
 if __name__ == '__main__':

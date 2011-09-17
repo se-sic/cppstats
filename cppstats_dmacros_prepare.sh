@@ -72,7 +72,6 @@ notify-send "starting ${indirabs}"
 # copy source-files
 echo '### preparing sources ...'
 echo '### copying all-files to one folder ...'
-echo '### and renaming duplicates (only filenames) to a unique name.'
 cd ${sourcedir}
 find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents '{}' ${invest} \;
 
@@ -145,9 +144,7 @@ done
 # create xml-representation of the source-code
 echo '### create xml-representation of the source-code files'
 for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
-	echo "create representation for ${f}"
-	${bin}/src2srcml --cpp-markup-if0 --language=C ${f} -o ${f}.xml || rm ${f}.xml
+	echo "create representation for ${invest}/${f}"
+	${bin}/src2srcml --language=C ${f} -o ${f}.xml || rm ${f}.xml
 done
 IFS=$SAVEIFS
-
-notify-send "finished ${indirabs}"

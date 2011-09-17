@@ -1,9 +1,1 @@
-/work/joliebig/cppstats/_cppstats_uclinux_2.0.38
-/work/joliebig/cppstats/_cppstats_uClibc-0.9.32-rc3
-/work/joliebig/cppstats/_cppstats_toybox-0.1.0
-/work/joliebig/cppstats/_cppstats_freetz-1.1.4
-/work/joliebig/cppstats/_cppstats_embtoolkit-0.1.0-rc13
-/work/joliebig/cppstats/_cppstats_coreboot_20110428
-/work/joliebig/cppstats/_cppstats_busybox-1.18.4
-/work/joliebig/cppstats/_cppstats_buildroot-2011.02
-/work/joliebig/cppstats/_cppstats_axTLS-1.3.2
+/opt/joliebig/cppstats/clamav-0.94.2/

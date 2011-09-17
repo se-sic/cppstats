@@ -115,6 +115,33 @@ parser.add_option("--maplep", dest="maplep",
 
 ##################################################
 # helper functions, constants and errors
+def returnFileNames(folder, extfilt = ['.xml']):
+    '''This function returns all files of the input folder <folder>
+    and its subfolders.'''
+    filesfound = list()
+
+    if os.path.isdir(folder):
+        wqueue = [os.path.abspath(folder)]
+
+        while wqueue:
+            currentfolder = wqueue[0]
+            wqueue = wqueue[1:]
+            foldercontent = os.listdir(currentfolder)
+            tmpfiles = filter(lambda n: os.path.isfile(
+                    os.path.join(currentfolder, n)), foldercontent)
+            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
+                    tmpfiles)
+            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
+                    tmpfiles)
+            filesfound += tmpfiles
+            tmpfolders = filter(lambda n: os.path.isdir(
+                    os.path.join(currentfolder, n)), foldercontent)
+            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
+                    tmpfolders)
+            wqueue += tmpfolders
+
+    return filesfound
+
 def uniqueItems(l):
     l = sorted(l)
     return list(k for k, _ in itertools.groupby(l))
@@ -1025,8 +1052,7 @@ def apply(folder):
 
     global __curfile
     fcount = 0
-    files = os.listdir(folder)
-    files = filter(lambda n: os.path.splitext(n)[1] == '.xml', files)
+    files = returnFileNames(folder, ['.xml'])
     fstats = [None]*len(__statsorder._keys)
     ftotal = len(files)
 
@@ -1065,7 +1091,7 @@ def apply(folder):
 
     annotations2andmore = map(lambda s: set(s), annotationmap.values())
 
-    projectname = os.path.basename(os.path.dirname(os.getcwd()))
+    projectname = os.path.basename(os.path.dirname(folder))
     fd = open(
         os.path.join(
             os.getcwd(),

@@ -17,7 +17,6 @@ fi
 
 while read dir; do
 	notify-send "starting $dir"
-	cd $dir/_cppstats_discipline
-	./interan.py 2>&1 | tee -a $LOGFILE >> /dev/null
+	./interan.py --folder $dir/_cppstats_discipline 2>&1 | tee -a $LOGFILE >> /dev/null
 	notify-send "finished $dir"
 done < $INPUTFILE

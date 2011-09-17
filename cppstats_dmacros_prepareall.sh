@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOGFILE=./log/cppstats_disciplined_preparation_log_`date +%Y%m%d`_$RANDOM.txt
-INPUTFILE=./cppstats_all.txt
+INPUTFILE=./cppstats_input.txt
 
 if [ -e $LOGFILE ]; then
 	rm $LOGFILE

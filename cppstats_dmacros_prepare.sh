@@ -73,94 +73,81 @@ notify-send "starting ${indirabs}"
 echo '### preparing sources ...'
 echo '### copying all-files to one folder ...'
 echo '### and renaming duplicates (only filenames) to a unique name.'
-for i in .h .c;
-do
-	echo "formating source-file $i"
-	find ${sourcedir} -type f -iname "*${i}" -exec cp --backup=t '{}' ${invest} \;
-done
+cd ${sourcedir}
+find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents '{}' ${invest} \;
 
 cd ${invest}
-for i in `ls *~`;
-do
-	echo $i
-	mv $i `echo $i | sed -r 's/(.+)\.(.+)\.~([0-9]+)~$/\1__\3.\2/g'`
-done
 
 # reformat source-files and delete comments and include guards
 echo '### reformat source-files'
-for i in .h .c;
-do
-	for j in `ls *${i}`;
-	do
-		j=${invest}/${j}
+SAVEIFS=$IFS
+IFS=$(echo -en "\n\b")
+for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
+	f=${invest}/${f}
 
-		# translate macros that span over multiple lines to one line
-		cp ${j} ${j}.bak01
-		mv ${j} tmp.txt
-		${bin}/move_multiple_macros.py tmp.txt ${j}
-		rm -f tmp.txt
+	# translate macros that span over multiple lines to one line
+	cp ${f} ${f}.bak01
+	mv ${f} ${f}tmp.txt
+	${bin}/move_multiple_macros.py ${f}tmp.txt ${f}
+	rm -f ${f}tmp.txt
 
-		# delete comments
-		cp ${j} ${j}.bak02
-		${bin}/src2srcml --language=C ${j} -o tmp.xml
-		xsltproc ${bin}/delete_comments.xsl tmp.xml > tmp_out.xml
-		${bin}/srcml2src tmp_out.xml -o ${j}
-		rm -f tmp.xml tmp_out.xml
+	# delete comments
+	cp ${f} ${f}.bak02
+	${bin}/src2srcml --language=C ${f} -o ${f}tmp.xml
+	xsltproc ${bin}/delete_comments.xsl ${f}tmp.xml > ${f}tmp_out.xml
+	${bin}/srcml2src ${f}tmp_out.xml -o ${f}
+	rm -f ${f}tmp.xml ${f}tmp_out.xml
 
-		# format source-code
-		cp ${j} ${j}.bak03
-		astyle --style=java ${j}
-		if [ -e ${j}.orig ]; then
-			rm -f ${j}.orig
-		fi
+	# format source-code
+	cp ${f} ${f}.bak03
+	astyle --style=java ${f}
+	if [ -e ${f}.orig ]; then
+		rm -f ${f}.orig
+	fi
 
-		# delete leading, trailing and inter (# ... if) whitespaces
-		cp ${j} ${j}.bak04
-		cat ${j} | sed 's/^[ \t]\+//g;s/[ \t]\+$//g;s/\#[ \t]\+/\#/g' > tmp.txt
-		mv tmp.txt ${j}
+	# delete leading, trailing and inter (# ... if) whitespaces
+	cp ${f} ${f}.bak04
+	cat ${f} | sed 's/^[ \t]\+//g;s/[ \t]\+$//g;s/\#[ \t]\+/\#/g' > ${f}tmp.txt
+	mv ${f}tmp.txt ${f}
 
-		# delete multipe whitespaces
-		cp ${j} ${j}.bak05
-		cat ${j} | sed 's/\t/ /g;s/[ \t]\{2,\}/ /g' > tmp.txt
-		mv tmp.txt ${j}
+	# delete multipe whitespaces
+	cp ${f} ${f}.bak05
+	cat ${f} | sed 's/\t/ /g;s/[ \t]\{2,\}/ /g' > ${f}tmp.txt
+	mv ${f}tmp.txt ${f}
 
-		# rewrite ifdefs and ifndefs
-		cp ${j} ${j}.bak06
-		${bin}/rewriteifdefs.py ${j} > tmp.txt
-		mv tmp.txt ${j}
-		
-		# delete include guards
-		if [ $i == '.h' ]; then
-			echo 'deleting include guard in ' ${j}
-			cp ${j} ${j}.bak07
-			mv ${j} tmp.txt
-			${bin}/delete_include_guards.py tmp.txt > ${j}
-			rm -f tmp.txt
-		fi
-		
-		# delete preprocessor directives in #ifdefs
-		cp ${j} ${j}.bak08
-		${bin}/partial_preprocessor.py -i ${j} -o tmp.txt
-		mv tmp.txt ${j}
+	# rewrite ifdefs and ifndefs
+	cp ${f} ${f}.bak06
+	${bin}/rewriteifdefs.py ${f} > ${f}tmp.txt
+	mv ${f}tmp.txt ${f}
+	
+	# delete include guards
+	if [ ${f/*./} == 'h' ]; then
+		echo 'deleting include guard in ' ${f}
+		cp ${f} ${f}.bak07
+		mv ${f} ${f}tmp.txt
+		${bin}/delete_include_guards.py ${f}tmp.txt > ${f}
+		rm -f ${f}tmp.txt
+	fi
+	
+	# delete preprocessor directives in #ifdefs
+	cp ${f} ${f}.bak08
+	${bin}/partial_preprocessor.py -i ${f} -o ${f}tmp.txt
+	mv ${f}tmp.txt ${f}
 
-		# delete empty lines
-		cp ${j} ${j}.bak09
-		mv ${j} tmp.txt
-		${bin}/delete_emptylines.sed tmp.txt > ${j}
-		rm -f tmp.txt
-	done
+	# delete empty lines
+	cp ${f} ${f}.bak09
+	mv ${f} ${f}tmp.txt
+	${bin}/delete_emptylines.sed ${f}tmp.txt > ${f}
+	rm -f ${f}tmp.txt
 done
 
 
 # create xml-representation of the source-code
 echo '### create xml-representation of the source-code files'
-for i in .h .c;
-do
-	for j in `ls *${i}`;
-	do
-		echo "create representation for ${j}"
-		${bin}/src2srcml --cpp-markup-if0 --language=C ${j} -o ${j}.xml || rm ${j}.xml
-	done
+for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
+	echo "create representation for ${f}"
+	${bin}/src2srcml --cpp-markup-if0 --language=C ${f} -o ${f}.xml || rm ${f}.xml
 done
+IFS=$SAVEIFS
 
 notify-send "finished ${indirabs}"

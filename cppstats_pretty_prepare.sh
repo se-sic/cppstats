@@ -66,53 +66,45 @@ notify-send "starting ${indirabs}"
 echo '### preparing sources ...'
 echo '### copying all-files to one folder ...'
 echo '### and renaming duplicates (only filenames) to a unique name.'
-for i in .h .c;
-do
-	echo "formating source-file $i"
-	find ${sourcedir} -type f -iname "*${i}" -exec cp --backup=t '{}' ${invest} \;
-done
+echo "formating source-file $i"
+cd ${sourcedir}
+find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents '{}' ${invest} \;
 
 cd ${invest}
-for i in `ls *~`;
-do
-	echo $i
-	mv $i `echo $i | sed -r 's/(.+)\.(.+)\.~([0-9]+)~$/\1__\3.\2/g'`
-done
 
 # reformat source-files and delete comments and include guards
 echo '### reformat source-files'
-for i in .h .c;
-do
-	for j in `ls *${i}`;
-	do
-		j=${invest}/${j}
-		
-		# translate macros that span over multiple lines to one line
-		cp ${j} ${j}.bak01
-		mv ${j} tmp.txt
-		${bin}/move_multiple_macros.py tmp.txt ${j}
-		rm -f tmp.txt
+SAVEIFS=$IFS
+IFS=$(echo -en "\n\b")
+for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
+	j=${invest}/${f}
+	
+	# translate macros that span over multiple lines to one line
+	cp ${f} ${f}.bak01
+	mv ${f} ${f}tmp.txt
+	${bin}/move_multiple_macros.py ${f}tmp.txt ${f}
+	rm -f ${f}tmp.txt
 
-		# format source-code
-		cp ${j} ${j}.bak02
-		astyle --style=java ${j}
-		if [ -e ${j}.orig ]; then
-			rm -f ${j}.orig
-		fi
+	# format source-code
+	cp ${f} ${f}.bak02
+	astyle --style=java ${f}
+	if [ -e ${f}.orig ]; then
+		rm -f ${f}.orig
+	fi
 
-		# delete comments
-		cp ${j} ${j}.bak03
-		${bin}/src2srcml2009 --language=C ${j} tmp.xml
-		xsltproc ${bin}/delete_comments.xsl tmp.xml > tmp_out.xml
-		${bin}/srcml2src2009 tmp_out.xml ${j}
-		rm -f tmp.xml tmp_out.xml
+	# delete comments
+	cp ${f} ${f}.bak03
+	${bin}/src2srcml --language=C ${f} -o ${f}tmp.xml
+	xsltproc ${bin}/delete_comments.xsl ${f}tmp.xml > ${f}tmp_out.xml
+	${bin}/srcml2src ${f}tmp_out.xml -o ${f}
+	rm -f ${f}tmp.xml ${f}tmp_out.xml
 
-		# delete empty lines
-		cp ${j} ${j}.bak04
-		mv ${j} tmp.txt
-		${bin}/delete_emptylines.sed tmp.txt > ${j}
-		rm -f tmp.txt
-	done
+	# delete empty lines
+	cp ${f} ${f}.bak04
+	mv ${f} ${f}tmp.txt
+	${bin}/delete_emptylines.sed ${f}tmp.txt > ${f}
+	rm -f ${f}tmp.txt
 done
+IFS=$SAVEIFS
 
 notify-send "finished ${indirabs}"

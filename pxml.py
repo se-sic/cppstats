@@ -103,7 +103,7 @@ __statsorder = Enum(
     'GRANEL',            # condition block extension - includes return
     'GRANML',            # function parameter extension
     'GRANERR',           # not determined granularity
-    
+
     'NDMAX',             # maximum nesting depth in a file
 )
 ##################################################
@@ -133,6 +133,33 @@ parser.add_option("--maplep", dest="maplep",
 
 ##################################################
 # helper functions, constants and errors
+def returnFileNames(folder, extfilt = ['.xml']):
+    '''This function returns all files of the input folder <folder>
+    and its subfolders.'''
+    filesfound = list()
+
+    if os.path.isdir(folder):
+        wqueue = [os.path.abspath(folder)]
+
+        while wqueue:
+            currentfolder = wqueue[0]
+            wqueue = wqueue[1:]
+            foldercontent = os.listdir(currentfolder)
+            tmpfiles = filter(lambda n: os.path.isfile(
+                    os.path.join(currentfolder, n)), foldercontent)
+            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
+                    tmpfiles)
+            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
+                    tmpfiles)
+            filesfound += tmpfiles
+            tmpfolders = filter(lambda n: os.path.isdir(
+                    os.path.join(currentfolder, n)), foldercontent)
+            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
+                    tmpfolders)
+            wqueue += tmpfolders
+
+    return filesfound
+
 def _flatten(l):
     """This function takes a list as input and returns a flatten version
     of the list. So all nested lists are unpacked and moved up to the
@@ -1151,8 +1178,9 @@ def apply(folder):
 
     global __curfile
     fcount = 0
-    files = os.listdir(folder)
-    files = filter(lambda n: os.path.splitext(n)[1] == '.xml', files)
+    files = returnFileNames(folder, ['.xml'])
+    print(folder)
+    print(files)
     fstats = [None]*len(__statsorder._keys)
     ftotal = len(files)
 

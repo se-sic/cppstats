@@ -142,6 +142,6 @@ done
 echo '### create xml-representation of the source-code files'
 for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
 	echo "create representation for ${invest}/${f}"
-	${bin}/src2srcml --language=C ${f} -o ${j}.xml || rm ${f}.xml
+	${bin}/src2srcml --language=C ${f} -o ${f}.xml || rm ${f}.xml
 done
 IFS=$SAVEIFS

@@ -117,19 +117,12 @@ __statsorder = Enum(
 parser = OptionParser()
 parser.add_option("--folder", dest="folder",
         help="input folder [default=.]", default=".")
-parser.add_option("--maple", dest="maple", action="store_true",
-        default=False, help="make use of maple for checking " \
-        "feature expressions equality [default=False]")
 parser.add_option("--csp", dest="csp", action="store_true",
         default=False, help="make use of csp solver to check " \
         "feature expression equality [default=False]")
 parser.add_option("--str", dest="str", action="store_true",
         default=True, help="make use of simple string comparision " \
         "for checking feature expression equality [default=True]")
-parser.add_option("--mapleh", dest="mapleh",
-        default="bashir", help="name of the host with maple xmlrpc [default=bashir]")
-parser.add_option("--maplep", dest="maplep",
-        default="10001", help="port of the host with maple xmlrpc [default=10001]")
 
 (options, args) = parser.parse_args()
 
@@ -349,15 +342,15 @@ def _parseFeatureSignatureAndRewrite(sig):
         '>=': '>=',
         '==': '=',
         '!=': '!=',
-        '*' : '*',        # needs rewriting with parenthesis
+        '*' : '*',       # needs rewriting with parenthesis
         '/' : '/',
         '%' : '',        # needs rewriting a % b => modp(a, b)
         '+' : '+',
         '-' : '-',
         '&' : '',        # needs rewriting a & b => BitAnd(a, b)
         '|' : '',        # needs rewriting a | b => BitOr(a, b)
-        '>>': '>>',        # needs rewriting a >> b => a / (2^b)
-        '<<': '<<',        # needs rewriting a << b => a * (2^b)
+        '>>': '>>',      # needs rewriting a >> b => a / (2^b)
+        '<<': '<<',      # needs rewriting a << b => a * (2^b)
     }
 
     def _rewriteOne(param):
@@ -1112,8 +1105,6 @@ def _checkForEquivalentSig(l, sig):
     """This method takes a list of signatures and checks sig for an
     equivalent signature. If no equivalent signature is found this
     method raises an error."""
-    if options.maple:
-        mserv = xmlrpclib.ServerProxy(':'.join(['http://' + options.mapleh, options.maplep]))
 
     def _checkSigEquivalence(sig1, sig2):
         """This function checks the equivalence of two signatures.
@@ -1123,20 +1114,6 @@ def _checkForEquivalentSig(l, sig):
         if not (sig1 and sig2):            # ommit empty signatures
             return False
 
-        if options.maple:
-            ret = mserv.checkEquivalence(sig1, sig2)
-            if ret == 'error':
-                return False
-                __errormatch.append((sig1, sig2))
-            if ret == 'true':
-                return True
-            if ret == 'false':
-                return False
-            if ret == None:
-                return sig1 == sig2
-            if (sig1 == sig2) != ret:
-                print("INFO: maple-signature match is different")
-                __errorfexp += 1
         if options.str:
             return sig1 == sig2
 
@@ -1328,12 +1305,6 @@ def apply(folder):
 
     fdcsv.writerow(astats)
     fd.close()
-    if options.maple:
-        print('feature expressions: not equal '
-            'string to maple (%s)' % str(__errorfexp))
-        print('feature expressions: found error '
-            'in (%s) expressions' % str(len(__errormatch)))
-        print(__errormatch)
 
 
 ##################################################

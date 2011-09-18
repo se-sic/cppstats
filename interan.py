@@ -39,7 +39,10 @@ except ImportError:
 
 # pyparsing module
 try:
-    import pyparsing as pypa
+    pversion = sys.version_info[0]
+
+    if pversion == 2: import pyparsing.pyparsing_py2 as pypa
+    else: import pyparsing.pyparsing_py3 as pypa
     pypa.ParserElement.enablePackrat()        # speed up parsing
     sys.setrecursionlimit(4000)               # handle larger expressions
 except ImportError:
@@ -186,7 +189,7 @@ def _collectDefines(d):
 __numlitl = pypa.Literal('l').suppress() | pypa.Literal('L').suppress()
 __numlitu = pypa.Literal('u').suppress() | pypa.Literal('U').suppress()
 
-__string = pypa.QuotedString('\'')
+__string = pypa.QuotedString('\'', '\\')
 
 __hexadec = \
         pypa.Literal('0x').suppress() + \

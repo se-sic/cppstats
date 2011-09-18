@@ -38,7 +38,10 @@ except ImportError:
 
 # pyparsing module
 try:
-    import pyparsing as pypa
+    pversion = sys.version_info[0]
+
+    if pversion == 2: import pyparsing.pyparsing_py2 as pypa
+    else: import pyparsing.pyparsing_py3 as pypa
     pypa.ParserElement.enablePackrat()        # speed up parsing
     sys.setrecursionlimit(2000)               # handle larger expressions
 except ImportError:
@@ -197,16 +200,18 @@ def _collectDefines(d):
 #   - identifier
 #   - macro function, which is basically expanded via #define
 #     to an expression
-__string = \
-        pypa.Literal('\'').suppress() + \
-        pypa.Word(pypa.alphanums+'_\\') + \
-        pypa.Literal('\'').suppress()
+__numlitl = pypa.Literal('l').suppress() | pypa.Literal('L').suppress()
+__numlitu = pypa.Literal('u').suppress() | pypa.Literal('U').suppress()
+
+__string = pypa.QuotedString('\'', '\\')
 
 __hexadec = \
         pypa.Literal('0x').suppress() + \
         pypa.Word(pypa.hexnums).\
         setParseAction(lambda t: str(int(t[0], 16))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L')))
+        pypa.Optional(__numlitu) + \
+        pypa.Optional(__numlitl) + \
+        pypa.Optional(__numlitl)
 
 __integer = \
         pypa.Optional('~') + \
@@ -216,7 +221,7 @@ __integer = \
         pypa.Optional(pypa.Suppress(pypa.Literal('L')))
 
 __identifier = \
-        pypa.Word(pypa.alphanums+'_'+'-').setParseAction(_collectDefines)
+        pypa.Word(pypa.alphanums+'_'+'-'+'@'+'$').setParseAction(_collectDefines)
 __arg = pypa.Word(pypa.alphanums+'_')
 __args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + \
         __arg)
@@ -1179,8 +1184,6 @@ def apply(folder):
     global __curfile
     fcount = 0
     files = returnFileNames(folder, ['.xml'])
-    print(folder)
-    print(files)
     fstats = [None]*len(__statsorder._keys)
     ftotal = len(files)
 

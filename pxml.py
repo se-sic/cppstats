@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # modules from the std-library
@@ -825,7 +825,7 @@ def _getOuterGranularityStats(lgran):
         elif gran[0] in ['function']:            # function prototype
             continue
         else:
-            print('ERROR: outer granularity (%s, %s) not recognize!' % \
+            print('ERROR: outer granularity (%s, %s) not recognized!' % \
                     (gran, line))
             goerror += 1
 

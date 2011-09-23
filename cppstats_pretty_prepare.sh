@@ -28,6 +28,14 @@ bin=${PWD}
 echo ${bin}
 echo '### preliminaries ...'
 
+case `uname -s` in
+	Linux|linux) s2sml=src2srcml.linux; sml2s=srcml2src.linux;;
+	Darwin|darwin) s2sml=src2srcml.osx; sml2s=srcml2src.osx;;
+	*) echo '### program src2srcml missing'
+	   echo '    see: http://www.sdml.info/projects/srcml/trunk/'
+	   exit 1;;
+esac
+
 which astyle > /dev/null
 if [ $? -ne 0 ]; then
 	echo '### programm astyle missing!'
@@ -94,9 +102,9 @@ for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
 
 	# delete comments
 	cp ${f} ${f}.bak03
-	${bin}/src2srcml --language=C ${f} -o ${f}tmp.xml
+	${bin}/${s2sml} --language=C ${f} -o ${f}tmp.xml
 	xsltproc ${bin}/delete_comments.xsl ${f}tmp.xml > ${f}tmp_out.xml
-	${bin}/srcml2src ${f}tmp_out.xml -o ${f}
+	${bin}/${sml2s} ${f}tmp_out.xml -o ${f}
 	rm -f ${f}tmp.xml ${f}tmp_out.xml
 
 	# delete empty lines

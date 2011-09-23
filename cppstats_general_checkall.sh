@@ -17,7 +17,6 @@ fi
 
 while read dir; do
 	notify-send "starting $dir"
-	cd $dir/_cppstats
-	./pxml.py 2>&1 | tee -a $LOGFILE >> /dev/null
+	./pxml.py --folder $dir/_cppstats 2>&1 | tee -a $LOGFILE >> /dev/null
 	notify-send "finished $dir"
 done < $INPUTFILE

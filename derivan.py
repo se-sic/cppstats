@@ -1071,11 +1071,11 @@ def apply(folder):
 
     annotations2andmore = map(lambda s: set(s), annotationmap.values())
 
-    projectname = os.path.basename(os.path.dirname(folder))
+    projectpath = os.path.dirname(folder)
     fd = open(
         os.path.join(
-            os.getcwd(),
-            'derivan_' + projectname + '.txt'
+            projectpath,
+            'derivan.txt'
         )
         , 'w')
     featurenames = reduce(set.union, annotations2andmore, set([]))

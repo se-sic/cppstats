@@ -1,1 +1,1 @@
-/opt/joliebig/cppstats/clamav-0.94.2/
+/work/joliebig/cppstats/_cppstats_xterm-243

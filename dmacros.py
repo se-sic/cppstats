@@ -643,8 +643,14 @@ class DisciplinedAnnotations:
         for xmlfile in  xmlfiles:
             print('[INFO] checking file %s' % xmlfile)
             self.checkFile(xmlfile)
-        f = open("disciplined_stats.txt","a")
-        f.write(self.opts.dir
+        projectpath = os.path.dirname(self.opts.dir)
+        projectname = os.path.basename(projectpath)
+        fd = open(
+            os.path.join(
+                projectpath,
+                'dmacros.txt'
+            ), 'w')
+        fd.write(projectname
                 +";"+str(self.loc)
                 +";"+str(self.compilationunit)
                 +";"+str(self.functiontype)

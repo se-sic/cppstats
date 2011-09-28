@@ -38,5 +38,3 @@
 /work/joliebig/cppstats/_cppstats_xine-lib-1.1.16.2
 /work/joliebig/cppstats/_cppstats_xorg-server-1.5.1
 /work/joliebig/cppstats/_cppstats_xterm-243
-
-

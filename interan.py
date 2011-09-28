@@ -1081,14 +1081,22 @@ def apply(folder):
                 missingannotations.append((annotation, combfeatset))
             else:
                 noneannotations.append((annotation, combfeatset))
-    for i in relevantannotations: print i
-    print "total annotations: ", "%5d" % len(annotations3andmore)
-    print "relevant pairwise annotations: ", \
-        "%5d" % len(relevantannotations)
-    print "missing pairwise annotations: ", \
-        "%5d" % len(missingannotations)
-    print "none pairwise annotations: ", \
-        "%5d" % len(noneannotations)
+
+    projectpath = os.path.dirname(folder)
+    projectname = os.path.basename(projectpath)
+
+    fd = open(
+        os.path.join(
+            projectpath,
+            'interan.txt'
+        ), 'w')
+
+    for i in relevantannotations: fd.write(str(i)+"\n")
+    fd.write("total annotations: %5d\n" % len(annotations3andmore))
+    fd.write("relevant pairwise annotations: %5d\n" % len(relevantannotations))
+    fd.write("missing pairwise annotations: %5d\n" % len(missingannotations))
+    fd.write("none pairwise annotations: %5d\n" % len(noneannotations))
+    fd.close()
 
 
 ##################################################

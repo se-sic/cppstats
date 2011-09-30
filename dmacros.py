@@ -650,6 +650,20 @@ class DisciplinedAnnotations:
                 projectpath,
                 'dmacros.txt'
             ), 'w')
+        fd.write("projectname"
+                +";"+"loc"
+                +";"+"compilationunit"
+                +";"+"functiontype"
+                +";"+"siblings"
+                +";"+"wrapperif"
+                +";"+"conditionalcase"
+                +";"+"conditionalelif"
+                +";"+"parameter"
+                +";"+"expression"
+                +";"+"undisciplinedknown"
+                +";"+"undisciplinedunknown"
+                +";"+"disciplined/overallblocks"
+                +";"+"overallblocks"+"\n")
         fd.write(projectname
                 +";"+str(self.loc)
                 +";"+str(self.compilationunit)

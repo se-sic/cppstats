@@ -29,8 +29,8 @@ echo ${bin}
 echo '### preliminaries ...'
 
 case `uname -s` in
-	Linux|linux) s2sml=src2srcml.linux; sml2s=srcml2src.linux;;
-	Darwin|darwin) s2sml=src2srcml.osx; sml2s=srcml2src.osx;;
+	Linux|linux) s2sml=${bin}/src2srcml.linux; sml2s=${bin}/srcml2src.linux;;
+	Darwin|darwin) s2sml=${bin}/src2srcml.osx; sml2s=${bin}/srcml2src.osx;;
 	*) echo '### program src2srcml missing'
 	   echo '    see: http://www.sdml.info/projects/srcml/trunk/'
 	   exit 1;;
@@ -100,9 +100,9 @@ for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
 
 	# delete comments
 	cp ${f} ${f}.bak02
-	${bin}/src2srcml --language=C ${f} -o ${f}tmp.xml
+	$s2sml --language=C ${f} -o ${f}tmp.xml
 	xsltproc ${bin}/delete_comments.xsl ${f}tmp.xml > ${f}tmp_out.xml
-	${bin}/srcml2src ${f}tmp_out.xml -o ${f}
+	$sml2s ${f}tmp_out.xml -o ${f}
 	rm -f ${f}tmp.xml ${f}tmp_out.xml
 
 	# format source-code
@@ -153,6 +153,6 @@ done
 echo '### create xml-representation of the source-code files'
 for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
 	echo "create representation for ${invest}/${f}"
-	${bin}/src2srcml --language=C ${f} -o ${f}.xml || rm ${f}.xml
+	$s2sml --language=C ${f} -o ${f}.xml || rm ${f}.xml
 done
 IFS=$SAVEIFS

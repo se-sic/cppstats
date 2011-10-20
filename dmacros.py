@@ -650,6 +650,10 @@ class DisciplinedAnnotations:
                 projectpath,
                 'dmacros.txt'
             ), 'w')
+
+        ratio = 0
+        if (self.overallblocks > 0):
+            ratio = self.disciplined/(0.0 + self.overallblocks)
         fd.write("projectname"
                 +";"+"loc"
                 +";"+"compilationunit"
@@ -676,7 +680,7 @@ class DisciplinedAnnotations:
                 +";"+str(self.expression)
                 +";"+str(self.undisciplinedknown)
                 +";"+str(self.undisciplinedunknown)
-                +";"+str(self.disciplined/(0.0+self.overallblocks))
+                +";"+str(ratio)
                 +";"+str(self.overallblocks)+"\n")
 
 ##################################################

@@ -8,9 +8,12 @@ import sys
 
 # pyparsing module
 try:
-    import pyparsing as pypa
+    pversion = sys.version_info[0]
+
+    if pversion == 2: import pyparsing.pyparsing_py2 as pypa
+    else: import pyparsing.pyparsing_py3 as pypa
     pypa.ParserElement.enablePackrat()        # speed up parsing
-    sys.setrecursionlimit(3000)               # handle larger expressions
+    sys.setrecursionlimit(2000)               # handle larger expressions
 except ImportError:
     print("pyparsing module not found! (python-pyparsing)")
     print("see http://pyparsing.wikispaces.com/")

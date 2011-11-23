@@ -80,7 +80,7 @@ mkdir ${invest}
 echo '### preparing sources ...'
 echo '### copying all-files to one folder ...'
 cd ${sourcedir}
-find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents '{}' ${invest} \;
+find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents --no-preserve=mode '{}' ${invest} \;
 
 cd ${invest}
 
@@ -127,7 +127,7 @@ for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
 	mv ${f}tmp.txt ${f}
 	
 	# delete include guards
-	if [ ${f/*./} == '.h' ]; then
+	if [ ${f/*./} == 'h' ]; then
 		echo 'deleting include guard in ' ${f}
 		cp ${f} ${f}.bak07
 		mv ${f} ${f}tmp.txt

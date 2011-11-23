@@ -43,7 +43,7 @@ try:
     if pversion == 2: import pyparsing.pyparsing_py2 as pypa
     else: import pyparsing.pyparsing_py3 as pypa
     pypa.ParserElement.enablePackrat()        # speed up parsing
-    sys.setrecursionlimit(2000)               # handle larger expressions
+    sys.setrecursionlimit(8000)               # handle larger expressions
 except ImportError:
     print("pyparsing module not found! (python-pyparsing)")
     print("see http://pyparsing.wikispaces.com/")
@@ -294,10 +294,10 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
         ret = '(' + ret.join(map(str, param[0][0::2])) + ')'
         return ret
 
-    operand = __string | __hexadec | __integer | \
+    operand = __hexadec | __integer | __string | \
             __function | __identifier
     compoperator = pypa.oneOf('< > <= >= == !=')
-    calcoperator = pypa.oneOf('+ - * / & | << >>')
+    calcoperator = pypa.oneOf('+ - * / & | << >> %')
     expr = pypa.operatorPrecedence(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
@@ -380,7 +380,7 @@ def _parseFeatureSignatureAndRewrite(sig):
     operand = __string | __hexadec | __integer | \
             __function | __identifier
     compoperator = pypa.oneOf('< > <= >= == !=')
-    calcoperator = pypa.oneOf('+ - * / & | << >>')
+    calcoperator = pypa.oneOf('+ - * / & | << >> %')
     expr = pypa.operatorPrecedence(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),

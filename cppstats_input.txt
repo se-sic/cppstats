@@ -1,1 +1,3 @@
-/work/joliebig/cppstats/_cppstats_xterm-243
+/work/joliebig/cppstats/_cppstats_solaris_kernel/
+/work/joliebig/cppstats/_cppstats_freebsd/
+/work/joliebig/cppstats/_cppstats_linux-2.6.28.7/

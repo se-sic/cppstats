@@ -80,7 +80,7 @@ mkdir ${invest}
 echo '### preparing sources ...'
 echo '### copying all-files to one folder ...'
 cd ${sourcedir}
-find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents --no-preserve=mode '{}' ${invest} \;
+find . -type f \( -name "*.pi" \) -exec cp --parents --no-preserve=mode '{}' ${invest} \;
 
 cd ${invest}
 
@@ -88,7 +88,7 @@ cd ${invest}
 echo '### reformat source-files'
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")
-for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
+for f in `find . -type f \( -name "*.pi" \)`; do
 	f=${invest}/${f}
 
 	# translate macros that span over multiple lines to one line
@@ -147,7 +147,7 @@ done
 
 # create xml-representation of the source-code
 echo '### create xml-representation of the source-code files'
-for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
+for f in `find . -type f \( -name "*.pi" \)`; do
 	echo "create representation for ${invest}/${f}"
 	${bin}/${s2sml} --language=C ${f} -o ${f}.xml || rm ${f}.xml
 done

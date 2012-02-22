@@ -107,7 +107,7 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 
 	# format source-code
 	cp ${f} ${f}.bak03
-	#astyle --style=java ${f}
+	astyle --style=java ${f}
 	if [ -e ${f}.orig ]; then
 		rm -f ${f}.orig
 	fi

@@ -142,6 +142,8 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 	mv ${f} ${f}tmp.txt
 	${bin}/delete_emptylines.sed ${f}tmp.txt > ${f}
 	rm -f ${f}tmp.txt
+
+	rm ${f}.bak*
 done
 
 

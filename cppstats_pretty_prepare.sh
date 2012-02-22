@@ -76,7 +76,7 @@ echo '### copying all-files to one folder ...'
 echo '### and renaming duplicates (only filenames) to a unique name.'
 echo "formating source-file $i"
 cd ${sourcedir}
-find . -type f \( -name "*.pi" \) -exec cp --parents '{}' ${invest} \;
+find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents '{}' ${invest} \;
 
 cd ${invest}
 
@@ -84,7 +84,7 @@ cd ${invest}
 echo '### reformat source-files'
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")
-for f in `find . -type f \( -name "*.pi" \)`; do
+for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
 	j=${invest}/${f}
 	
 	# translate macros that span over multiple lines to one line

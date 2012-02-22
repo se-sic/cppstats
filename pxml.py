@@ -256,6 +256,7 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
     __pt = {
         #'defined' : 'defined_',
         'defined' : '',
+        'definedEx' : '',
         '!' : '!',
         '&&': '&',
         '||': '|',
@@ -280,10 +281,12 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
     def _rewriteOne(param):
         """This function returns each one parameter function
         representation for csp."""
+        print("in here\n")
         op, ma = param[0]
         mal.append(ma)
         if op == '!': ret = __pt[op] + '(' + ma + ')'
         if op == 'defined': ret = ma
+        if op == 'definedEx': ret = ma
         return  ret
 
     def _rewriteTwo(param):
@@ -300,6 +303,7 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
     expr = pypa.operatorPrecedence(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
+        ('definedEx', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
         (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
         (compoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
@@ -333,6 +337,7 @@ def _parseFeatureSignatureAndRewrite(sig):
     __pt = {
         #'defined' : 'defined_',
         'defined' : '',
+        'definedEx' : '',
         '!' : '&not',
         '&&': '&and',
         '||': '&or',
@@ -358,7 +363,7 @@ def _parseFeatureSignatureAndRewrite(sig):
         representation for maple."""
         if param[0][0] == '!':
             ret = __pt[param[0][0]] + '(' + str(param[0][1]) + ')'
-        if param[0][0] == 'defined':
+        if param[0][0] == 'defined' or param[0][0] == 'definedEx':
             ret = __pt[param[0][0]] + str(param[0][1])
         return  ret
 
@@ -383,6 +388,7 @@ def _parseFeatureSignatureAndRewrite(sig):
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
     expr = pypa.operatorPrecedence(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
+        ('definedEx', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
         (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
         (compoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),

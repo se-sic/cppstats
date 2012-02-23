@@ -257,6 +257,7 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
         #'defined' : 'defined_',
         'defined' : '',
         'definedEx' : '',
+        'def' : '',
         '!' : '!',
         '&&': '&',
         '||': '|',
@@ -287,6 +288,7 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
         if op == '!': ret = __pt[op] + '(' + ma + ')'
         if op == 'defined': ret = ma
         if op == 'definedEx': ret = ma
+        if op == 'def': ret = ma
         return  ret
 
     def _rewriteTwo(param):
@@ -302,6 +304,7 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
     expr = pypa.operatorPrecedence(operand, [
+        ('def', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('definedEx', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
@@ -336,6 +339,7 @@ def _parseFeatureSignatureAndRewrite(sig):
     # e.g. 'defined'
     __pt = {
         #'defined' : 'defined_',
+        'def' : '',
         'defined' : '',
         'definedEx' : '',
         '!' : '&not',
@@ -363,7 +367,7 @@ def _parseFeatureSignatureAndRewrite(sig):
         representation for maple."""
         if param[0][0] == '!':
             ret = __pt[param[0][0]] + '(' + str(param[0][1]) + ')'
-        if param[0][0] == 'defined' or param[0][0] == 'definedEx':
+        if param[0][0] == 'defined' or param[0][0] == 'definedEx' or param[0][0] == 'def':
             ret = __pt[param[0][0]] + str(param[0][1])
         return  ret
 
@@ -387,6 +391,7 @@ def _parseFeatureSignatureAndRewrite(sig):
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
     expr = pypa.operatorPrecedence(operand, [
+        ('def', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('definedEx', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),

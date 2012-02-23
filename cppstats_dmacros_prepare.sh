@@ -114,10 +114,10 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 
 	# format source-code
 	cp ${f} ${f}.bak03
-	astyle --style=java -X -q ${f} > /dev/null 2&>1
-	if [ -e ${f}.orig ]; then
-		rm -f ${f}.orig
-	fi
+	# astyle --style=java -X -q ${f} > /dev/null 2&>1
+	# if [ -e ${f}.orig ]; then
+	# 	rm -f ${f}.orig
+	# fi
 
 	# delete leading, trailing and inter (# ... if) whitespaces
 	cp ${f} ${f}.bak04

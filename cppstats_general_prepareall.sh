@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# disable job control to omit "Abort" messages from bash
+set +m
+
 LOGFILE=./log/cppstats_general_preparation_logfile_`date +%Y%m%d_%H%M`_$RANDOM.txt
 INPUTFILE=./cppstats_input.txt
 

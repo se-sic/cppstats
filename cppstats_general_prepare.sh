@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# disable job control to omit "Abort" messages from bash
+set +m
+
 # parameters
 # cmd - script-name itself
 # indir - input-directory
@@ -81,6 +84,8 @@ echo '### preparing sources ...'
 echo '### copying all-files to one folder ...'
 cd ${sourcedir}
 find . -type f \( -name "*.pi" \) -exec cp --parents --no-preserve=mode '{}' ${invest} \;
+NUMOFFILES=`find . -type f \( -name "*.pi" \) | wc -l`
+NUMOFCURFILE=0
 
 cd ${invest}
 
@@ -89,7 +94,9 @@ echo '### reformat source-files'
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")
 for f in `find . -type f \( -name "*.pi" \)`; do
+	let NUMOFCURFILE=NUMOFCURFILE+1
 	f=${invest}/${f}
+	echo "[INFO] preparing file $NUMOFCURFILE of $NUMOFFILES ($f)"
 
 	# translate macros that span over multiple lines to one line
 	cp ${f} ${f}.bak01
@@ -99,7 +106,7 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 
 	# format source-code
 	cp ${f} ${f}.bak02
-	astyle --style=java ${f}
+	astyle --style=java -X -q ${f} > /dev/null 2&>1
 	if [ -e ${f}.orig ]; then
 		rm -f ${f}.orig
 	fi
@@ -135,7 +142,7 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 		rm -f ${f}tmp.txt
 	fi
 	
-	# bak08 is the partial preprocessor in the dmacros script. omitting this number for consistency
+	# bak08 is the partial preprocessor in the dmacros script. number is used for consistency.
 
 	# delete empty lines
 	cp ${f} ${f}.bak09

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOGFILE=./log/cppstats_general_preparation_logfile_`date +%Y%m%d`_$RANDOM.txt
+LOGFILE=./log/cppstats_general_preparation_logfile_`date +%Y%m%d_%H%M`_$RANDOM.txt
 INPUTFILE=./cppstats_input.txt
 
 if [ -e $LOGFILE ]; then

@@ -3,6 +3,10 @@
 # disable job control to omit "Abort" messages from bash
 set +m
 
+### configuration ###
+# timeout for some programs that are know to hang, such as src2srcml
+TIMEOUT=60s
+
 # parameters
 # cmd - script-name itself
 # indir - input-directory
@@ -60,6 +64,13 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+which timeout > /dev/null
+if [ $? -ne 0 ]; then
+	echo '### programm timeout missing!'
+	echo '    see: http://www.gnu.org/software/coreutils/'
+	exit 1
+fi
+
 which notify-send > /dev/null
 if [ $? -ne 0 ]; then
 	echo '### program notify-send missing!'
@@ -113,10 +124,14 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 
 	# delete comments
 	cp ${f} ${f}.bak03
-	${bin}/${s2sml} --language=C ${f} -o ${f}tmp.xml
-	xsltproc ${bin}/delete_comments.xsl ${f}tmp.xml > ${f}tmp_out.xml
-	${bin}/${sml2s} ${f}tmp_out.xml -o ${f}
-	rm -f ${f}tmp.xml ${f}tmp_out.xml
+	timeout $TIMEOUT ${bin}/${s2sml} --language=C ${f} -o ${f}tmp.xml || rm ${f}tmp.xml
+	if [ -e ${f}tmp.xml ]; then
+		xsltproc ${bin}/delete_comments.xsl ${f}tmp.xml > ${f}tmp_out.xml
+		${bin}/${sml2s} ${f}tmp_out.xml -o ${f}
+		rm -f ${f}tmp.xml ${f}tmp_out.xml
+	else
+		echo "[ERROR] src2srcml could not process ${f}"
+	fi
 
 	# delete leading, trailing and inter (# ... if) whitespaces
 	cp ${f} ${f}.bak04
@@ -158,6 +173,9 @@ done
 echo '### create xml-representation of the source-code files'
 for f in `find . -type f \( -name "*.pi" \)`; do
 	echo "create representation for ${invest}/${f}"
-	${bin}/${s2sml} --language=C ${f} -o ${f}.xml || rm ${f}.xml
+	timeout $TIMEOUT ${bin}/${s2sml} --language=C ${f} -o ${f}.xml || rm ${f}.xml
+	if [ ! -e ${f}.xml ]; then
+		echo "[ERROR] src2srcml could not process ${f}"
+	fi
 done
 IFS=$SAVEIFS

@@ -116,7 +116,7 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 	rm -f ${f}tmp.txt
 
 	# format source-code
-	cp ${f} ${f}.bak02
+	# cp ${f} ${f}.bak02
 	# astyle --style=java -X -q ${f} > /dev/null 2&>1
 	# if [ -e ${f}.orig ]; then
 	# 	rm -f ${f}.orig
@@ -139,9 +139,9 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 	mv ${f}tmp.txt ${f}
 
 	# delete multipe whitespaces
-	cp ${f} ${f}.bak05
-	cat ${f} | sed 's/\t/ /g;s/[ \t]\{2,\}/ /g' > ${f}tmp.txt
-	mv ${f}tmp.txt ${f}
+	# cp ${f} ${f}.bak05
+	# cat ${f} | sed 's/\t/ /g;s/[ \t]\{2,\}/ /g' > ${f}tmp.txt
+	# mv ${f}tmp.txt ${f}
 
 	# rewrite ifdefs and ifndefs
 	cp ${f} ${f}.bak06
@@ -149,13 +149,13 @@ for f in `find . -type f \( -name "*.pi" \)`; do
 	mv ${f}tmp.txt ${f}
 	
 	# delete include guards
-	if [ ${f/*./} == 'h' ]; then
-		echo 'deleting include guard in ' ${f}
-		cp ${f} ${f}.bak07
-		mv ${f} ${f}tmp.txt
-		${bin}/delete_include_guards.py ${f}tmp.txt > ${f}
-		rm -f ${f}tmp.txt
-	fi
+	# if [ ${f/*./} == 'h' ]; then
+	# 	echo 'deleting include guard in ' ${f}
+	# 	cp ${f} ${f}.bak07
+	# 	mv ${f} ${f}tmp.txt
+	# 	${bin}/delete_include_guards.py ${f}tmp.txt > ${f}
+	# 	rm -f ${f}tmp.txt
+	# fi
 	
 	# bak08 is the partial preprocessor in the dmacros script. number is used for consistency.
 

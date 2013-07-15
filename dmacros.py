@@ -648,7 +648,7 @@ class DisciplinedAnnotations:
         fd = open(
             os.path.join(
                 projectpath,
-                'dmacros.txt'
+                'dmacros.csv'
             ), 'w')
 
         ratio = 0

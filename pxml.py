@@ -108,6 +108,8 @@ __statsorder = Enum(
     'GRANERR',           # not determined granularity
 
     'NDMAX',             # maximum nesting depth in a file
+    'FINFILEMEAN',       # average number of files per feature constant
+    'FINFILESTD',        # standard deviation for same data as for FINFILEMEAN
 )
 ##################################################
 
@@ -171,6 +173,18 @@ def _flatten(l):
                 l[i:i+1] = l[i]
         i += 1
     return l
+
+
+def dictinvert(d):
+    """This function inverses a dictionary that maps a key to a set of
+    values into a dictionary that maps the values to the corresponding
+    set of former keys."""
+    inv = dict()
+    for (k,v) in d.iteritems():
+        for value in v:
+            keys = inv.setdefault(value, [])
+            keys.append(k)
+    return inv
 
 
 def _collectDefines(d):
@@ -1101,6 +1115,22 @@ def _getGranularityStats(fcodetags):
     return granstats
 
 
+def __getFinfileStats(filetofeatureconstants):
+    featureconstantstofiles = dictinvert(filetofeatureconstants)
+    numbers = map(lambda v: len(v), featureconstantstofiles.values())
+
+    #mean
+    if (len(numbers) > 0):
+        numbersmean = pstat.stats.lmean(numbers)
+    else:
+        numbersmean = 0
+    # std
+    if (len(numbers) > 1):
+        numbersstd = pstat.stats.lstdev(numbers)
+
+    return (numbersmean,numbersstd)
+
+
 def _checkForEquivalentSig(l, sig):
     """This method takes a list of signatures and checks sig for an
     equivalent signature. If no equivalent signature is found this
@@ -1155,7 +1185,7 @@ def apply(folder):
                 sigmap[psig] = [sig]
 
     # outputfile
-    fd, fdcsv = _prologCSV(folder)
+    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir))
     # fdfeat = open(os.path.join(folder, __outputfexp), 'w')
 
     global __curfile
@@ -1292,6 +1322,8 @@ def apply(folder):
 
     (_, _, _, het, hom, hethom) = _distinguishFeatures(afeatures)
 
+    (finfilemean, finfilestd) = __getFinfileStats(__defsetf)
+
     astats[__statsorder.FILENAME.index] = "ALL - MERGED"
     astats[__statsorder.NOFC.index] = _getNumOfDefines(__defset)
     astats[__statsorder.LOF.index] = lof
@@ -1302,6 +1334,8 @@ def apply(folder):
     astats[__statsorder.SDEGSTD.index] = sdegstd
     astats[__statsorder.TDEGMEAN.index] = tdegmean
     astats[__statsorder.TDEGSTD.index] = tdegstd
+    astats[__statsorder.FINFILEMEAN.index] = finfilemean
+    astats[__statsorder.FINFILESTD.index] = finfilestd
 
     fdcsv.writerow(astats)
     fd.close()

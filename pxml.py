@@ -108,8 +108,8 @@ __statsorder = Enum(
     'GRANERR',           # not determined granularity
 
     'NDMAX',             # maximum nesting depth in a file
-    'FINFILEMEAN',       # average number of files per feature constant
-    'FINFILESTD',        # standard deviation for same data as for FINFILEMEAN
+    'NOFPFCMEAN',       # average number of files per feature constant
+    'NOFPFCSTD',        # standard deviation for same data as for NOFPFCMEAN
 )
 ##################################################
 
@@ -1115,7 +1115,7 @@ def _getGranularityStats(fcodetags):
     return granstats
 
 
-def __getFinfileStats(filetofeatureconstants):
+def __getNumOfFilesPerFeatureStats(filetofeatureconstants):
     featureconstantstofiles = dictinvert(filetofeatureconstants)
     numbers = map(lambda v: len(v), featureconstantstofiles.values())
 
@@ -1127,6 +1127,8 @@ def __getFinfileStats(filetofeatureconstants):
     # std
     if (len(numbers) > 1):
         numbersstd = pstat.stats.lstdev(numbers)
+    else:
+        numbersstd = 0
 
     return (numbersmean,numbersstd)
 
@@ -1322,7 +1324,7 @@ def apply(folder):
 
     (_, _, _, het, hom, hethom) = _distinguishFeatures(afeatures)
 
-    (finfilemean, finfilestd) = __getFinfileStats(__defsetf)
+    (nofpfcmean, nofpfcstd) = __getNumOfFilesPerFeatureStats(__defsetf)
 
     astats[__statsorder.FILENAME.index] = "ALL - MERGED"
     astats[__statsorder.NOFC.index] = _getNumOfDefines(__defset)
@@ -1334,8 +1336,8 @@ def apply(folder):
     astats[__statsorder.SDEGSTD.index] = sdegstd
     astats[__statsorder.TDEGMEAN.index] = tdegmean
     astats[__statsorder.TDEGSTD.index] = tdegstd
-    astats[__statsorder.FINFILEMEAN.index] = finfilemean
-    astats[__statsorder.FINFILESTD.index] = finfilestd
+    astats[__statsorder.NOFPFCMEAN.index] = nofpfcmean
+    astats[__statsorder.NOFPFCSTD.index] = nofpfcstd
 
     fdcsv.writerow(astats)
     fd.close()

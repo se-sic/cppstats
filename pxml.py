@@ -451,6 +451,7 @@ def _prologCSV(folder):
     return (fd, fdcsv)
 
 
+nestedIfdefsLevels = []
 def _countNestedIfdefs(root):
     """This function counts the number of nested ifdefs (conditionals)
     within the source-file."""
@@ -470,6 +471,7 @@ def _countNestedIfdefs(root):
     if (len(cnlist) > 0):
         nnimax = max(cnlist)
         nnitmp = filter(lambda n: n > 0, cnlist)
+        nestedIfdefsLevels.append(nnitmp)
         nnimean = pstat.stats.lmean(nnitmp)
     else:
         nnimax = 0
@@ -1322,6 +1324,16 @@ def apply(folder):
             _getScatteringTanglingDegrees(_flatten(sigmap.values()),
             list(__defset))
 
+    global nestedIfdefsLevels
+    nestedIfdefsLevels = _flatten(nestedIfdefsLevels)
+    nnimean = pstat.stats.lmean(nestedIfdefsLevels)
+    if (len(nestedIfdefsLevels) > 1):
+        nnistd = pstat.stats.lstdev(nestedIfdefsLevels)
+    else:
+        nnistd = 0
+
+    d = map(lambda s: s.replace('defined', ''), afeatures.keys())
+
     (_, _, _, het, hom, hethom) = _distinguishFeatures(afeatures)
 
     (nofpfcmean, nofpfcstd) = __getNumOfFilesPerFeatureStats(__defsetf)
@@ -1329,6 +1341,8 @@ def apply(folder):
     astats[__statsorder.FILENAME.index] = "ALL - MERGED"
     astats[__statsorder.NOFC.index] = _getNumOfDefines(__defset)
     astats[__statsorder.LOF.index] = lof
+    astats[__statsorder.ANDAVG.index] = nnimean
+    astats[__statsorder.ANDSTDEV.index] = nnistd
     astats[__statsorder.HET.index] = len(het.keys())
     astats[__statsorder.HOM.index] = len(hom.keys())
     astats[__statsorder.HOHE.index] = len(hethom.keys())

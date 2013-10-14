@@ -54,6 +54,7 @@ except ImportError:
 ##################################################
 # config:
 __outputfile = "cppstats.csv"
+__listoffeaturesfile = "listoffeatures.csv"
 
 # error numbers:
 __errorfexp = 0
@@ -125,6 +126,9 @@ parser.add_option("--csp", dest="csp", action="store_true",
 parser.add_option("--str", dest="str", action="store_true",
         default=True, help="make use of simple string comparision " \
         "for checking feature expression equality [default=True]")
+parser.add_option("--loff", dest="loff", action="store_true",
+        default=False, help="output a file 'listoffeatures.csv' that maps" \
+        "files to a list of used feature constants")
 
 (options, args) = parser.parse_args()
 
@@ -413,6 +417,10 @@ def _parseFeatureSignatureAndRewrite(sig):
     except RuntimeError:
         print('ERROR (time): cannot parse sig (%s)' % (sig))
         return sig
+    except ValueError, e:
+        print('ERROR (parse): cannot parse sig (%s) ~~ (%s)' %
+                (sig, e))
+        return sig
     return ''.join(rsig)
 
 
@@ -442,12 +450,12 @@ def _getMacroSignature(ifdefnode):
     return res
 
 
-def _prologCSV(folder):
+def _prologCSV(folder, file, headings):
     """prolog of the CSV-output file
     no corresponding _epilogCSV."""
-    fd = open(os.path.join(folder, __outputfile), 'w')
+    fd = open(os.path.join(folder, file), 'w')
     fdcsv = csv.writer(fd, delimiter=',')
-    fdcsv.writerow(list(__statsorder._keys))
+    fdcsv.writerow(headings)
     return (fd, fdcsv)
 
 
@@ -1189,7 +1197,7 @@ def apply(folder):
                 sigmap[psig] = [sig]
 
     # outputfile
-    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir))
+    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, __statsorder._keys)
     # fdfeat = open(os.path.join(folder, __outputfexp), 'w')
 
     global __curfile
@@ -1197,6 +1205,12 @@ def apply(folder):
     files = returnFileNames(folder, ['.xml'])
     fstats = [None]*len(__statsorder._keys)
     ftotal = len(files)
+
+    # preparations for the list-of-features file
+    if __outputloff:
+        loffheadings = ['FILENAME', 'listoffeatures']
+        loffrow = [None]*len(loffheadings)
+        loffhandle, loffwriter = _prologCSV(os.path.join(folder, os.pardir), __listoffeaturesfile, loffheadings)
 
     # get statistics for all files; write results into csv
     # and merge the features
@@ -1260,6 +1274,12 @@ def apply(folder):
         # may be defined later
 
         fdcsv.writerow(fstats)
+
+        if __outputloff:
+            listoffeaturesstring = ';'.join(list(__defsetf[__curfile])) if __defsetf.has_key(__curfile) else ''
+            loffrow[0] = __curfile
+            loffrow[1] = listoffeaturesstring
+            loffwriter.writerow(loffrow)
 
     # writing convinience functions
     fnum = len(files)+1            # +1 for the header of the table
@@ -1356,11 +1376,16 @@ def apply(folder):
     fdcsv.writerow(astats)
     fd.close()
 
+    # close list-of-features-file
+    if __outputloff:
+        loffhandle.close()
 
 ##################################################
 if __name__ == '__main__':
 
     folder = os.path.abspath(options.folder)
+    # flag to control output of list-of-features file
+    __outputloff = options.loff
     if (os.path.isdir(folder)):
         apply(folder)
     else:

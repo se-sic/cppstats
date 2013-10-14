@@ -19,6 +19,7 @@ fi
 while read dir; do
 	# cut of _cppstats for inputfile
 	notify-send "starting $dir"
+	echo "# prepare `basename $dir`"
 	./cppstats_general_prepare.sh $dir 2>&1 | tee -a $LOGFILE >> /dev/null
 	notify-send "finished $dir"
 done < $INPUTFILE

@@ -55,6 +55,7 @@ except ImportError:
 # config:
 __outputfile = "cppstats.csv"
 __listoffeaturesfile = "listoffeatures.csv"
+__scatteringstanglingsfile = "scattering_tangling_values.csv"
 
 # error numbers:
 __errorfexp = 0
@@ -127,8 +128,12 @@ parser.add_option("--str", dest="str", action="store_true",
         default=True, help="make use of simple string comparision " \
         "for checking feature expression equality [default=True]")
 parser.add_option("--loff", dest="loff", action="store_true",
-        default=False, help="output a file 'listoffeatures.csv' that maps" \
+        default=False, help="output a file '" + __listoffeaturesfile + "' that maps" \
         "files to a list of used feature constants")
+parser.add_option("--stf", dest="stf", action="store_true",
+        default=False, help="output a file '" + __scatteringstanglingsfile + "'" \
+        "that maps files to a list of scatterings and tanglings of all occuring"
+        "feature expressions")
 
 (options, args) = parser.parse_args()
 
@@ -1077,6 +1082,33 @@ def _getScatteringTanglingDegrees(sigs, defines):
     return (sdegmean, sdegstd, tdegmean, tdegstd)
 
 
+def _getScatteringTanglingValues(sigs, defines):
+    """This method returns the scattering and tangling VALUES of
+    defines according to the given mapping of a define to occurances
+    in the signatures. The input is all feature-signatures and
+    all defines."""
+
+    def __add(x, y):
+        """This method is a helper function to add values
+        of lists pairwise. See below for more information."""
+        return x+y
+
+    scat = list()            # relation define to signatures
+    tang = [0]*len(sigs)    # signatures overall
+    for d in defines:
+        dre = re.compile(r'\b'+d+r'\b')        # using word boundaries
+        vec = map(lambda s: not dre.search(s) is None, sigs)
+        scat.append(vec.count(True))
+        tang = map(__add, tang, vec)
+
+    # create dictionaries from sigs and defines and corresponding
+    # scattering and tangling values
+    scatdict = dict(zip(defines, scat))
+    tangdict = dict(zip(sigs, tang))
+
+    return (scatdict, tangdict)
+
+
 def _getGranularityStats(fcodetags):
     """This method returns a tuple of NOO with decl_stmt, expr_stmt
     and signature changes.
@@ -1212,18 +1244,23 @@ def apply(folder):
         loffrow = [None]*len(loffheadings)
         loffhandle, loffwriter = _prologCSV(os.path.join(folder, os.pardir), __listoffeaturesfile, loffheadings)
 
+    # preparations for the scatterings-tanglings file
+    if __outputstf:
+        stfheadings = ['name', 'values']
+        stfrow = [None]*len(stfheadings)
+        stfhandle, stfwriter = _prologCSV(os.path.join(folder, os.pardir), __scatteringstanglingsfile, stfheadings)
+
+
     # get statistics for all files; write results into csv
     # and merge the features
     for file in files:
         __curfile = file
-        fcount += 1
+
         try:
             tree = etree.parse(file)
         except etree.XMLSyntaxError:
             print("ERROR: cannot parse (%s). Skipping this file." % os.path.join(folder, file))
             continue
-
-        print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
 
         root = tree.getroot()
         try:
@@ -1231,7 +1268,12 @@ def apply(folder):
         except IfdefEndifMismatchError:
             print("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file)))
             continue
+
         _mergeFeatures(features)
+
+        # file successfully parsed
+        fcount += 1
+        print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
 
         # granularity stats
         grouter = _getOuterGranularity(featuresgrouter)
@@ -1338,12 +1380,27 @@ def apply(folder):
 
     # overall - stats
     astats = [None]*len(__statsorder._keys)
+
+    # LOF
     (_, _, lof, _, _, _, _) = \
             _getFeatureStats(afeatures)
-    (sdegmean, sdegstd, tdegmean, tdegstd) = \
-            _getScatteringTanglingDegrees(_flatten(sigmap.values()),
+
+    # SDEG + TDEG
+    (scatvalues, tangvalues) = \
+        _getScatteringTanglingValues(_flatten(sigmap.values()),
             list(__defset))
 
+    if (len(scatvalues)): sdegmean = pstat.stats.lmean(scatvalues.values())
+    else: sdegmean = 0
+    if (len(scatvalues) > 1): sdegstd = pstat.stats.lstdev(scatvalues.values())
+    else: sdegstd = 0
+
+    if (len(tangvalues)): tdegmean = pstat.stats.lmean(tangvalues.values())
+    else: tdegmean = 0
+    if (len(tangvalues) > 1): tdegstd = pstat.stats.lstdev(tangvalues.values())
+    else: tdegstd = 0
+
+    # ANDAVG + ANDSTDEV
     global nestedIfdefsLevels
     nestedIfdefsLevels = _flatten(nestedIfdefsLevels)
     nnimean = pstat.stats.lmean(nestedIfdefsLevels)
@@ -1352,12 +1409,13 @@ def apply(folder):
     else:
         nnistd = 0
 
-    d = map(lambda s: s.replace('defined', ''), afeatures.keys())
-
+    # HOM, HET, HOHE
     (_, _, _, het, hom, hethom) = _distinguishFeatures(afeatures)
 
+    # NOFPFCMEAN, NOFPFCSTD
     (nofpfcmean, nofpfcstd) = __getNumOfFilesPerFeatureStats(__defsetf)
 
+    # write data
     astats[__statsorder.FILENAME.index] = "ALL - MERGED"
     astats[__statsorder.NOFC.index] = _getNumOfDefines(__defset)
     astats[__statsorder.LOF.index] = lof
@@ -1380,12 +1438,27 @@ def apply(folder):
     if __outputloff:
         loffhandle.close()
 
+    # write data to scattering-and-tangling file
+    if __outputstf:
+        stfrow[0] = "tangling"
+        tanglingstring = ';'.join(map(str, tangvalues.values()))
+        stfrow[1] = tanglingstring
+        stfwriter.writerow(stfrow)
+
+        stfrow[0] = "scattering"
+        scatteringstring = ';'.join(map(str, scatvalues.values()))
+        stfrow[1] = scatteringstring
+        stfwriter.writerow(stfrow)
+
+        stfhandle.close()
+
 ##################################################
 if __name__ == '__main__':
 
     folder = os.path.abspath(options.folder)
     # flag to control output of list-of-features file
     __outputloff = options.loff
+    __outputstf = options.stf
     if (os.path.isdir(folder)):
         apply(folder)
     else:

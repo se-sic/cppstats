@@ -3,7 +3,9 @@
 LOGFILE=./log/cppstats_general_logfile_`date +%Y%m%d`_$RANDOM.txt
 INPUTFILE=./cppstats_input.txt
 
-# possible arguments: --loff (for list-of-features file)
+# possible arguments:
+# --loff (for list-of-features file)
+# --stf (for scattering-and-tangling-values file)
 ARGS=${@}
 
 if [ -e $LOGFILE ]; then

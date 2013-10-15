@@ -55,7 +55,7 @@ except ImportError:
 # config:
 __outputfile = "cppstats.csv"
 __listoffeaturesfile = "listoffeatures.csv"
-__scatteringstanglingsfile = "scattering_tangling_values.csv"
+__metricvaluesfile = "metric_values.csv"
 
 # error numbers:
 __errorfexp = 0
@@ -131,9 +131,8 @@ parser.add_option("--loff", dest="loff", action="store_true",
         default=False, help="output a file '" + __listoffeaturesfile + "' that maps" \
         "files to a list of used feature constants")
 parser.add_option("--stf", dest="stf", action="store_true",
-        default=False, help="output a file '" + __scatteringstanglingsfile + "'" \
-        "that maps files to a list of scatterings and tanglings of all occuring"
-        "feature expressions")
+        default=False, help="output a file '" + __metricvaluesfile + "'" \
+        "that maps metrics to a list of all values that are collected during measurement")
 
 (options, args) = parser.parse_args()
 
@@ -1244,11 +1243,11 @@ def apply(folder):
         loffrow = [None]*len(loffheadings)
         loffhandle, loffwriter = _prologCSV(os.path.join(folder, os.pardir), __listoffeaturesfile, loffheadings)
 
-    # preparations for the scatterings-tanglings file
+    # preparations for the metrics-values file
     if __outputstf:
         stfheadings = ['name', 'values']
         stfrow = [None]*len(stfheadings)
-        stfhandle, stfwriter = _prologCSV(os.path.join(folder, os.pardir), __scatteringstanglingsfile, stfheadings)
+        stfhandle, stfwriter = _prologCSV(os.path.join(folder, os.pardir), __metricvaluesfile, stfheadings)
 
 
     # get statistics for all files; write results into csv
@@ -1438,7 +1437,7 @@ def apply(folder):
     if __outputloff:
         loffhandle.close()
 
-    # write data to scattering-and-tangling file
+    # write data to mectrics-values file
     if __outputstf:
         stfrow[0] = "tangling"
         tanglingstring = ';'.join(map(str, tangvalues.values()))
@@ -1448,6 +1447,11 @@ def apply(folder):
         stfrow[0] = "scattering"
         scatteringstring = ';'.join(map(str, scatvalues.values()))
         stfrow[1] = scatteringstring
+        stfwriter.writerow(stfrow)
+
+        stfrow[0] = "nestedIfdefsLevels"
+        ndstring = ';'.join(map(str, nestedIfdefsLevels))
+        stfrow[1] = ndstring
         stfwriter.writerow(stfrow)
 
         stfhandle.close()

@@ -459,6 +459,7 @@ def _prologCSV(folder, file, headings):
     no corresponding _epilogCSV."""
     fd = open(os.path.join(folder, file), 'w')
     fdcsv = csv.writer(fd, delimiter=',')
+    fdcsv.writerow(["sep=,"])
     fdcsv.writerow(headings)
     return (fd, fdcsv)
 
@@ -1323,7 +1324,7 @@ def apply(folder):
             loffwriter.writerow(loffrow)
 
     # writing convinience functions
-    fnum = len(files)+1            # +1 for the header of the table
+    fnum = fcount + 1            # +1 for the header of the table
     excelcols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
             'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
             'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE',

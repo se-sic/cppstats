@@ -50,31 +50,42 @@ def apply(fname):
         guardname = ''
         taillist = list()
 
-        # processing ifdef
+        # processing ifdefs
         for item in sourcecode:
             currentitem += 1
             if item.startswith('#if'):
+                # checks if the ifdef line is start of an include guard
+                # breaks if an include guard is found
+                # skips all other ifdefs (including also never-include-guards)
+
                 ifdef = item
                 ifdefpos = currentitem
+
+                 # processing ifdef
+                ifdefexpr = rg.match(ifdef)
+                if (ifdefexpr):
+                    # potential include-guard matched
+                    guardname = ifdefexpr.groups()[0]
+                else:
+                    # not an include-guard ifdef
+                    continue
+
+                # processing define line following the ifdef
                 taillist = list(sourcecode[currentitem:])
-                break
+                define = taillist[1]
+                ifdefexpr = rd.match(define)
+                if (ifdefexpr):
+                    if guardname == ifdefexpr.groups()[0]:
+                        # include guard found
+                        break
+                else:
+                    # ifdef is part of never-include-guard or normal ifdef->ignore
+                    continue
+
             if currentitem == len(sourcecode):
+                # no include guard found
                 return (-1, -1)
 
-        # processing ifdef and define
-        regres = rg.match(ifdef)
-        if (regres):
-            guardname = regres.groups()[0]
-        else:
-            return (-1, -1)
-
-        define = taillist[1]
-        regres = rd.match(define)
-        if (regres):
-            if guardname != regres.groups()[0]:
-                return (-1, -1)
-        else:
-            return (-1, -1)
 
         # process taillist for else and endif
         ifcount = 1
@@ -99,7 +110,8 @@ def apply(fname):
     if (ifdef == -1 or endif == -1):
         pass
     else:
-        sourcecode = sourcecode[:max(0, ifdef-1)]+sourcecode[ifdef+2:endif]+sourcecode[endif+1:]
+        # sourcecode = before include guard + within include guard (without guard and define) + after include guard
+        sourcecode = sourcecode[:ifdef] + sourcecode[ifdef+2:endif] + sourcecode[endif+1:]
 
     for item in sourcecode:
         print(item)

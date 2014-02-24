@@ -33,7 +33,9 @@ def apply(fname):
 
     with open(fname, 'r') as fd:
         for line in fd.readlines():
-            sourcecode.append(line.strip())
+            l = line.strip()
+            if l:
+                sourcecode.append(l)
 
     def _findCorrespondingItems(sourcecode):
         '''This method returns a tuple with the include guard elements to cut of the source.

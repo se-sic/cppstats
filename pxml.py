@@ -1235,6 +1235,7 @@ def apply(folder):
     global __curfile
     fcount = 0
     files = returnFileNames(folder, ['.xml'])
+    files.sort()
     fstats = [None]*len(__statsorder._keys)
     ftotal = len(files)
 

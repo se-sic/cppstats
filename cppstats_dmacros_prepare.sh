@@ -14,7 +14,7 @@ indir=${1}
 
 D=`dirname "${indir}"`
 B=`basename "${indir}"`
-indirabs="`cd \"$D\" 2>/dev/null && pwd || echo \"$D\"`/$B"
+indirabs="`cd \"${D}\" 2>/dev/null && pwd || echo \"${D}\"`/$B"
 
 
 # change to script directory
@@ -29,8 +29,8 @@ echo ${bin}
 echo '### preliminaries ...'
 
 case `uname -s` in
-	Linux|linux) s2sml=${bin}/src2srcml.linux; sml2s=${bin}/srcml2src.linux;;
-	Darwin|darwin) s2sml=${bin}/src2srcml.osx; sml2s=${bin}/srcml2src.osx;;
+	Linux|linux) s2sml=src2srcml.linux; sml2s=srcml2src.linux;;
+	Darwin|darwin) s2sml=src2srcml.osx; sml2s=srcml2src.osx;;
 	*) echo '### program src2srcml missing'
 	   echo '    see: http://www.sdml.info/projects/srcml/trunk/'
 	   exit 1;;
@@ -75,13 +75,12 @@ if [ -e ${invest} ]; then
 fi
 mkdir ${invest}
 
-notify-send "starting ${indirabs}"
 
 # copy source-files
 echo '### preparing sources ...'
 echo '### copying all-files to one folder ...'
 cd ${sourcedir}
-find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents '{}' ${invest} \;
+find . -type f \( -iname "*.h" -o -iname "*.c" \) -exec cp --parents --no-preserve=mode '{}' ${invest} \;
 
 cd ${invest}
 
@@ -89,7 +88,7 @@ cd ${invest}
 echo '### reformat source-files'
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")
-for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
+for f in `find . -type f \( -iname "*.h" -o -iname "*.c" \)`; do
 	f=${invest}/${f}
 
 	# translate macros that span over multiple lines to one line
@@ -98,19 +97,19 @@ for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
 	${bin}/move_multiple_macros.py ${f}tmp.txt ${f}
 	rm -f ${f}tmp.txt
 
-	# delete comments
-	cp ${f} ${f}.bak02
-	$s2sml --language=C ${f} -o ${f}tmp.xml
-	xsltproc ${bin}/delete_comments.xsl ${f}tmp.xml > ${f}tmp_out.xml
-	$sml2s ${f}tmp_out.xml -o ${f}
-	rm -f ${f}tmp.xml ${f}tmp_out.xml
-
 	# format source-code
-	cp ${f} ${f}.bak03
+	cp ${f} ${f}.bak02
 	# astyle --style=java ${f}
 	if [ -e ${f}.orig ]; then
 		rm -f ${f}.orig
 	fi
+
+	# delete comments
+	cp ${f} ${f}.bak03
+	${bin}/${s2sml} --language=C ${f} -o ${f}tmp.xml
+	xsltproc ${bin}/delete_comments.xsl ${f}tmp.xml > ${f}tmp_out.xml
+	${bin}/${sml2s} ${f}tmp_out.xml -o ${f}
+	rm -f ${f}tmp.xml ${f}tmp_out.xml
 
 	# delete leading, trailing and inter (# ... if) whitespaces
 	cp ${f} ${f}.bak04
@@ -151,8 +150,8 @@ done
 
 # create xml-representation of the source-code
 echo '### create xml-representation of the source-code files'
-for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
+for f in `find . -type f \( -iname "*.h" -o -iname "*.c" \)`; do
 	echo "create representation for ${invest}/${f}"
-	$s2sml --language=C ${f} -o ${f}.xml || rm ${f}.xml
+	${bin}/${s2sml} --language=C ${f} -o ${f}.xml || rm ${f}.xml
 done
 IFS=$SAVEIFS

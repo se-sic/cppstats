@@ -14,7 +14,7 @@ indir=${1}
 
 D=`dirname "${indir}"`
 B=`basename "${indir}"`
-indirabs="`cd \"$D\" 2>/dev/null && pwd || echo \"$D\"`/$B"
+indirabs="`cd \"${D}\" 2>/dev/null && pwd || echo \"${D}\"`/$B"
 
 
 # change to script directory
@@ -35,6 +35,13 @@ case `uname -s` in
 	   echo '    see: http://www.sdml.info/projects/srcml/trunk/'
 	   exit 1;;
 esac
+
+which python > /dev/null
+if [ $? -ne 0 ]; then
+	echo '### programm python missing!'
+	echo '    see: http://www.python.org/'
+	exit 1
+fi
 
 which astyle > /dev/null
 if [ $? -ne 0 ]; then
@@ -68,15 +75,13 @@ if [ -e ${invest} ]; then
 fi
 mkdir ${invest}
 
-notify-send "starting ${indirabs}"
 
 # copy source-files
 echo '### preparing sources ...'
 echo '### copying all-files to one folder ...'
 echo '### and renaming duplicates (only filenames) to a unique name.'
-echo "formating source-file $i"
 cd ${sourcedir}
-find . -type f \( -name "*.h" -o -name "*.c" \) -exec cp --parents '{}' ${invest} \;
+find . -type f \( -iname "*.h" -o -iname "*.c" \) -exec cp --parents --no-preserve=mode '{}' ${invest} \;
 
 cd ${invest}
 
@@ -84,9 +89,9 @@ cd ${invest}
 echo '### reformat source-files'
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")
-for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
-	j=${invest}/${f}
-	
+for f in `find . -type f \( -iname "*.h" -o -iname "*.c" \)`; do
+	f=${invest}/${f}
+
 	# translate macros that span over multiple lines to one line
 	cp ${f} ${f}.bak01
 	mv ${f} ${f}tmp.txt
@@ -114,5 +119,3 @@ for f in `find . -type f \( -name "*.h" -o -name "*.c" \)`; do
 	rm -f ${f}tmp.txt
 done
 IFS=$SAVEIFS
-
-notify-send "finished ${indirabs}"

@@ -1240,6 +1240,7 @@ def apply(folder):
     ftotal = len(files)
 
     # preparations for the list-of-features file
+    #FIXME move --loff as base feature to featurelocations part of cppstats!
     if __outputloff:
         loffheadings = ['FILENAME', 'listoffeatures']
         loffrow = [None]*len(loffheadings)

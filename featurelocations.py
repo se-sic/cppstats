@@ -59,6 +59,7 @@ except ImportError:
 # #################################################
 # config:
 __outputfile = "cppstats_featurelocations.csv"
+__listoffeaturesfile = "listoffeatures.csv"
 
 
 
@@ -674,13 +675,19 @@ def apply(folder):
     # outputfile
     fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, __statsorder._keys)
 
+    # list-of-features file
+    loffheadings = ['FILENAME', 'CONSTANTS']
+    loffrow = [None]*len(loffheadings)
+    loffhandle, loffwriter = _prologCSV(os.path.join(folder, os.pardir), __listoffeaturesfile, loffheadings)
+
+    # preparations for file-loop
     global __curfile
     files = returnFileNames(folder, ['.xml'])
     files.sort()
     fcount = 0
     ftotal = len(files)
 
-    # TODO rewrite comment! get statistics for all files; write results into csv
+    #TODO rewrite comment! get statistics for all files; write results into csv
     # and merge the features
     for file in files:
         __curfile = file
@@ -706,6 +713,13 @@ def apply(folder):
         fcount += 1
         print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
 
+        # print features for this file to list-of-features file
+        featureslist = list(__defsetf[__curfile]) \
+            if __defsetf.has_key(__curfile) else '' # list of features within the current file
+        listoffeaturesstring = ';'.join(sorted(featureslist)) # sort and join
+        loffwriter.writerow([__curfile, listoffeaturesstring]) # write row to file
+
+
     # collect feature locations and consisting used features
     featurelocations = list(featlocations)
     featurelocations.sort(key=lambda x: (x.filename, x.startline))
@@ -716,8 +730,9 @@ def apply(folder):
         row = floc.getCSVList()
         fdcsv.writerow(row)
 
-    # close output file
-    fd.close()
+    # close output files
+    fd.close() # __outputfile
+    loffhandle.close() # __listoffeaturesfile
 
 ##################################################
 if __name__ == '__main__':

@@ -54,7 +54,6 @@ except ImportError:
 ##################################################
 # config:
 __outputfile = "cppstats.csv"
-__listoffeaturesfile = "listoffeatures.csv"
 __metricvaluesfile = "metric_values.csv"
 
 # error numbers:
@@ -127,9 +126,6 @@ parser.add_option("--csp", dest="csp", action="store_true",
 parser.add_option("--str", dest="str", action="store_true",
         default=True, help="make use of simple string comparision " \
         "for checking feature expression equality [default=True]")
-parser.add_option("--loff", dest="loff", action="store_true",
-        default=False, help="output a file '" + __listoffeaturesfile + "' that maps" \
-        "files to a list of used feature constants")
 parser.add_option("--stf", dest="stf", action="store_true",
         default=False, help="output a file '" + __metricvaluesfile + "'" \
         "that maps metrics to a list of all values that are collected during measurement")
@@ -592,7 +588,7 @@ def _getFeatures(root):
     feature elements: Every feature element reflects one part of a
     feature withing the whole source-code, that is framed by contional
     and endif-macros.
-    
+
     featuresgrinner: All tags from the feature elements (see above).
     featuresgrouter: All tags from the elements arround the feature.
     """
@@ -1239,13 +1235,6 @@ def apply(folder):
     fstats = [None]*len(__statsorder._keys)
     ftotal = len(files)
 
-    # preparations for the list-of-features file
-    #FIXME move --loff as base feature to featurelocations part of cppstats!
-    if __outputloff:
-        loffheadings = ['FILENAME', 'listoffeatures']
-        loffrow = [None]*len(loffheadings)
-        loffhandle, loffwriter = _prologCSV(os.path.join(folder, os.pardir), __listoffeaturesfile, loffheadings)
-
     # preparations for the metrics-values file
     if __outputstf:
         stfheadings = ['name', 'values']
@@ -1319,11 +1308,6 @@ def apply(folder):
 
         fdcsv.writerow(fstats)
 
-        if __outputloff:
-            listoffeaturesstring = ';'.join(list(__defsetf[__curfile])) if __defsetf.has_key(__curfile) else ''
-            loffrow[0] = __curfile
-            loffrow[1] = listoffeaturesstring
-            loffwriter.writerow(loffrow)
 
     # writing convinience functions
     fnum = fcount + 1            # +1 for the header of the table
@@ -1436,10 +1420,6 @@ def apply(folder):
     fdcsv.writerow(astats)
     fd.close()
 
-    # close list-of-features-file
-    if __outputloff:
-        loffhandle.close()
-
     # write data to mectrics-values file
     if __outputstf:
         stfrow[0] = "tangling"
@@ -1463,8 +1443,6 @@ def apply(folder):
 if __name__ == '__main__':
 
     folder = os.path.abspath(options.folder)
-    # flag to control output of list-of-features file
-    __outputloff = options.loff
     __outputstf = options.stf
     if (os.path.isdir(folder)):
         apply(folder)

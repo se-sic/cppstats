@@ -38,9 +38,7 @@ def translate(infile, outfile):
 				fdout.write(curline+'\n')
 				fdout.write('\n' * numlines)
 				curline = ''
-				print(numlines)
 				numlines = 0
-
 
 			continue
 

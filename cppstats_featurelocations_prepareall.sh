@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOGFILE="./log/cppstats_featurelocation_logfile_%s_preparation_`date +%Y%m%d_%H%M%S`.txt"
+LOGFILE="./log/cppstats_featurelocations_logfile_%s_preparation_`date +%Y%m%d_%H%M%S`.txt"
 INPUTFILE="./cppstats_input.txt"
 
 #if [ -e $LOGFILE ]; then
@@ -37,7 +37,7 @@ function cppstats_featurelocations_prepare() {
 
 	notify-send "starting $1"
 	echo "# prepare" `basename "$1"`
-	./cppstats_featurelocation_prepare.sh "${1}" 2>&1 | tee -a `printf ${LOGFILE} ${FOLDER}` >> /dev/null
+	./cppstats_featurelocations_prepare.sh "${1}" 2>&1 | tee -a `printf ${LOGFILE} ${FOLDER}` >> /dev/null
 	notify-send "finished $1"
 
 	return 0

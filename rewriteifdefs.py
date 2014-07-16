@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import sys
+import sys, os
 
 class WrongIfdefError(Exception):
 	def __init__(self):
@@ -8,8 +8,12 @@ class WrongIfdefError(Exception):
 	def __str__(self):
 		return ("Didn't find \"ifdef\" or \"ifndef\" as macro")
 
-def rewriteFile(fname):
-	fd = open(fname, 'r')
+def rewriteFile(fname, out = sys.stdout):
+	fd = open(fname, 'rU')
+
+	first_line = fd.readline() # read first line to determine line separator
+	eol = fd.newlines
+	fd.seek(0) # rewind file to start
 
 	for line in fd:
 		if line.startswith('#ifdef') or line.startswith('#ifndef'):
@@ -17,14 +21,14 @@ def rewriteFile(fname):
 			identifier = identifier.strip()
 
 			if ifdef == '#ifdef':
-				print('#if defined(' + identifier + ')')
+				out.write('#if defined(' + identifier + ')' + eol)
 				continue
 			if ifdef == '#ifndef':
-				print('#if !defined(' + identifier + ')')
+				out.write('#if !defined(' + identifier + ')' + eol)
 				continue
 			raise WrongIfdefError()
 		else:
-			print(line.strip())
+			out.write(line)
 
 	fd.close()
 

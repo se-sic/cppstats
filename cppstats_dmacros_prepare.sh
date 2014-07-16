@@ -127,7 +127,7 @@ for f in `find . -type f \( -iname "*.h" -o -iname "*.c" \)`; do
 	mv ${f}tmp.txt ${f}
 	
 	# delete include guards
-	if [ ${f/*./} == 'h' ]; then
+	if [ ${f/*./} == 'h' ] || [ ${f/*./} == 'H' ]; then
 		echo 'deleting include guard in ' ${f}
 		cp ${f} ${f}.bak07
 		mv ${f} ${f}tmp.txt

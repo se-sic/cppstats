@@ -96,12 +96,12 @@ for f in `find . -type f \( -iname "*.h" -o -iname "*.c" \)`; do
 	${bin}/move_multiple_macros.py ${f}tmp.txt ${f}
 	rm -f ${f}tmp.txt
 
-	# format source-code
-	cp ${f} ${f}.bak02
-	astyle --style=java ${f}
-	if [ -e ${f}.orig ]; then
-		rm -f ${f}.orig
-	fi
+#	# format source-code
+#	cp ${f} ${f}.bak02
+#	#astyle --style=java ${f}
+#	if [ -e ${f}.orig ]; then
+#		rm -f ${f}.orig
+#	fi
 
 	# delete leading, trailing and inter (# ... if) whitespaces
 	cp ${f} ${f}.bak04

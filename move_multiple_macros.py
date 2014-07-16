@@ -25,16 +25,17 @@ def translate(infile, outfile):
 	numlines = 0
 
 	for line in fdin:
-		line = line.strip()
+		sline = line.strip()
 
 		# macro found
 		if len(curline):
 			# multi-line macro
-			if line.endswith('\\'):
-				curline += line[:-1]
+			if sline.endswith('\\'):
+				curline += sline[:-1]
 				numlines += 1
 			else:
-				curline += line
+				curline += sline
+                #TODO fix line endings
 				fdout.write(curline+'\n')
 				fdout.write('\n' * numlines)
 				curline = ''
@@ -43,13 +44,13 @@ def translate(infile, outfile):
 			continue
 
 		# found a new macro
-		if (line.startswith('#') and line.endswith('\\')):
-			curline += line[:-1]
+		if (sline.startswith('#') and sline.endswith('\\')):
+			curline += sline[:-1]
 			numlines += 1
 			continue
 
 		# normal line
-		fdout.write(line+'\n')
+		fdout.write(line)
 
 	# closeup
 	fdin.close()

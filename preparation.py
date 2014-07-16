@@ -28,10 +28,11 @@ sys.path.append(os.path.abspath(__preparation_scripts_subfolder))  # preparation
 # #################################################
 # imports from subfolders
 
-from preparation import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
 # for rewriting of #ifdefs to "if defined(..)"
 # for turning multiline macros to oneliners
 # for deletion of include guards in H files
+import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
+
 import cpplib.cpplib as cpplib
 
 

@@ -50,14 +50,14 @@ _filepattern = _filepattern_c + _filepattern_h
 # case `uname -s` in
 # Linux|linux) s2sml=src2srcml.linux; sml2s=srcml2src.linux;;
 # Darwin|darwin) s2sml=src2srcml.osx; sml2s=srcml2src.osx;;
-# 	*) echo '### program src2srcml missing'
-# 	   echo '    see: http://www.sdml.info/projects/srcml/trunk/'
-# 	   exit 1;;
+# *) echo '### program src2srcml missing'
+# echo '    see: http://www.sdml.info/projects/srcml/trunk/'
+# exit 1;;
 # esac
 #
 # which python > /dev/null
 # if [ $? -ne 0 ]; then
-# 	echo '### programm python missing!'
+# echo '### programm python missing!'
 # 	echo '    see: http://www.python.org/'
 # 	exit 1
 # fi
@@ -85,6 +85,7 @@ def notify(message):
     notice = pynotify.Notification(message)
     notice.show()
     return
+
 
 # function for ignore pattern
 def filterForCFiles(dirpath, contents):
@@ -452,6 +453,7 @@ class PrettyPreparationThread(AbstractPreparationThread):
 # collection of preparation threads
 
 # add all subclass of AbstractPreparationThread as available preparation kinds
+# FIXME check if there are subclasses available
 __preparationkinds = []
 for cls in AbstractPreparationThread.__subclasses__():
     entry = (cls.getName(), cls)
@@ -462,13 +464,16 @@ __preparationkinds = OrderedDict(__preparationkinds)
 # #################################################
 # options parsing
 
+# FIXME port to argparse, since optparse is deprecated since 2.7
 # TODO synthesis of preparation and analysis! (rewording help!)
 parser = OptionParser()
-parser.add_option("--kind", type="choice", choices=__preparationkinds.keys(), dest="kind", default=__preparationkinds.keys()[0],
-                  metavar="<K>",
+parser.add_option("--kind", type="choice", choices=__preparationkinds.keys(), dest="kind",
+                  default=__preparationkinds.keys()[0], metavar="<K>",
                   help="the preparation to be performed (should correspond to the analysis to be performed) [default: %default]")
 parser.add_option("--input", type="string", dest="inputfile", default=__inputfile_default, metavar="FILE",
                   help="a FILE that contains the list of input projects/folders [default: %default]")
+parser.add_option("-a", "--all", action="store_true", dest="allkinds", default=False,
+                  help="perform all available kinds of preparation [default: %default]")
 
 group = OptionGroup(parser, "Possible Kinds of Preparation <K>", ", ".join(__preparationkinds.keys()))
 parser.add_option_group(group)
@@ -488,6 +493,7 @@ def getFoldersFromInputFile(inputfile):
 
     return folders
 
+
 def apply(kind, inputfile):
     threads = []  # list of independent threads performing preparation steps
 
@@ -499,7 +505,7 @@ def apply(kind, inputfile):
         # start preparation for this single folder
 
         # print __preparationkinds[kind].__name__
-        thread = __preparationkinds[kind](folder) # get proper preparation thread and call it
+        thread = __preparationkinds[kind](folder)  # get proper preparation thread and call it
         threads.append(thread)
         thread.start()
 
@@ -507,5 +513,15 @@ def apply(kind, inputfile):
     for t in threads:
         t.join()
 
+
+def applyAll(inputfile):
+    for kind in __preparationkinds.keys():
+        apply(kind, inputfile)
+
+
 if __name__ == '__main__':
-    apply(options.kind, options.inputfile)
+
+    if (options.allkinds):
+        applyAll(options.inputfile)
+    else:
+        apply(options.kind, options.inputfile)

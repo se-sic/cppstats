@@ -6,7 +6,8 @@ Created on Jun 30, 2010
 
 @author: joliebig
 '''
-from cpplib import _filterAnnotatedIfdefs
+#FIXME move this script to another folder!
+from lib.cpplib.cpplib import _filterAnnotatedIfdefs
 from optparse import OptionParser
 import sys
 
@@ -22,10 +23,10 @@ class PartialPreprocessor:
         if not self.opts.ifile or not self.opts.ofile:
             oparser.print_help()
             sys.exit(-1)
-        
+
         _filterAnnotatedIfdefs(self.opts.ifile, self.opts.ofile)
-    
-     
+
+
 ##################################################
 if __name__ == '__main__':
     PartialPreprocessor()

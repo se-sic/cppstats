@@ -104,17 +104,17 @@ def _collectIfdefExpressions(fname):
     '''
     This method filters all ifdef expressions out of a file and returns them as a list.
     '''
-    
+
     def _extractIfdefExpression(tokens):
         global __ifdefexplist
         __ifdefexplist += tokens
-        
+
     __macro = pypa.Literal('#') \
             + pypa.oneOf("if ifdef ifndef elif") \
             + pypa.OneOrMore(pypa.Word(pypa.alphanums+"&|><=^")) \
                     .setParseAction(_extractIfdefExpression) \
             + pypa.StringEnd()
-        
+
     with open(fname, 'r') as fd:
         for line in fd.xreadlines():
             try:
@@ -128,7 +128,7 @@ def _filterAnnotatedIfdefs(fnamein, fnameout):
     This method removes all preprocessor annotated lines from the input.
     '''
     inifdef = 0
- 
+
     with open(fnameout, 'w') as fdout:
         with open(fnamein, 'r') as fdin:
             for line in fdin.readlines():
@@ -153,7 +153,7 @@ def _filterAnnotatedIfdefs(fnamein, fnameout):
                 # found regular C code
                 else:
                     fdout.write(line)
-           
+
 
 ##################################################
 if __name__ == '__main__':

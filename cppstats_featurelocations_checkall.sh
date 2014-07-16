@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOGFILE="./log/cppstats_general_logfile_%s_`date +%Y%m%d_%H%M%S`.txt"
+LOGFILE="./log/cppstats_featurelocations_logfile_%s_`date +%Y%m%d_%H%M%S`.txt"
 INPUTFILE="./cppstats_input.txt"
 
 # possible arguments:

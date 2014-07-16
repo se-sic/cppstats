@@ -14,6 +14,14 @@ if not sys.platform.startswith('linux'):
     print("ERROR: %s not supported!" % sys.platform)
     sys.exit(-1)
 
+
+# #################################################
+# path adjustments, so that all imports can be done relative to these paths
+
+__lib_subfolder = "lib"
+sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
+
+
 # modules in bin-path
 from enum import Enum
 

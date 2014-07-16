@@ -14,7 +14,15 @@ if not sys.platform.startswith('linux'):
     print("ERROR: %s not supported!" % sys.platform)
     sys.exit(-1)
 
-# modules in bin-path
+
+# #################################################
+# path adjustments, so that all imports can be done relative to these paths
+
+__lib_subfolder = "lib"
+sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
+
+
+# modules in lib-path
 from enum import Enum
 
 # external libs
@@ -27,14 +35,8 @@ except ImportError:
     print("programm terminating ...!")
     sys.exit(-1)
 
-# statistics module
-try:
-    import pstat
-except ImportError:
-    print("pstat module not found! (python-stats)")
-    print("see http://www.nmr.mgh.harvard.edu/Neural_Systems_Group/gary/python.html")
-    print("programm terminating ...!")
-    sys.exit(-1)
+#FIXME move libs to subfolder! (do not forget pstats)
+#FIXME merge scripts into a python script!
 
 # pyparsing module
 try:

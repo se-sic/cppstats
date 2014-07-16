@@ -10,6 +10,13 @@ import sys
 import xmlrpclib
 from optparse import OptionParser
 
+# #################################################
+# path adjustments, so that all imports can be done relative to these paths
+
+__lib_subfolder = "lib"
+sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
+
+
 # currently we only support linux
 if not sys.platform.startswith('linux'):
     print("ERROR: %s not supported!" % sys.platform)

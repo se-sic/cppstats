@@ -172,7 +172,9 @@ class AbstractPreparationThread(threading.Thread):
         for root, subFolders, files in os.walk(self.subfolder):
             for file in files:
                 f = os.path.join(root, file)
-                self.prepareFile(f)
+                self.backupCounter = 0
+                self.currentFile = f
+                self.prepareFile()
 
         self.teardown()
 
@@ -189,6 +191,13 @@ class AbstractPreparationThread(threading.Thread):
         # copy all C and H files recursively to the subfolder
         shutil.copytree(self.source, self.subfolder, ignore=filterForFiles)
 
+    def backupCurrentFile(self):
+        '''# backup file'''
+        if (not options.nobak) :
+            bak = self.currentFile+ ".bak" + str(self.backupCounter)
+            shutil.copyfile(self.currentFile, bak)
+            self.backupCounter += 1
+
     @classmethod
     @abstractmethod
     def getName(cls):
@@ -203,48 +212,42 @@ class AbstractPreparationThread(threading.Thread):
         pass
 
     # TODO refactor such that file has not be opened several times! (__currentfile)
-    # TODO introduce counter for backup files for __currentfile
-    def rewriteMultilineMacros(self, filename):
+    def rewriteMultilineMacros(self):
+        tmp = self.currentFile + "tmp.txt"
 
-        tmp = filename + "tmp.txt"
-
-        if (not options.nobak) :
-            shutil.copyfile(filename, filename + ".bak01")  # backup file
+        self.backupCurrentFile()  # backup file
 
         # turn multiline macros to oneliners
-        shutil.move(filename, tmp)  # move for script
-        rewriteMultilineMacros.translate(tmp, filename)  # call function
+        shutil.move(self.currentFile, tmp)  # move for script
+        rewriteMultilineMacros.translate(tmp, self.currentFile)  # call function
 
         os.remove(tmp)  # remove temp file
 
-    def formatCode(self, filename):
-        if (not options.nobak) :
-            shutil.copyfile(filename, filename + ".bak02")  # backup file
+    def formatCode(self):
+        self.backupCurrentFile()  # backup file
 
         # call astyle to format file in Java-style
-        runBashCommand("astyle --style=java " + filename)
+        runBashCommand("astyle --style=java " + self.currentFile)
 
         # try remove astyle backup file
-        silentlyRemoveFile(filename + ".orig")
+        silentlyRemoveFile(self.currentFile + ".orig")
 
-    def deleteComments(self, filename):
+    def deleteComments(self):
+        tmp = self.currentFile + "tmp.xml"
+        tmp_out = self.currentFile + "tmp_out.xml"
 
-        tmp = filename + "tmp.xml"
-        tmp_out = filename + "tmp_out.xml"
-
-        if (not options.nobak) :
-            shutil.copyfile(filename, filename + ".bak03")  # backup file
+        self.backupCurrentFile()  # backup file
 
         # call src2srcml to transform code to xml
         # subprocess.call(["./src2srcml.linux", "--language=C", filename, "-o " + tmp])
-        runBashCommand("./lib/srcml/src2srcml.linux --language=C " + filename + " -o " + tmp)
+        runBashCommand("./lib/srcml/src2srcml.linux --language=C " + self.currentFile + " -o " + tmp)
 
         # delete all comments in the xml and write to another file
         runBashCommand("xsltproc -o " + tmp_out + " " + getPreparationScript("deleteComments.xsl") + " " + tmp)
 
         # re-transform the xml to a normal source file
         # subprocess.call(["./srcml2src.linux", tmp_out, "-o " + filename])
-        runBashCommand("./lib/srcml/srcml2src.linux " + tmp_out + " -o " + filename)
+        runBashCommand("./lib/srcml/srcml2src.linux " + tmp_out + " -o " + self.currentFile)
 
         # delete temp files
         os.remove(tmp)
@@ -255,13 +258,12 @@ class AbstractPreparationThread(threading.Thread):
         # Linux|linux) s2sml=src2srcml.linux; sml2s=srcml2src.linux;;
         # Darwin|darwin) s2sml=src2srcml.osx; sml2s=srcml2src.osx;;
 
-    def deleteWhitespace(self, filename):
+    def deleteWhitespace(self):
         """deletes leading, trailing and inter (# ... if) whitespaces,
         replaces multiple whitespace with a single space"""
-        tmp = filename + "tmp.txt"
+        tmp = self.currentFile + "tmp.txt"
 
-        if (not options.nobak) :
-            shutil.copyfile(filename, filename + ".bak04")  # backup file
+        self.backupCurrentFile()  # backup file
 
         # replace patterns with replacements
         replacements = {
@@ -272,67 +274,63 @@ class AbstractPreparationThread(threading.Thread):
             '[ \t]{2,}': ' '  # multiple whitespace to one space
 
         }
-        replaceMultiplePatterns(replacements, filename, tmp)
+        replaceMultiplePatterns(replacements, self.currentFile, tmp)
 
         # move temp file to output file
-        shutil.move(tmp, filename)
+        shutil.move(tmp, self.currentFile)
 
-    def rewriteIfdefsAndIfndefs(self, filename):
-        tmp = filename + "tmp.txt"
+    def rewriteIfdefsAndIfndefs(self):
+        tmp = self.currentFile + "tmp.txt"
 
-        if (not options.nobak) :
-            shutil.copyfile(filename, filename + ".bak06")  # backup file
+        self.backupCurrentFile()  # backup file
 
         # rewrite #if(n)def ... to #if (!)defined(...)
-        d = rewriteIfdefs.rewriteFile(filename, open(tmp, 'w'))
+        d = rewriteIfdefs.rewriteFile(self.currentFile, open(tmp, 'w'))
 
         # move temp file to output file
-        shutil.move(tmp, filename)
+        shutil.move(tmp, self.currentFile)
 
-    def removeIncludeGuards(self, filename):
+    def removeIncludeGuards(self):
         # include guards only exist in H files, otherwise return
-        _, extension = os.path.splitext(filename)
+        _, extension = os.path.splitext(self.currentFile)
         if (extension not in _filepattern_h):
             return
 
-        tmp = filename + "tmp.txt"
+        tmp = self.currentFile + "tmp.txt"
 
-        if (not options.nobak) :
-            shutil.copyfile(filename, filename + ".bak07")  # backup file
+        self.backupCurrentFile()  # backup file
 
         # delete include guards
-        deleteIncludeGuards.apply(filename, open(tmp, 'w'))
+        deleteIncludeGuards.apply(self.currentFile, open(tmp, 'w'))
 
         # move temp file to output file
-        shutil.move(tmp, filename)
+        shutil.move(tmp, self.currentFile)
 
-    def removeOtherPreprocessor(self, filename):
-        tmp = filename + "tmp.txt"
+    def removeOtherPreprocessor(self):
+        tmp = self.currentFile + "tmp.txt"
 
-        if (not options.nobak) :
-            shutil.copyfile(filename, filename + ".bak08")  # backup file
+        self.backupCurrentFile()  # backup file
 
         # delete other preprocessor statements than #ifdefs
-        cpplib._filterAnnotatedIfdefs(filename, tmp)
+        cpplib._filterAnnotatedIfdefs(self.currentFile, tmp)
 
         # move temp file to output file
-        shutil.copyfile(tmp, filename)
+        shutil.copyfile(tmp, self.currentFile)
 
-    def deleteEmptyLines(self, filename):
-        tmp = filename + "tmp.txt"
+    def deleteEmptyLines(self):
+        tmp = self.currentFile + "tmp.txt"
 
-        if (not options.nobak) :
-            shutil.copyfile(filename, filename + ".bak09")  # backup file
+        self.backupCurrentFile()  # backup file
 
         # remove empty lines
-        stripEmptyLinesFromFile(filename, tmp)
+        stripEmptyLinesFromFile(self.currentFile, tmp)
 
         # move temp file to output file
-        shutil.move(tmp, filename)
+        shutil.move(tmp, self.currentFile)
 
-    def transformFileToSrcml(self, filename):
-        source = filename
-        dest = filename + ".xml"
+    def transformFileToSrcml(self):
+        source = self.currentFile
+        dest = self.currentFile + ".xml"
 
         # TODO other platforms for srcml transformations, encapsulate srcml calls in method!
         runBashCommand("./lib/srcml/src2srcml.linux --language=C " + source + " -o " + dest)
@@ -350,27 +348,27 @@ class GeneralPreparationThread(AbstractPreparationThread):
     def getSubfolder(self):
         return "_cppstats"
 
-    def prepareFile(self, filename):
+    def prepareFile(self):
         # multiline macros
-        self.rewriteMultilineMacros(filename)
+        self.rewriteMultilineMacros()
 
         # delete comments
-        self.deleteComments(filename)
+        self.deleteComments()
 
         # delete leading, trailing and inter (# ... if) whitespaces
-        self.deleteWhitespace(filename)
+        self.deleteWhitespace()
 
         # rewrite #if(n)def ... to #if (!)defined(...)
-        self.rewriteIfdefsAndIfndefs(filename)
+        self.rewriteIfdefsAndIfndefs()
 
         # removes include guards from H files
-        self.removeIncludeGuards(filename)
+        self.removeIncludeGuards()
 
         # delete empty lines
-        self.deleteEmptyLines(filename)
+        self.deleteEmptyLines()
 
         # transform file to srcml
-        self.transformFileToSrcml(filename)
+        self.transformFileToSrcml()
 
 
 class DisciplinePreparationThread(AbstractPreparationThread):
@@ -381,30 +379,30 @@ class DisciplinePreparationThread(AbstractPreparationThread):
     def getSubfolder(self):
         return "_cppstats_discipline"
 
-    def prepareFile(self, filename):
+    def prepareFile(self):
         # multiline macros
-        self.rewriteMultilineMacros(filename)
+        self.rewriteMultilineMacros()
 
         # delete comments
-        self.deleteComments(filename)
+        self.deleteComments()
 
         # delete leading, trailing and inter (# ... if) whitespaces
-        self.deleteWhitespace(filename)
+        self.deleteWhitespace()
 
         # rewrite #if(n)def ... to #if (!)defined(...)
-        self.rewriteIfdefsAndIfndefs(filename)
+        self.rewriteIfdefsAndIfndefs()
 
         # removes include guards from H files
-        self.removeIncludeGuards(filename)
+        self.removeIncludeGuards()
 
         # removes other preprocessor than #ifdefs
-        self.removeOtherPreprocessor(filename)
+        self.removeOtherPreprocessor()
 
         # delete empty lines
-        self.deleteEmptyLines(filename)
+        self.deleteEmptyLines()
 
         # transform file to srcml
-        self.transformFileToSrcml(filename)
+        self.transformFileToSrcml()
 
 
 class FeatureLocationsPreparationThread(AbstractPreparationThread):
@@ -415,18 +413,18 @@ class FeatureLocationsPreparationThread(AbstractPreparationThread):
     def getSubfolder(self):
         return "_cppstats_featurelocations"
 
-    def prepareFile(self, filename):
+    def prepareFile(self):
         # multiline macros
-        self.rewriteMultilineMacros(filename)
+        self.rewriteMultilineMacros()
 
         # delete leading, trailing and inter (# ... if) whitespaces
-        self.deleteWhitespace(filename)
+        self.deleteWhitespace()
 
         # rewrite #if(n)def ... to #if (!)defined(...)
-        self.rewriteIfdefsAndIfndefs(filename)
+        self.rewriteIfdefsAndIfndefs()
 
         # transform file to srcml
-        self.transformFileToSrcml(filename)
+        self.transformFileToSrcml()
 
 
 class PrettyPreparationThread(AbstractPreparationThread):
@@ -437,18 +435,18 @@ class PrettyPreparationThread(AbstractPreparationThread):
     def getSubfolder(self):
         return "_cppstats_pretty"
 
-    def prepareFile(self, filename):
+    def prepareFile(self):
         # multiline macros
-        self.rewriteMultilineMacros(filename)
+        self.rewriteMultilineMacros()
 
         # format the code
-        self.formatCode(filename)
+        self.formatCode()
 
         # delete comments
-        self.deleteComments(filename)
+        self.deleteComments()
 
         # delete empty lines
-        self.deleteEmptyLines(filename)
+        self.deleteEmptyLines()
 
 
 # #################################################

@@ -58,7 +58,7 @@ _filepattern = _filepattern_c + _filepattern_h
 # which python > /dev/null
 # if [ $? -ne 0 ]; then
 # echo '### programm python missing!'
-# 	echo '    see: http://www.python.org/'
+# echo '    see: http://www.python.org/'
 # 	exit 1
 # fi
 #
@@ -88,9 +88,9 @@ def notify(message):
 
 
 # function for ignore pattern
-def filterForCFiles(dirpath, contents):
+def filterForFiles(dirpath, contents, pattern = _filepattern):
     mylist = [filename for filename in contents if
-              not filename.endswith(_filepattern) and
+              not filename.endswith(pattern) and
               not os.path.isdir(os.path.join(dirpath, filename))
     ]
     return mylist
@@ -187,7 +187,7 @@ class AbstractPreparationThread(threading.Thread):
             shutil.rmtree(self.subfolder)
 
         # copy all C and H files recursively to the subfolder
-        shutil.copytree(self.source, self.subfolder, ignore=filterForCFiles)
+        shutil.copytree(self.source, self.subfolder, ignore=filterForFiles)
 
     @classmethod
     @abstractmethod
@@ -208,7 +208,8 @@ class AbstractPreparationThread(threading.Thread):
 
         tmp = filename + "tmp.txt"
 
-        shutil.copyfile(filename, filename + ".bak01")  # backup file
+        if (not options.nobak) :
+            shutil.copyfile(filename, filename + ".bak01")  # backup file
 
         # turn multiline macros to oneliners
         shutil.move(filename, tmp)  # move for script
@@ -217,7 +218,8 @@ class AbstractPreparationThread(threading.Thread):
         os.remove(tmp)  # remove temp file
 
     def formatCode(self, filename):
-        shutil.copyfile(filename, filename + ".bak02")  # backup file
+        if (not options.nobak) :
+            shutil.copyfile(filename, filename + ".bak02")  # backup file
 
         # call astyle to format file in Java-style
         runBashCommand("astyle --style=java " + filename)
@@ -230,7 +232,8 @@ class AbstractPreparationThread(threading.Thread):
         tmp = filename + "tmp.xml"
         tmp_out = filename + "tmp_out.xml"
 
-        shutil.copyfile(filename, filename + ".bak03")  # backup file
+        if (not options.nobak) :
+            shutil.copyfile(filename, filename + ".bak03")  # backup file
 
         # call src2srcml to transform code to xml
         # subprocess.call(["./src2srcml.linux", "--language=C", filename, "-o " + tmp])
@@ -257,7 +260,8 @@ class AbstractPreparationThread(threading.Thread):
         replaces multiple whitespace with a single space"""
         tmp = filename + "tmp.txt"
 
-        shutil.copyfile(filename, filename + ".bak04")  # backup file
+        if (not options.nobak) :
+            shutil.copyfile(filename, filename + ".bak04")  # backup file
 
         # replace patterns with replacements
         replacements = {
@@ -276,7 +280,8 @@ class AbstractPreparationThread(threading.Thread):
     def rewriteIfdefsAndIfndefs(self, filename):
         tmp = filename + "tmp.txt"
 
-        shutil.copyfile(filename, filename + ".bak06")  # backup file
+        if (not options.nobak) :
+            shutil.copyfile(filename, filename + ".bak06")  # backup file
 
         # rewrite #if(n)def ... to #if (!)defined(...)
         d = rewriteIfdefs.rewriteFile(filename, open(tmp, 'w'))
@@ -292,7 +297,8 @@ class AbstractPreparationThread(threading.Thread):
 
         tmp = filename + "tmp.txt"
 
-        shutil.copyfile(filename, filename + ".bak07")  # backup file
+        if (not options.nobak) :
+            shutil.copyfile(filename, filename + ".bak07")  # backup file
 
         # delete include guards
         deleteIncludeGuards.apply(filename, open(tmp, 'w'))
@@ -303,7 +309,8 @@ class AbstractPreparationThread(threading.Thread):
     def removeOtherPreprocessor(self, filename):
         tmp = filename + "tmp.txt"
 
-        shutil.copyfile(filename, filename + ".bak08")  # backup file
+        if (not options.nobak) :
+            shutil.copyfile(filename, filename + ".bak08")  # backup file
 
         # delete other preprocessor statements than #ifdefs
         cpplib._filterAnnotatedIfdefs(filename, tmp)
@@ -314,7 +321,8 @@ class AbstractPreparationThread(threading.Thread):
     def deleteEmptyLines(self, filename):
         tmp = filename + "tmp.txt"
 
-        shutil.copyfile(filename, filename + ".bak09")  # backup file
+        if (not options.nobak) :
+            shutil.copyfile(filename, filename + ".bak09")  # backup file
 
         # remove empty lines
         stripEmptyLinesFromFile(filename, tmp)
@@ -453,7 +461,7 @@ for cls in AbstractPreparationThread.__subclasses__():
     __preparationkinds.append(entry)
 
 # exit, if there are no preparation threads available
-if (len(__preparationkinds) == 0) :
+if (len(__preparationkinds) == 0):
     print "ERROR: No preparation tasks found! Revert your changes or call the maintainer."
     print "Exiting now..."
     sys.exit(1)
@@ -465,14 +473,14 @@ __preparationkinds = OrderedDict(__preparationkinds)
 
 parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
 parser.add_argument("--kind", choices=__preparationkinds.keys(), dest="kind",
-                  default=__preparationkinds.keys()[0], metavar="<K>",
-                  help="the preparation to be performed [default: %(default)s]")
+                    default=__preparationkinds.keys()[0], metavar="<K>",
+                    help="the preparation to be performed [default: %(default)s]")
 parser.add_argument("--input", type=str, dest="inputfile", default=__inputfile_default, metavar="FILE",
-                  help="a FILE that contains the list of input projects/folders [default: %(default)s]")
+                    help="a FILE that contains the list of input projects/folders [default: %(default)s]")
 parser.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
-                  help="perform all available kinds of preparation [default: %(default)s]")
-
-# TODO add option to remove bak\d\d files?
+                    help="perform all available kinds of preparation [default: %(default)s]")
+parser.add_argument("--nobak", action="store_true", dest="nobak", default=False,
+                    help="do not backup files during preparation [default: %(default)s]")
 
 group = parser.add_argument_group("Possible Kinds of Preparation <K>", ", ".join(__preparationkinds.keys()))
 

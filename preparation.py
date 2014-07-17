@@ -110,7 +110,6 @@ def runBashCommand(command, shell=False, stdout=None):
     # TODO do something with the output
 
 
-# TODO http://stackoverflow.com/questions/2369440/how-to-delete-all-blank-lines-in-the-file-with-the-help-of-python/2369538#2369538
 def replaceMultiplePatterns(replacements, infile, outfile):
     with open(infile, "rb") as source:
         with open(outfile, "w") as target:
@@ -327,8 +326,7 @@ class AbstractPreparationThread(threading.Thread):
         source = filename
         dest = filename + ".xml"
 
-        # TODO other platforms for srcml transformations
-        # FIXME encapsulate srcml calls in method!
+        # TODO other platforms for srcml transformations, encapsulate srcml calls in method!
         runBashCommand("./lib/srcml/src2srcml.linux --language=C " + source + " -o " + dest)
         # FIXME incorporate "|| rm ${f}.xml" from bash
 
@@ -419,10 +417,6 @@ class FeatureLocationsPreparationThread(AbstractPreparationThread):
         # rewrite #if(n)def ... to #if (!)defined(...)
         self.rewriteIfdefsAndIfndefs(filename)
 
-        # TODO is this necessary?
-        # removes other preprocessor than #ifdefs
-        self.removeOtherPreprocessor(filename)
-
         # transform file to srcml
         self.transformFileToSrcml(filename)
 
@@ -433,7 +427,7 @@ class PrettyPreparationThread(AbstractPreparationThread):
         return "pretty"
 
     def getSubfolder(self):
-        return "_cppstats_pretty2"
+        return "_cppstats_pretty"
 
     def prepareFile(self, filename):
         # multiline macros
@@ -453,11 +447,16 @@ class PrettyPreparationThread(AbstractPreparationThread):
 # collection of preparation threads
 
 # add all subclass of AbstractPreparationThread as available preparation kinds
-# FIXME check if there are subclasses available
 __preparationkinds = []
 for cls in AbstractPreparationThread.__subclasses__():
     entry = (cls.getName(), cls)
     __preparationkinds.append(entry)
+
+# exit, if there are no preparation threads available
+if (len(__preparationkinds) == 0) :
+    print "ERROR: No preparation tasks found! Revert your changes or call the maintainer."
+    print "Exiting now..."
+    sys.exit(1)
 
 __preparationkinds = OrderedDict(__preparationkinds)
 

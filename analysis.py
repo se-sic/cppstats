@@ -215,6 +215,12 @@ for cls in AbstractAnalysisThread.__subclasses__():
     entry = (cls.getName(), cls)
     __analysiskinds.append(entry)
 
+# exit, if there are no analysis threads available
+if (len(__analysiskinds) == 0) :
+    print "ERROR: No analysis tasks found! Revert your changes or call the maintainer."
+    print "Exiting now..."
+    sys.exit(1)
+
 __analysiskinds = OrderedDict(__analysiskinds)
 
 

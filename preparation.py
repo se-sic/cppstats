@@ -13,7 +13,7 @@ import subprocess  # for calling other commands
 import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
 import pynotify  # for system notifications
-from optparse import OptionParser, OptionGroup  # for parameters to this script
+from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict
 
 # #################################################
@@ -463,23 +463,20 @@ __preparationkinds = OrderedDict(__preparationkinds)
 # #################################################
 # options parsing
 
-# FIXME port to argparse, since optparse is deprecated since 2.7
-# TODO synthesis of preparation and analysis! (rewording help!)
-parser = OptionParser()
-parser.add_option("--kind", type="choice", choices=__preparationkinds.keys(), dest="kind",
+parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+parser.add_argument("--kind", choices=__preparationkinds.keys(), dest="kind",
                   default=__preparationkinds.keys()[0], metavar="<K>",
-                  help="the preparation to be performed (should correspond to the analysis to be performed) [default: %default]")
-parser.add_option("--input", type="string", dest="inputfile", default=__inputfile_default, metavar="FILE",
-                  help="a FILE that contains the list of input projects/folders [default: %default]")
-parser.add_option("-a", "--all", action="store_true", dest="allkinds", default=False,
-                  help="perform all available kinds of preparation [default: %default]")
+                  help="the preparation to be performed [default: %(default)s]")
+parser.add_argument("--input", type=str, dest="inputfile", default=__inputfile_default, metavar="FILE",
+                  help="a FILE that contains the list of input projects/folders [default: %(default)s]")
+parser.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
+                  help="perform all available kinds of preparation [default: %(default)s]")
 
 # TODO add option to remove bak\d\d files?
 
-group = OptionGroup(parser, "Possible Kinds of Preparation <K>", ", ".join(__preparationkinds.keys()))
-parser.add_option_group(group)
+group = parser.add_argument_group("Possible Kinds of Preparation <K>", ", ".join(__preparationkinds.keys()))
 
-(options, args) = parser.parse_args()
+options = parser.parse_args()
 
 
 # #################################################

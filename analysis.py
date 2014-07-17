@@ -227,7 +227,6 @@ __analysiskinds = OrderedDict(__analysiskinds)
 # #################################################
 # options parsing
 
-# TODO synthesis of preparation and analysis! (rewording help!)
 parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
 parser.add_argument("--kind", choices=__analysiskinds.keys(), dest="kind",
                   default=__analysiskinds.keys()[0], metavar="<K>",

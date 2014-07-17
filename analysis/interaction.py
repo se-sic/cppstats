@@ -8,7 +8,7 @@ import os
 import re
 import sys
 import xmlrpclib
-from optparse import OptionParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 # currently we only support linux
 if not sys.platform.startswith('linux'):
@@ -101,20 +101,6 @@ __statsorder = Enum(
 )
 ##################################################
 
-
-##################################################
-# options parsing
-parser = OptionParser()
-parser.add_option("--folder", dest="folder",
-        help="input folder [default=.]", default=".")
-parser.add_option("--csp", dest="csp", action="store_true",
-        default=False, help="make use of csp solver to check " \
-        "feature expression equality [default=False]")
-parser.add_option("--str", dest="str", action="store_true",
-        default=True, help="make use of simple string comparision " \
-        "for checking feature expression equality [default=True]")
-
-(options, args) = parser.parse_args()
 
 
 ##################################################
@@ -1107,8 +1093,40 @@ def apply(folder):
     fd.close()
 
 
+# ##################################################
+# add command line options
+
+def addCommandLineOptionsMain(optionparser):
+    ''' add command line options for a direct call of this script'''
+    optionparser.add_argument("--folder", dest="folder",
+        help="input folder [default=.]", default=".")
+
+
+def addCommandLineOptions(optionparser) :
+    # TODO implement CSP solving?
+    # optionparser.add_argument("--csp", dest="csp", action="store_true",
+    #         default=False, help="make use of csp solver to check " \
+    #         "feature expression equality [default=False]")
+    # optionparser.add_argument("--str", dest="str", action="store_true",
+    #         default=True, help="make use of simple string comparision " \
+    #         "for checking feature expression equality [default=True]")
+    pass
+
+
 ##################################################
 if __name__ == '__main__':
+
+
+    ##################################################
+    # options parsing
+    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+    addCommandLineOptionsMain(parser)
+    addCommandLineOptions(parser)
+
+    options = parser.parse_args()
+
+    # ####
+    # main
 
     folder = os.path.abspath(options.folder)
     if (os.path.isdir(folder)):

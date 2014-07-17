@@ -7,7 +7,7 @@ import os
 import re
 import sys
 import xmlrpclib
-from optparse import OptionParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 # currently we only support linux
 if not sys.platform.startswith('linux'):
@@ -99,21 +99,6 @@ __statsorder = Enum(
     'EXPRESSION',  # the presence condition stated in the #ifdef
     'CONSTANTS',  # all configuration constants used in the presence condition
 )
-
-
-
-
-##################################################
-# options parsing
-
-
-parser = OptionParser()
-parser.add_option("--folder", dest="folder",
-                  help="input folder [default=.]", default=".")
-
-(options, args) = parser.parse_args()
-
-
 
 
 ##################################################
@@ -736,8 +721,32 @@ def apply(folder):
     fd.close() # __outputfile
     loffhandle.close() # __listoffeaturesfile
 
+
+
+# ##################################################
+# add command line options
+
+def addCommandLineOptionsMain(optionparser):
+    ''' add command line options for a direct call of this script'''
+    optionparser.add_argument("--folder", dest="folder",
+                  help="input folder [default=.]", default=".")
+
+
+
+def addCommandLineOptions(optionparser) :
+    pass
+
+
 ##################################################
 if __name__ == '__main__':
+
+    ##################################################
+    # options parsing
+    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+    addCommandLineOptionsMain(parser)
+    addCommandLineOptions(parser)
+
+    options = parser.parse_args()
 
     folder = os.path.abspath(options.folder)
 

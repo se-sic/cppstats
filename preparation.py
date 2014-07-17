@@ -475,6 +475,8 @@ parser.add_option("--input", type="string", dest="inputfile", default=__inputfil
 parser.add_option("-a", "--all", action="store_true", dest="allkinds", default=False,
                   help="perform all available kinds of preparation [default: %default]")
 
+# TODO add option to remove bak\d\d files?
+
 group = OptionGroup(parser, "Possible Kinds of Preparation <K>", ", ".join(__preparationkinds.keys()))
 parser.add_option_group(group)
 

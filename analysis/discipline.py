@@ -5,7 +5,7 @@
 import os
 import re
 import sys
-from optparse import OptionParser, OptionGroup
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 # external libs
 # python-lxml module
@@ -59,40 +59,12 @@ class DisciplinedAnnotations:
     __conditions   = ['if', 'ifdef', 'ifndef']
     ##################################################
 
-    def __init__(self):
-        oparser = OptionParser()
-        oparser.add_option('-d', '--dir', dest='dir',
-                help='input directory (mandatory)')
-        oparser.add_option('-l', '--log', dest='log',
-                default=True, help='log to stdout (default=True)')
-        oparser.add_option('-c', '--check', dest='check', type='int',
-                default=1, help='pattern check (default=1)')
-        oparser.add_option('-v', '--verbose', dest='verbose', type='int',
-                default=0, help='verbose output (default=0)')
-        oparser.add_option('-a', '--all', dest='all', type='int',
-                default=0, help='check all patterns (default=0)')
-        groupc = OptionGroup(oparser, 'Check',
-                'This option allows to set the patterns, that are '
-                'checked during the program run: '
-                '(1) check top level siblings (compilation unit) '
-                '(2) check sibling (excludes check top level siblings; NOT CLASSIFIED) '
-                '(4) check if-then enframement (wrapper) '
-                '(8) check case enframement (conditional) '
-                '(16) check else-if enframement (conditional) '
-                '(32) check param/argument enframement (parameter) '
-                '(64) check expression enframement (expression) '
-                '(128) check else enframement (NOT CLASSIFIED) '
-        )
-        oparser.add_option_group(groupc)
-        groupr = OptionGroup(oparser, 'Result',
-                'This program counts the number of the disciplined '
-                'cpp usage in software projects. To this end, it '
-                'checks xml representations of header and source '
-                'files and returns the number of disciplined ifdefs '
-                'in those. Disciplined annotations are: '
-        )
-        oparser.add_option_group(groupr)
-        (self.opts, self.args) = oparser.parse_args()
+    def __init__(self, folder, options):
+
+        self.opts = options
+        self.opts.dir = os.path.abspath(folder)
+
+        print self.opts.dir
 
         if not self.opts.dir:
             oparser.print_help()
@@ -545,7 +517,7 @@ class DisciplinedAnnotations:
         self.overallblocks += len(listundisciplined)
 
         # check TLS pattern, subset of sibling pattern
-        if (self.opts.all or self.opts.check & (1 << DisciplinedAnnotations.PATTLS)):
+        if (self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATTLS)):
             listifdefs = list(listundisciplined)
             (listdisciplined, listundisciplined) = \
                     self.__checkStrictTLSCUPattern__(listifdefs)
@@ -567,7 +539,7 @@ class DisciplinedAnnotations:
             self.disciplined += len(listdisciplined)
 
         # check if-then pattern
-        if (self.opts.all or self.opts.check & (1 << DisciplinedAnnotations.PATIFTHEN)):
+        if (self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATIFTHEN)):
             listifdefs = list(listundisciplined)
             (listdisciplined, listundisciplined) = \
                     self.__checkIfThenPattern__(listifdefs)
@@ -575,7 +547,7 @@ class DisciplinedAnnotations:
             self.undisciplinedknown += len(listdisciplined)
 
         # check case pattern
-        if (self.opts.all or self.opts.check & (1 << DisciplinedAnnotations.PATCASE)):
+        if (self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATCASE)):
             listifdefs = list(listundisciplined)
             (listdisciplined, listundisciplined) = \
                     self.__checkCasePattern__(listifdefs)
@@ -583,7 +555,7 @@ class DisciplinedAnnotations:
             self.undisciplinedknown += len(listdisciplined)
 
         # check else-if pattern
-        if (self.opts.all or self.opts.check & (1 << DisciplinedAnnotations.PATELSEIF)):
+        if (self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATELSEIF)):
             listifdefs = list(listundisciplined)
             (listdisciplined, listundisciplined) = \
                     self.__checkElseIfPattern__(listifdefs)
@@ -591,7 +563,7 @@ class DisciplinedAnnotations:
             self.undisciplinedknown += len(listdisciplined)
 
         # check param pattern
-        if (self.opts.all or self.opts.check & (1 << DisciplinedAnnotations.PATPARAM)):
+        if (self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATPARAM)):
             listifdefs = list(listundisciplined)
             (listdisciplined, listundisciplined) = \
                     self.__checkParameter__(listifdefs)
@@ -599,7 +571,7 @@ class DisciplinedAnnotations:
             self.undisciplinedknown += len(listdisciplined)
 
         # check expression pattern
-        if (self.opts.all or self.opts.check & (1 << DisciplinedAnnotations.PATEXP)):
+        if (self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATEXP)):
             listifdefs = list(listundisciplined)
             (listdisciplined, listundisciplined) = \
                     self.__checkExpression__(listifdefs)
@@ -607,7 +579,7 @@ class DisciplinedAnnotations:
             self.undisciplinedknown += len(listdisciplined)
 
         # check sibling pattern; check this late because pattern might match for others as well
-        if (self.opts.all or self.opts.check & (1 << DisciplinedAnnotations.PATSIB)):
+        if (self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATSIB)):
             listifdefs = list(listundisciplined)
             (listdisciplined, listundisciplined) = \
                     self.__checkSiblingPattern__(listifdefs)
@@ -683,6 +655,52 @@ class DisciplinedAnnotations:
                 +";"+str(ratio)
                 +";"+str(self.overallblocks)+"\n")
 
+
+# ##################################################
+# add command line options
+
+def addCommandLineOptionsMain(optionparser):
+    ''' add command line options for a direct call of this script'''
+    optionparser.add_argument('-d', '--dir', '--folder', dest='dir',
+            help='input directory (mandatory)')
+
+
+def addCommandLineOptions(optionparser) :
+    optionparser.description = 'This analysis counts the number of the disciplined CPP usage in software projects. \n' \
+            'To this end, it checks xml representations of header and source ' \
+            'files and returns the number of disciplined ifdefs in those. \n'
+            # TODO what are the disciplined ones
+            #'Disciplined annotations are:'
+
+    optionparser.add_argument('-l', '--log', dest='log', action="store_true",
+            default=True, help='log to stdout [default=%(default)s]')
+    optionparser.add_argument('-v', '--verbose', dest='verbose', action="store_true",
+            default=False, help='verbose output [default=%(default)s]')
+    optionparser.add_argument('--check', dest='check', type=int,
+            default=1, help='CHECK set the patterns that are checked [default=%(default)s]:'
+            '(1) check top level siblings (compilation unit) \n'
+            '(2) check sibling (excludes check top level siblings; NOT CLASSIFIED) \n'
+            '(4) check if-then enframement (wrapper) \n'
+            '(8) check case enframement (conditional) \n'
+            '(16) check else-if enframement (conditional) \n'
+            '(32) check param/argument enframement (parameter) \n'
+            '(64) check expression enframement (expression) \n'
+            '(128) check else enframement (NOT CLASSIFIED) \n'
+    )
+    optionparser.add_argument('--dall', dest='disc_all', action="store_true",
+                              default=True, help='check all patterns [default=%(default)s] \n(overrides --check)')
+
+
 ##################################################
 if __name__ == '__main__':
-    DisciplinedAnnotations()
+
+    ##################################################
+    # options parsing
+    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+    addCommandLineOptionsMain(parser)
+    addCommandLineOptions(parser)
+
+    options = parser.parse_args()
+
+    # main
+    DisciplinedAnnotations(options.dir, options)

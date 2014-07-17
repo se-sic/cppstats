@@ -7,7 +7,7 @@ import os
 import re
 import sys
 import xmlrpclib
-from optparse import OptionParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 # currently we only support linux
 if not sys.platform.startswith('linux'):
@@ -122,23 +122,6 @@ __statsorder = Enum(
 )
 ##################################################
 
-
-##################################################
-# options parsing
-parser = OptionParser()
-parser.add_option("--folder", dest="folder",
-        help="input folder [default=.]", default=".")
-parser.add_option("--csp", dest="csp", action="store_true",
-        default=False, help="make use of csp solver to check " \
-        "feature expression equality [default=False]")
-parser.add_option("--str", dest="str", action="store_true",
-        default=True, help="make use of simple string comparision " \
-        "for checking feature expression equality [default=True]")
-parser.add_option("--stf", dest="stf", action="store_true",
-        default=False, help="output a file '" + __metricvaluesfile + "'" \
-        "that maps metrics to a list of all values that are collected during measurement")
-
-(options, args) = parser.parse_args()
 
 
 ##################################################
@@ -1192,8 +1175,8 @@ def _checkForEquivalentSig(l, sig):
         if not (sig1 and sig2):            # ommit empty signatures
             return False
 
-        if options.str:
-            return sig1 == sig2
+        # if options.str:
+        return sig1 == sig2
 
     # _checkForEquivalentSig
     for it in l:
@@ -1202,7 +1185,7 @@ def _checkForEquivalentSig(l, sig):
     raise NoEquivalentSigError()
 
 
-def apply(folder):
+def apply(folder, options):
     """This function applies the analysis to all xml-files in that
     directory and take the results and joins them together. Results
     are getting written into the fdcsv-file."""
@@ -1244,7 +1227,7 @@ def apply(folder):
     ftotal = len(files)
 
     # preparations for the metrics-values file
-    if __outputstf:
+    if options.stf:
         stfheadings = ['name', 'values']
         stfrow = [None]*len(stfheadings)
         stfhandle, stfwriter = _prologCSV(os.path.join(folder, os.pardir), __metricvaluesfile, stfheadings)
@@ -1429,7 +1412,7 @@ def apply(folder):
     fd.close()
 
     # write data to mectrics-values file
-    if __outputstf:
+    if options.stf:
         stfrow[0] = "tangling"
         tanglingstring = ';'.join(map(str, tangvalues.values()))
         stfrow[1] = tanglingstring
@@ -1447,12 +1430,46 @@ def apply(folder):
 
         stfhandle.close()
 
+
+# ##################################################
+# add command line options
+
+def addCommandLineOptionsMain(optionparser):
+    ''' add command line options for a direct call of this script'''
+    optionparser.add_argument("--folder", dest="folder",
+        help="input folder [default=.]", default=".")
+
+
+def addCommandLineOptions(optionparser) :
+    # TODO implement CSP solving?
+    # optionparser.add_option("--csp", dest="csp", action="store_true",
+    #     default=False, help="make use of csp solver to check " \
+    #     "feature expression equality [default=False]")
+    # optionparser.add_option("--str", dest="str", action="store_true",
+    #     default=True, help="make use of simple string comparision " \
+    #     "for checking feature expression equality [default=True]")
+    optionparser.add_argument("--stf", dest="stf", action="store_true",
+        default=False, help="output a file '" + __metricvaluesfile + "' " \
+        "that maps metrics to a list of all values that are collected during measurement")
+
+
 ##################################################
 if __name__ == '__main__':
 
+
+    ##################################################
+    # options parsing
+    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+    addCommandLineOptionsMain(parser)
+    addCommandLineOptions(parser)
+
+    options = parser.parse_args()
+
+    # ####
+    # main
+
     folder = os.path.abspath(options.folder)
-    __outputstf = options.stf
     if (os.path.isdir(folder)):
-        apply(folder)
+        apply(folder, options)
     else:
         sys.exit(-1)

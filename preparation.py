@@ -4,8 +4,7 @@
 # #################################################
 # imports from the std-library
 
-import os
-import sys
+import os, sys, platform
 import shutil  # for copying files and folders
 import errno  # for error/exception handling
 import threading  # for parallelism
@@ -17,13 +16,56 @@ from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to t
 from collections import OrderedDict
 
 # #################################################
-# path adjustments, so that all imports can be done relative to these paths
+# path adjustments
 
 __preparation_scripts_subfolder = "preparation"
 __preparation_lib_subfolder = "lib"
+__preparation_lib_srcml_subfolder = "srcml"
 
 sys.path.append(os.path.abspath(__preparation_lib_subfolder))  # lib subfolder
 sys.path.append(os.path.abspath(__preparation_scripts_subfolder))  # preparation scripts
+
+
+def getPreparationScript(filename):
+    return os.path.join(__preparation_scripts_subfolder, filename)
+
+
+def getLib(path):
+    return os.path.abspath(os.path.join(__preparation_lib_subfolder, path))
+
+
+# #################################################
+# platform specific preliminaries
+
+# cf. https://docs.python.org/2/library/sys.html#sys.platform
+__platform = sys.platform.lower()
+
+if (__platform.startswith("linux")):
+    __s2sml_executable = "src2srcml.linux"
+    __sml2s_executable = "srcml2src.linux"
+elif (__platform.startswith("darwin")):
+    __s2sml_executable = "src2srcml.osx"
+    __sml2s_executable = "srcml2src.osx"
+# elif (__platform.startswith("cygwin")) :
+#     __s2sml_executable = "win/src2srcml.exe"
+#     __sml2s_executable = "win/srcml2src.exe"
+#TODO is path supplied to cygwin right? does it work like that?
+# +function getSrcmlPath {
+# +
+# + # the path supplied to srcml must be changed to windows path on cygwin!
+# + if $iscygwin; then
+# + echo `cygpath -w ${1}`
+# + else
+# + echo ${1}
+# + fi
+# +
+# +}
+else:
+    print "Your system '" + __platform + "' is not supported by SrcML right now."
+
+__s2sml = getLib(os.path.join(__preparation_lib_srcml_subfolder, __s2sml_executable))
+__sml2s = getLib(os.path.join(__preparation_lib_srcml_subfolder, __sml2s_executable))
+
 
 # #################################################
 # imports from subfolders
@@ -59,7 +101,7 @@ _filepattern = _filepattern_c + _filepattern_h
 # if [ $? -ne 0 ]; then
 # echo '### programm python missing!'
 # echo '    see: http://www.python.org/'
-# 	exit 1
+# exit 1
 # fi
 #
 # which astyle > /dev/null
@@ -88,16 +130,12 @@ def notify(message):
 
 
 # function for ignore pattern
-def filterForFiles(dirpath, contents, pattern = _filepattern):
+def filterForFiles(dirpath, contents, pattern=_filepattern):
     mylist = [filename for filename in contents if
               not filename.endswith(pattern) and
               not os.path.isdir(os.path.join(dirpath, filename))
     ]
     return mylist
-
-
-def getPreparationScript(filename):
-    return os.path.join(__preparation_scripts_subfolder, filename)
 
 
 def runBashCommand(command, shell=False, stdout=None):
@@ -135,6 +173,15 @@ def silentlyRemoveFile(filename):
             raise  # re-raise exception if a different error occured
 
 
+def src2srcml(src, srcml):
+    runBashCommand("./lib/srcml/src2srcml.linux --language=C " + src + " -o " + srcml)
+    # FIXME incorporate "|| rm ${f}.xml" from bash
+
+
+def srcml2src(srcml, src):
+    runBashCommand("./lib/srcml/srcml2src.linux " + srcml + " -o " + src)
+
+
 # #################################################
 # abstract preparation thread
 
@@ -155,12 +202,13 @@ class AbstractPreparationThread(threading.Thread):
 
     def startup(self):
         # LOGGING
-        notify("starting preparation: " + self.folderBasename)
-        print "# prepare " + self.folderBasename
+        notify("starting '" + self.getName() + "' preparation:\n " + self.folderBasename)
+        print "# starting '" + self.getName() + "' preparation: " + self.folderBasename
 
     def teardown(self):
         # LOGGING
-        notify("finished preparation: " + self.folderBasename)
+        notify("finished '" + self.getName() + "' preparation:\n " + self.folderBasename)
+        print "# finished '" + self.getName() + "' preparation: " + self.folderBasename
 
     def run(self):
         self.startup()
@@ -193,8 +241,8 @@ class AbstractPreparationThread(threading.Thread):
 
     def backupCurrentFile(self):
         '''# backup file'''
-        if (not options.nobak) :
-            bak = self.currentFile+ ".bak" + str(self.backupCounter)
+        if (not options.nobak):
+            bak = self.currentFile + ".bak" + str(self.backupCounter)
             shutil.copyfile(self.currentFile, bak)
             self.backupCounter += 1
 
@@ -239,24 +287,18 @@ class AbstractPreparationThread(threading.Thread):
         self.backupCurrentFile()  # backup file
 
         # call src2srcml to transform code to xml
-        # subprocess.call(["./src2srcml.linux", "--language=C", filename, "-o " + tmp])
-        runBashCommand("./lib/srcml/src2srcml.linux --language=C " + self.currentFile + " -o " + tmp)
+        src2srcml(self.currentFile, tmp)
 
         # delete all comments in the xml and write to another file
         runBashCommand("xsltproc -o " + tmp_out + " " + getPreparationScript("deleteComments.xsl") + " " + tmp)
 
         # re-transform the xml to a normal source file
         # subprocess.call(["./srcml2src.linux", tmp_out, "-o " + filename])
-        runBashCommand("./lib/srcml/srcml2src.linux " + tmp_out + " -o " + self.currentFile)
+        srcml2src(tmp_out, self.currentFile)
 
         # delete temp files
         os.remove(tmp)
         os.remove(tmp_out)
-
-        # TODO implement getLib(path)
-        # TODO support different systems than Linux!
-        # Linux|linux) s2sml=src2srcml.linux; sml2s=srcml2src.linux;;
-        # Darwin|darwin) s2sml=src2srcml.osx; sml2s=srcml2src.osx;;
 
     def deleteWhitespace(self):
         """deletes leading, trailing and inter (# ... if) whitespaces,
@@ -332,9 +374,8 @@ class AbstractPreparationThread(threading.Thread):
         source = self.currentFile
         dest = self.currentFile + ".xml"
 
-        # TODO other platforms for srcml transformations, encapsulate srcml calls in method!
-        runBashCommand("./lib/srcml/src2srcml.linux --language=C " + source + " -o " + dest)
-        # FIXME incorporate "|| rm ${f}.xml" from bash
+        # transform to srcml
+        src2srcml(source, dest)
 
 
 # #################################################

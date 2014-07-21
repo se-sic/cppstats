@@ -1,2 +1,16 @@
 cppstats is a suite of analyses for measuring cpp-preprocessor based variability
 in software product lines
+
+HOW TO
+---------------------------------
+supply cppstats with the appropriate paths in cppstats_input.txt
+	- use full paths like "/local/repos/cpp-history/mpsolve/mpsolve-2.2"
+	- each project folder given in the file has to be structured as follows:
+		- mpsolve-2.2/ 
+			- source/ (here are the C source files)
+
+Then run:
+$ ./cppstats.py --kind <K> 
+Have a look on "./cppstats.py --help" for further command line options.
+
+The output files for each analysis are written to the folders given in cppstats_input.txt.

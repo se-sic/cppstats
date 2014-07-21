@@ -620,7 +620,7 @@ class DisciplinedAnnotations:
         fd = open(
             os.path.join(
                 projectpath,
-                'dmacros.csv'
+                'cppstats_discipline.csv'
             ), 'w')
 
         ratio = 0

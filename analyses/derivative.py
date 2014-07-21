@@ -61,7 +61,7 @@ except ImportError:
 
 ##################################################
 # config:
-__outputfile = "cppstats.csv"
+__outputfile = "cppstats_derivative.csv"
 
 # error numbers:
 __errorfexp = 0
@@ -972,8 +972,9 @@ def _checkForEquivalentSig(l, sig):
         if not (sig1 and sig2):            # ommit empty signatures
             return False
 
-        if options.str:
-            return sig1 == sig2
+        # TODO csp:
+        # if options.str:
+        return sig1 == sig2
 
     # _checkForEquivalentSig
     for it in l:

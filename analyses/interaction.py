@@ -62,7 +62,7 @@ except ImportError:
 
 ##################################################
 # config:
-__outputfile = "cppstats.csv"
+__outputfile = "cppstats_interaction.csv"
 
 # error numbers:
 __errorfexp = 0

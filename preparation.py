@@ -243,6 +243,7 @@ class AbstractPreparationThread(threading.Thread):
 
     def backupCurrentFile(self):
         '''# backup file'''
+        # TODO check if nobak exists first!
         if (not self.options.nobak):
             bak = self.currentFile + ".bak" + str(self.backupCounter)
             shutil.copyfile(self.currentFile, bak)

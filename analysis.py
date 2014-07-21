@@ -19,7 +19,7 @@ from collections import OrderedDict  # for ordered dictionaries
 # #################################################
 # path adjustments, so that all imports can be done relative to these paths
 
-__preparation_scripts_subfolder = "analysis"
+__preparation_scripts_subfolder = "analyses"
 __preparation_lib_subfolder = "lib"
 
 sys.path.append(os.path.abspath(__preparation_lib_subfolder))  # lib subfolder
@@ -58,9 +58,11 @@ class AbstractAnalysisThread(threading.Thread):
     '''This class analyzes a whole project according to the given kind of analysis in an independent thread.'''
     __metaclass__ = ABCMeta
 
-    def __init__(self, folder):
+    def __init__(self, folder, options):
         threading.Thread.__init__(self)
         self.folder = folder
+        self.options = options
+
         self.folderBasename = os.path.basename(os.path.normpath(self.folder))
 
         # get full path of subfolder
@@ -74,7 +76,7 @@ class AbstractAnalysisThread(threading.Thread):
 
     def teardown(self):
         # LOGGING
-        notify("finished analysis: " + self.folderBasename)
+        notify("finished analyses: " + self.folderBasename)
 
     def run(self):
         self.startup()
@@ -116,7 +118,7 @@ class GeneralAnalysisThread(AbstractAnalysisThread):
 
     def analyze(self, folder):
         import general
-        general.apply(folder, options)
+        general.apply(folder, self.options)
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
@@ -136,7 +138,7 @@ class DisciplineAnalysisThread(AbstractAnalysisThread):
 
     def analyze(self, folder):
         import discipline
-        discipline.DisciplinedAnnotations(folder, options)
+        discipline.DisciplinedAnnotations(folder, self.options)
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
@@ -201,7 +203,7 @@ class InteractionAnalysisThread(AbstractAnalysisThread):
     @classmethod
     def addCommandLineOptions(cls, optionParser):
         import interaction
-        title = "Options for analysis '" + cls.getName() + "'"
+        title = "Options for analyses '" + cls.getName() + "'"
         group = optionParser.add_argument_group(title.upper())
         interaction.addCommandLineOptions(group)
 
@@ -224,28 +226,8 @@ if (len(__analysiskinds) == 0) :
 __analysiskinds = OrderedDict(__analysiskinds)
 
 
-# #################################################
-# options parsing
-
-parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
-parser.add_argument("--kind", choices=__analysiskinds.keys(), dest="kind",
-                  default=__analysiskinds.keys()[0], metavar="<K>",
-                  help="the analysis to be performed [default: %(default)s]")
-parser.add_argument("--input", type=str, dest="inputfile", default=__inputfile_default, metavar="FILE",
-                  help="a FILE that contains the list of input projects/folders \n[default: %(default)s]")
-parser.add_argument("--all", action="store_true", dest="allkinds", default=False,
-                  help="perform all available kinds of analysis \n(overrides the --kind parameter) [default: %(default)s]")
-
-parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(__analysiskinds.keys()))
-
-
-# add options for each analysis kind
-for cls in __analysiskinds.values():
-    cls.addCommandLineOptions(parser)
-
-# parse options
-options = parser.parse_args()
-
+def getKinds():
+    return __analysiskinds
 
 # #################################################
 # main method
@@ -260,18 +242,19 @@ def getFoldersFromInputFile(inputfile):
     return folders
 
 
-def apply(kind, inputfile):
-    threads = []  # list of independent threads performing preparation steps
+def apply(kind, inputfile, options):
+    kinds = getKinds()
+    threads = []  # list of independent threads performing preparations steps
 
     # get the list of projects/folders to process
     folders = getFoldersFromInputFile(inputfile)
 
     # for each folder:
     for folder in folders:
-        # start preparation for this single folder
+        # start preparations for this single folder
 
         # print __preparationkinds[kind].__name__
-        thread = __analysiskinds[kind](folder)  # get proper preparation thread and call it
+        thread = kinds[kind](folder, options)  # get proper preparations thread and call it
         threads.append(thread)
         thread.start()
 
@@ -280,14 +263,41 @@ def apply(kind, inputfile):
         t.join()
 
 
-def applyAll(inputfile):
-    for kind in __analysiskinds.keys():
-        apply(kind, inputfile)
+def applyAll(inputfile, options):
+    kinds = getKinds()
+    for kind in kinds.keys():
+        apply(kind, inputfile, options)
 
 
 if __name__ == '__main__':
+    kinds = getKinds()
+
+    # #################################################
+    # options parsing
+
+    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--kind", choices=kinds.keys(), dest="kind",
+                      default=kinds.keys()[0], metavar="<K>",
+                      help="the analysis to be performed [default: %(default)s]")
+    parser.add_argument("--input", type=str, dest="inputfile", default=__inputfile_default, metavar="FILE",
+                      help="a FILE that contains the list of input projects/folders \n[default: %(default)s]")
+    parser.add_argument("--all", action="store_true", dest="allkinds", default=False,
+                      help="perform all available kinds of analysis \n(overrides the --kind parameter) [default: %(default)s]")
+
+    parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(kinds.keys()))
+
+
+    # add options for each analysis kind
+    for cls in kinds.values():
+        cls.addCommandLineOptions(parser)
+
+    # parse options
+    options = parser.parse_args()
+
+    # #################################################
+    # main
 
     if (options.allkinds):
-        applyAll(options.inputfile)
+        applyAll(options.inputfile, options)
     else:
-        apply(options.kind, options.inputfile)
+        apply(options.kind, options.inputfile, options)

@@ -677,7 +677,8 @@ def addCommandLineOptions(optionparser) :
     optionparser.add_argument('-v', '--verbose', dest='verbose', action="store_true",
             default=False, help='verbose output [default=%(default)s]')
     optionparser.add_argument('--check', dest='check', type=int,
-            default=1, help='CHECK set the patterns that are checked [default=%(default)s]:'
+            default=1, help='CHECK sets the patterns that are checked [default=%(default)s].\n'
+            'Supply sum of wanted patterns:\n'
             '(1) check top level siblings (compilation unit) \n'
             '(2) check sibling (excludes check top level siblings; NOT CLASSIFIED) \n'
             '(4) check if-then enframement (wrapper) \n'

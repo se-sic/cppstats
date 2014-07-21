@@ -18,7 +18,7 @@ from collections import OrderedDict
 # #################################################
 # path adjustments
 
-__preparation_scripts_subfolder = "preparation"
+__preparation_scripts_subfolder = "preparations"
 __preparation_lib_subfolder = "lib"
 __preparation_lib_srcml_subfolder = "srcml"
 
@@ -174,25 +174,27 @@ def silentlyRemoveFile(filename):
 
 
 def src2srcml(src, srcml):
-    runBashCommand("./lib/srcml/src2srcml.linux --language=C " + src + " -o " + srcml)
+    runBashCommand(__s2sml + " --language=C " + src + " -o " + srcml)
     # FIXME incorporate "|| rm ${f}.xml" from bash
 
 
 def srcml2src(srcml, src):
-    runBashCommand("./lib/srcml/srcml2src.linux " + srcml + " -o " + src)
+    runBashCommand(__sml2s + " " + srcml + " -o " + src)
 
 
 # #################################################
 # abstract preparation thread
 
 class AbstractPreparationThread(threading.Thread):
-    '''This class prepares a single folder according to the given kind of preparation in an independent thread.'''
+    '''This class prepares a single folder according to the given kind of preparations in an independent thread.'''
     __metaclass__ = ABCMeta
     sourcefolder = "source"
 
-    def __init__(self, folder):
+    def __init__(self, folder, options):
         threading.Thread.__init__(self)
         self.folder = folder
+        self.options = options
+
         self.folderBasename = os.path.basename(os.path.normpath(self.folder))
         self.source = os.path.join(folder, self.sourcefolder)
 
@@ -202,13 +204,13 @@ class AbstractPreparationThread(threading.Thread):
 
     def startup(self):
         # LOGGING
-        notify("starting '" + self.getName() + "' preparation:\n " + self.folderBasename)
-        print "# starting '" + self.getName() + "' preparation: " + self.folderBasename
+        notify("starting '" + self.getName() + "' preparations:\n " + self.folderBasename)
+        print "# starting '" + self.getName() + "' preparations: " + self.folderBasename
 
     def teardown(self):
         # LOGGING
-        notify("finished '" + self.getName() + "' preparation:\n " + self.folderBasename)
-        print "# finished '" + self.getName() + "' preparation: " + self.folderBasename
+        notify("finished '" + self.getName() + "' preparations:\n " + self.folderBasename)
+        print "# finished '" + self.getName() + "' preparations: " + self.folderBasename
 
     def run(self):
         self.startup()
@@ -241,7 +243,7 @@ class AbstractPreparationThread(threading.Thread):
 
     def backupCurrentFile(self):
         '''# backup file'''
-        if (not options.nobak):
+        if (not self.options.nobak):
             bak = self.currentFile + ".bak" + str(self.backupCounter)
             shutil.copyfile(self.currentFile, bak)
             self.backupCounter += 1
@@ -504,26 +506,10 @@ if (len(__preparationkinds) == 0):
     print "ERROR: No preparation tasks found! Revert your changes or call the maintainer."
     print "Exiting now..."
     sys.exit(1)
-
 __preparationkinds = OrderedDict(__preparationkinds)
 
-# #################################################
-# options parsing
-
-parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
-parser.add_argument("--kind", choices=__preparationkinds.keys(), dest="kind",
-                    default=__preparationkinds.keys()[0], metavar="<K>",
-                    help="the preparation to be performed [default: %(default)s]")
-parser.add_argument("--input", type=str, dest="inputfile", default=__inputfile_default, metavar="FILE",
-                    help="a FILE that contains the list of input projects/folders [default: %(default)s]")
-parser.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
-                    help="perform all available kinds of preparation [default: %(default)s]")
-parser.add_argument("--nobak", action="store_true", dest="nobak", default=False,
-                    help="do not backup files during preparation [default: %(default)s]")
-
-group = parser.add_argument_group("Possible Kinds of Preparation <K>", ", ".join(__preparationkinds.keys()))
-
-options = parser.parse_args()
+def getKinds():
+    return __preparationkinds
 
 
 # #################################################
@@ -539,18 +525,19 @@ def getFoldersFromInputFile(inputfile):
     return folders
 
 
-def apply(kind, inputfile):
-    threads = []  # list of independent threads performing preparation steps
+def apply(kind, inputfile, options):
+    kinds = getKinds()
+    threads = []  # list of independent threads performing preparations steps
 
     # get the list of projects/folders to process
     folders = getFoldersFromInputFile(inputfile)
 
     # for each folder:
     for folder in folders:
-        # start preparation for this single folder
+        # start preparations for this single folder
 
         # print __preparationkinds[kind].__name__
-        thread = __preparationkinds[kind](folder)  # get proper preparation thread and call it
+        thread = kinds[kind](folder, options)  # get proper preparations thread and call it
         threads.append(thread)
         thread.start()
 
@@ -560,13 +547,36 @@ def apply(kind, inputfile):
 
 
 def applyAll(inputfile):
-    for kind in __preparationkinds.keys():
+    kinds = getKinds()
+    for kind in kinds.keys():
         apply(kind, inputfile)
 
 
 if __name__ == '__main__':
+    kinds = getKinds()
+
+    # #################################################
+    # options parsing
+
+    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--kind", choices=kinds.keys(), dest="kind",
+                        default=kinds.keys()[0], metavar="<K>",
+                        help="the preparation to be performed [default: %(default)s]")
+    parser.add_argument("--input", type=str, dest="inputfile", default=__inputfile_default, metavar="FILE",
+                        help="a FILE that contains the list of input projects/folders [default: %(default)s]")
+    parser.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
+                        help="perform all available kinds of preparation [default: %(default)s]")
+    parser.add_argument("--nobak", action="store_true", dest="nobak", default=False,
+                        help="do not backup files during preparation [default: %(default)s]")
+
+    group = parser.add_argument_group("Possible Kinds of Preparation <K>", ", ".join(kinds.keys()))
+
+    options = parser.parse_args()
+
+    # #################################################
+    # main
 
     if (options.allkinds):
-        applyAll(options.inputfile)
+        applyAll(options.inputfile, options)
     else:
-        apply(options.kind, options.inputfile)
+        apply(options.kind, options.inputfile, options)

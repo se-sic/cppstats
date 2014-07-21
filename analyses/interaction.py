@@ -974,8 +974,9 @@ def _checkForEquivalentSig(l, sig):
         if not (sig1 and sig2):            # ommit empty signatures
             return False
 
-        if options.str:
-            return sig1 == sig2
+        # TODO csp vs str
+        # if options.str:
+        return sig1 == sig2
 
     # _checkForEquivalentSig
     for it in l:
@@ -1082,7 +1083,7 @@ def apply(folder):
     fd = open(
         os.path.join(
             projectpath,
-            'interan.txt'
+            __outputfile
         ), 'w')
 
     for i in relevantannotations: fd.write(str(i)+"\n")

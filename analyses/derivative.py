@@ -1068,7 +1068,7 @@ def apply(folder):
     fd = open(
         os.path.join(
             projectpath,
-            'derivan.txt'
+            __outputfile
         )
         , 'w')
     featurenames = reduce(set.union, annotations2andmore, set([]))

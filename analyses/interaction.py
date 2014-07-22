@@ -1014,8 +1014,8 @@ def apply(folder):
                 afeatures[sig] = (mal, depth, list(code))
                 sigmap[psig] = [sig]
 
-    # outputfile
-    fd, fdcsv = _prologCSV(folder)
+    # # outputfile
+    # fd, fdcsv = _prologCSV(folder)
 
     global __curfile
     fcount = 0

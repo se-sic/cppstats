@@ -1021,7 +1021,7 @@ def apply(folder):
                 sigmap[psig] = [sig]
 
     # outputfile
-    fd, fdcsv = _prologCSV(folder)
+    # fd, fdcsv = _prologCSV(folder)
 
     global __curfile
     fcount = 0
@@ -1071,6 +1071,7 @@ def apply(folder):
             __outputfile
         )
         , 'w')
+
     featurenames = reduce(set.union, annotations2andmore, set([]))
     for i in featurenames:
         fd.write(i + '\n')

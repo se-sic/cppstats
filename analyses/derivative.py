@@ -17,11 +17,6 @@ __lib_subfolder = "lib"
 sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
 
 
-# currently we only support linux
-if not sys.platform.startswith('linux'):
-    print("ERROR: %s not supported!" % sys.platform)
-    sys.exit(-1)
-
 # modules in bin-path
 from enum import Enum
 

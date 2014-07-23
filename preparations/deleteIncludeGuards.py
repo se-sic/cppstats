@@ -32,11 +32,7 @@ def apply(fname, out=sys.stdout):
     rd = re.compile('#define\s+(\S+)')
     sourcecode = list()
 
-    fd = open(fname, 'rU')
-
-    first_line = fd.readline()  # read first line to determine line separator
-    eol = fd.newlines
-    fd.seek(0)
+    fd = open(fname, 'r')
 
     sourcecode = map(str.strip, fd.readlines())
     # for line in fd:
@@ -126,7 +122,7 @@ def apply(fname, out=sys.stdout):
                      + sourcecode[endif + 1:]
 
     for item in sourcecode:
-        out.write(item + eol)
+        out.write(item + '\n')
 
 
 def usage():

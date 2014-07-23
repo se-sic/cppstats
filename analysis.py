@@ -12,7 +12,6 @@ import threading  # for parallelism
 import subprocess  # for calling other commands
 import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
-import pynotify  # for system notifications
 from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict  # for ordered dictionaries
 
@@ -42,13 +41,32 @@ __inputfile_default = "cppstats_input.txt"
 
 
 # #################################################
+# platform specific preliminaries
+
+# cf. https://docs.python.org/2/library/sys.html#sys.platform
+__platform = sys.platform.lower()
+
+__iscygwin = False
+if (__platform.startswith("cygwin")):
+    __iscygwin = True
+elif (__platform.startswith("darwin") or __platform.startswith("linux")):
+    pass
+else:
+    print "Your system '" + __platform + "' is not supported right now."
+
+
+# #################################################
 # helper functions
 
 def notify(message):
+    if (__iscygwin):
+        return
+
+    import pynotify  # for system notifications
+
     pynotify.init("cppstats")
     notice = pynotify.Notification(message)
     notice.show()
-    return
 
 
 # #################################################

@@ -1,16 +1,104 @@
-cppstats is a suite of analyses for measuring cpp-preprocessor based variability
-in software product lines
+                                cppstats                                
 
-HOW TO
+
+What is it?
+-----------
+
+cppstats is a suite of analyses for measuring C preprocessor-based 
+variability in software product lines.
+
+Currently, cppstats supports following analyses:
+    - general,
+    - discipline,
+    - featurelocations,
+    - derivative, and
+    - interaction.
+For detailed information on each kind of analysis, please refer to the 
+corresponding paragraph below in this file.
+
+
+The Latest Version
+------------------
+
+Details of the latest version can be found on the cppstats project site 
+at GitHub under https://github.com/clhunsen/cppstats/.
+
+
+Installation
+------------
+
+cppstats should be runnable under following systems:
+- Linux/Ubuntu,
+- Mac OS X, and
+- Cygwin.
+
+Please see the file called INSTALL for detailed instructions for each 
+system.
+
+In detail, cppstats was successfully tested under:
+- Ubuntu 12.04, Python 2.7.3, and
+- Cygwin, Python 2.7.3.
+
+Right now Python 3.x is NOT supported.
+
+
+Quick Start
 ---------------------------------
-supply cppstats with the appropriate paths in cppstats_input.txt
-	- use full paths like "/local/repos/cpp-history/mpsolve/mpsolve-2.2"
-	- each project folder given in the file has to be structured as follows:
-		- mpsolve-2.2/ 
-			- source/ (here are the C source files)
+- supply cppstats with the appropriate paths in 'cppstats_input.txt'
+    * use full paths like 
+    "/local/repos/cpp-history/mpsolve/mpsolve-2.2" * each project 
+    folder given in the file has to be structured as follows:
+        > /local/repos/cpp-history/mpsolve/mpsolve-2.2/
+            > source/ (here are the C source files)
 
 Then run:
-$ ./cppstats.py --kind <K> 
-Have a look on "./cppstats.py --help" for further command line options.
+$ ./cppstats.py --kind <K>
+<K> must be one of the analyses listed in the introduction. Also, have 
+a look on "./cppstats.py --help" for further command line options.
 
-The output files for each analysis are written to the folders given in cppstats_input.txt.
+The output files for each analysis are written to the folders given in 
+the file 'cppstats_input.txt'.
+
+
+Analyses
+--------
+
+GENERAL:
+    - Measurement of CPP-related metrics regarding scattering, 
+      tangling, and nesting
+    - returns a list of metrics for each file, and a list of metric 
+      values for the whole project folder
+     
+DISCIPLINE:
+    - Analysis of the discipline of used CPP annotations
+    - returns the number of occurences for the categories listed below
+        (1) check top level siblings (compilation unit)'
+        (2) check sibling (excludes check top level siblings; NOT CLASSIFIED)'
+        (4) check if-then enframement (wrapper)'
+        (8) check case enframement (conditional)'
+        (16) check else-if enframement (conditional)
+        (32) check param/argument enframement (parameter)
+        (64) check expression enframement (expression)
+        (128) check else enframement (NOT CLASSIFIED)
+        
+FEATURELOCATIONS:
+    - Analysis of the locations of CPP annotation blocks in the given 
+      file or project folder
+    - returns a table with the following headers:
+        # file
+        # starting line
+        # end line
+        # type of the annotation (#if, #elif, #else)
+        # the #ifdef expression
+        # involved configuration constants
+
+DERIVATIVE:
+    # Analysis of all derivatives in the given project folder 
+    # returns all CPP annotations that involve shared code (expression 
+      contains '&&')
+
+INTERACTION:
+    # Analysis of pair-wise interactions of configurations constants 
+      that have been used alltogether in one expression (# of constants
+      involved >= 3)
+    # (A, B, C) -> |(A, B)? (A, C)? (B, C)? ...|

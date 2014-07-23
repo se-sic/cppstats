@@ -9,11 +9,7 @@ class WrongIfdefError(Exception):
 		return ("Didn't find \"ifdef\" or \"ifndef\" as macro")
 
 def rewriteFile(fname, out = sys.stdout):
-	fd = open(fname, 'rU')
-
-	first_line = fd.readline() # read first line to determine line separator
-	eol = fd.newlines
-	fd.seek(0) # rewind file to start
+	fd = open(fname, 'r')
 
 	for line in fd:
 		if line.startswith('#ifdef') or line.startswith('#ifndef'):
@@ -21,10 +17,10 @@ def rewriteFile(fname, out = sys.stdout):
 			identifier = identifier.strip()
 
 			if ifdef == '#ifdef':
-				out.write('#if defined(' + identifier + ')' + eol)
+				out.write('#if defined(' + identifier + ')' + '\n')
 				continue
 			if ifdef == '#ifndef':
-				out.write('#if !defined(' + identifier + ')' + eol)
+				out.write('#if !defined(' + identifier + ')' + '\n')
 				continue
 			raise WrongIfdefError()
 		else:

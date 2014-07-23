@@ -11,7 +11,6 @@ import threading  # for parallelism
 import subprocess  # for calling other commands
 import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
-import pynotify  # for system notifications
 from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict
 
@@ -40,31 +39,22 @@ def getLib(path):
 # cf. https://docs.python.org/2/library/sys.html#sys.platform
 __platform = sys.platform.lower()
 
+__iscygwin = False
 if (__platform.startswith("linux")):
     __s2sml_executable = "src2srcml.linux"
     __sml2s_executable = "srcml2src.linux"
 elif (__platform.startswith("darwin")):
     __s2sml_executable = "src2srcml.osx"
     __sml2s_executable = "srcml2src.osx"
-# elif (__platform.startswith("cygwin")) :
-#     __s2sml_executable = "win/src2srcml.exe"
-#     __sml2s_executable = "win/srcml2src.exe"
-#TODO is path supplied to cygwin right? does it work like that?
-# +function getSrcmlPath {
-# +
-# + # the path supplied to srcml must be changed to windows path on cygwin!
-# + if $iscygwin; then
-# + echo `cygpath -w ${1}`
-# + else
-# + echo ${1}
-# + fi
-# +
-# +}
+elif (__platform.startswith("cygwin")) :
+    __s2sml_executable = "win/src2srcml.exe"
+    __sml2s_executable = "win/srcml2src.exe"
+    __iscygwin = True
 else:
     print "Your system '" + __platform + "' is not supported by SrcML right now."
 
-__s2sml = getLib(os.path.join(__preparation_lib_srcml_subfolder, __s2sml_executable))
-__sml2s = getLib(os.path.join(__preparation_lib_srcml_subfolder, __sml2s_executable))
+_s2sml = getLib(os.path.join(__preparation_lib_srcml_subfolder, __s2sml_executable))
+_sml2s = getLib(os.path.join(__preparation_lib_srcml_subfolder, __sml2s_executable))
 
 
 # #################################################
@@ -123,10 +113,14 @@ _filepattern = _filepattern_c + _filepattern_h
 # helper functions
 
 def notify(message):
+    if (__iscygwin):
+        return
+
+    import pynotify  # for system notifications
+
     pynotify.init("cppstats")
     notice = pynotify.Notification(message)
     notice.show()
-    return
 
 
 # function for ignore pattern
@@ -144,8 +138,8 @@ def runBashCommand(command, shell=False, stdout=None):
         command = command.split()
 
     process = subprocess.Popen(command, shell=shell, stdout=stdout)
-    output = process.communicate()[0]
-    # TODO do something with the output
+    out, err = process.communicate() # TODO do something with the output
+    process.wait()
 
 
 def replaceMultiplePatterns(replacements, infile, outfile):
@@ -173,13 +167,30 @@ def silentlyRemoveFile(filename):
             raise  # re-raise exception if a different error occured
 
 
+def getCygwinPath(filename):
+    return subprocess.check_output(['cygpath', '-m', filename]).strip()
+
 def src2srcml(src, srcml):
-    runBashCommand(__s2sml + " --language=C " + src + " -o " + srcml)
+    global _s2sml
+
+    if (__iscygwin):
+        src = getCygwinPath(src)
+        #srcml = getCygwinPath(srcml)
+        _s2sml = getCygwinPath(_s2sml)
+
+    runBashCommand(_s2sml + " --language=C " + src, stdout = open(srcml, 'w+'))# + " -o " + srcml)
     # FIXME incorporate "|| rm ${f}.xml" from bash
 
 
 def srcml2src(srcml, src):
-    runBashCommand(__sml2s + " " + srcml + " -o " + src)
+
+    if (__iscygwin) :
+        global _sml2s
+        src = getCygwinPath(src)
+        srcml = getCygwinPath(srcml)
+        _sml2s = getCygwinPath(_sml2s)
+
+    runBashCommand(_sml2s + " " + srcml, stdout = open(src, 'w+'))# + " -o " + src)
 
 
 # #################################################
@@ -296,7 +307,6 @@ class AbstractPreparationThread(threading.Thread):
         runBashCommand("xsltproc -o " + tmp_out + " " + getPreparationScript("deleteComments.xsl") + " " + tmp)
 
         # re-transform the xml to a normal source file
-        # subprocess.call(["./srcml2src.linux", tmp_out, "-o " + filename])
         srcml2src(tmp_out, self.currentFile)
 
         # delete temp files
@@ -547,10 +557,10 @@ def apply(kind, inputfile, options):
         t.join()
 
 
-def applyAll(inputfile):
+def applyAll(inputfile, options):
     kinds = getKinds()
     for kind in kinds.keys():
-        apply(kind, inputfile)
+        apply(kind, inputfile, options)
 
 
 if __name__ == '__main__':

@@ -9,11 +9,6 @@ import sys
 import xmlrpclib
 from argparse import ArgumentParser, RawTextHelpFormatter
 
-# currently we only support linux
-if not sys.platform.startswith('linux'):
-    print("ERROR: %s not supported!" % sys.platform)
-    sys.exit(-1)
-
 
 # #################################################
 # path adjustments, so that all imports can be done relative to these paths

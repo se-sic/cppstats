@@ -52,6 +52,7 @@ def apply(fname, out=sys.stdout):
         currentitem = -1
         guardname = ''
         taillist = list()
+        __includeguard_found = False
 
         # processing ifdefs
         for item in sourcecode:
@@ -78,8 +79,10 @@ def apply(fname, out=sys.stdout):
                 define = taillist[1]
                 ifdefexpr = rd.match(define)
                 if (ifdefexpr):
+                    d = ifdefexpr.groups()[0]
                     if guardname == ifdefexpr.groups()[0]:
                         # include guard found
+                        __includeguard_found = True
                         break
                 else:
                     # ifdef is part of never-include-guard or normal ifdef->ignore
@@ -89,6 +92,9 @@ def apply(fname, out=sys.stdout):
                 # no include guard found
                 return (-1, -1)
 
+        # return false, if no include guard was found
+        if not __includeguard_found:
+            return (-1, -1)
 
         # process taillist for else and endif
         ifcount = 1

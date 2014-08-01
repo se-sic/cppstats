@@ -647,11 +647,21 @@ def _prologCSV(folder, file, headings):
 ##################################################
 # main method
 
-def apply(folder):
+def resetModule() :
+    global __macrofuncs, __defset, __defsetf
+    __macrofuncs = {}       # functional macros like: "GLIBVERSION(2,3,4)",
+                            # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
+    __defset = set()        # macro-objects
+    __defsetf = dict()      # macro-objects per file
+
+
+def apply(folder, options):
     """This function applies the analysis to all xml-files in that
     directory and take the results and joins them together. Results
     are getting written into the fdcsv-file."""
     # overall status variables
+    resetModule()
+
     featlocations = set()  # list of feature locations of class FeatureLocation
 
     # outputfile

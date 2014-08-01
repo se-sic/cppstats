@@ -1181,11 +1181,22 @@ def _checkForEquivalentSig(l, sig):
     raise NoEquivalentSigError()
 
 
+def resetModule() :
+    global __macrofuncs, __defset, __defsetf, __nestedIfdefsLevels
+    __macrofuncs = {}       # functional macros like: "GLIBVERSION(2,3,4)",
+                            # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
+    __defset = set()        # macro-objects
+    __defsetf = dict()      # macro-objects per file
+    __nestedIfdefsLevels = []
+
+
 def apply(folder, options):
     """This function applies the analysis to all xml-files in that
     directory and take the results and joins them together. Results
     are getting written into the fdcsv-file."""
     # overall status variables
+    resetModule()
+
     sigmap = {}                # {<converted sig>: [<equivalent sigs>]}
     afeatures = {}            # identified features; {<sig>: (depth, [code])}
 

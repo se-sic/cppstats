@@ -175,7 +175,7 @@ class FeatureLocationsAnalysisThread(AbstractAnalysisThread):
 
     def analyze(self, folder):
         import featurelocations
-        featurelocations.apply(folder)
+        featurelocations.apply(folder, self.options)
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
@@ -215,7 +215,7 @@ class InteractionAnalysisThread(AbstractAnalysisThread):
 
     def analyze(self, folder):
         import interaction
-        interaction.apply(folder)
+        interaction.apply(folder, self.options)
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):

@@ -10,7 +10,7 @@
 #
 # parser works with following characteristics:
 # - the include guard doesn't have to start at the first line
-#    and doesn't have to finish at the last line
+# and doesn't have to finish at the last line
 #  - only one guard per file
 #  - deleting first include-guard of following syntax
 #  - include is formated like:
@@ -32,13 +32,9 @@ def apply(fname, out=sys.stdout):
     rd = re.compile('#define\s+(\S+)')
     sourcecode = list()
 
-    fd = open(fname, 'r')
-
-    sourcecode = map(str.strip, fd.readlines())
-    # for line in fd:
-    #     l = line.strip()
-    #     if l:
-    #         sourcecode.append(l)
+    with open(fname, 'r') as fd:
+        for line in fd.readlines():
+            sourcecode.append(line)
 
     def _findCorrespondingItems(sourcecode):
         '''This method returns a tuple with the include guard elements to cut of the source.
@@ -49,51 +45,45 @@ def apply(fname, out=sys.stdout):
         '''
         ifdefpos = -1
         ifdef = ''
+        sifdef = '' # stripped #if
         currentitem = -1
         guardname = ''
         taillist = list()
-        __includeguard_found = False
 
         # processing ifdefs
         for item in sourcecode:
+            sitem = item.strip()
             currentitem += 1
-            if item.startswith('#if'):
-                # checks if the ifdef line is start of an include guard
-                # breaks if an include guard is found
-                # skips all other ifdefs (including also never-include-guards)
 
+            # line is empty (except for whitespace, probably)
+            if not sitem:
+                continue
+
+            if sitem.startswith('#if'):
                 ifdef = item
+                sifdef = sitem
                 ifdefpos = currentitem
-
-                # processing ifdef
-                ifdefexpr = rg.match(ifdef)
-                if (ifdefexpr):
-                    # potential include-guard matched
-                    guardname = ifdefexpr.groups()[0]
-                else:
-                    # not an include-guard ifdef
-                    continue
-
-                # processing define line following the ifdef
                 taillist = list(sourcecode[currentitem:])
-                define = taillist[1]
-                ifdefexpr = rd.match(define)
-                if (ifdefexpr):
-                    d = ifdefexpr.groups()[0]
-                    if guardname == ifdefexpr.groups()[0]:
-                        # include guard found
-                        __includeguard_found = True
-                        break
-                else:
-                    # ifdef is part of never-include-guard or normal ifdef->ignore
-                    continue
+                break # search for #if
 
+            # end of code reached and nothing found so far
             if currentitem == len(sourcecode):
                 # no include guard found
                 return (-1, -1)
 
-        # return false, if no include guard was found
-        if not __includeguard_found:
+        # processing ifdef and define
+        regres = rg.match(sifdef)
+        if (regres):
+            guardname = regres.groups()[0]
+        else:
+            return (-1, -1)
+
+        define = taillist[1]
+        regres = rd.match(define.strip())
+        if (regres):
+            if guardname != regres.groups()[0]:
+                return (-1, -1)
+        else:
             return (-1, -1)
 
         # process taillist for else and endif
@@ -119,16 +109,15 @@ def apply(fname, out=sys.stdout):
     if (ifdef == -1 or endif == -1):
         pass
     else:
-        # sourcecode = before include guard + within include guard (without guard and define (but empty lines instead)) + after include guard
-        emptyItemsList = [i for i in ("","","")]
-        sourcecode = sourcecode[:ifdef] \
-                     + emptyItemsList[0:2] \
-                     + sourcecode[ifdef + 2:endif] \
-                     + emptyItemsList[:2] \
-                     + sourcecode[endif + 1:]
+        # concat source code again and replace include guard with empty lines
+        sourcecode = sourcecode[:max(0, ifdef)] + \
+                     ["", ""] + \
+                     sourcecode[ifdef + 2:endif] + \
+                     [""] + \
+                     sourcecode[endif + 1:]
 
     for item in sourcecode:
-        out.write(item + '\n')
+        out.write(item.rstrip('\n') + '\n')
 
 
 def usage():

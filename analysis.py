@@ -18,19 +18,16 @@ from collections import OrderedDict  # for ordered dictionaries
 # #################################################
 # path adjustments, so that all imports can be done relative to these paths
 
-__preparation_scripts_subfolder = "analyses"
-__preparation_lib_subfolder = "lib"
+__analysis_lib_subfolder = "lib"
+__analysis_scripts_subfolder = "analyses"
 
-sys.path.append(os.path.abspath(__preparation_lib_subfolder))  # lib subfolder
-sys.path.append(os.path.abspath(__preparation_scripts_subfolder))  # preparation scripts
+sys.path.append(os.path.abspath(__analysis_lib_subfolder))  # lib subfolder
+sys.path.append(os.path.abspath(__analysis_scripts_subfolder))  # analysis scripts
 
 # #################################################
 # imports from subfolders
 
-# FIXME what to import?
-# import different kinds of analyses
-# import general  #, discipline, featurelocations, interaction, derivative
-
+# different kinds of analyses are imported later within the corresponding classes
 import cpplib.cpplib as cpplib
 
 
@@ -70,7 +67,7 @@ def notify(message):
 
 
 # #################################################
-# abstract preparation thread
+# abstract analysis thread
 
 class AbstractAnalysisThread(object):
     '''This class analyzes a whole project according to the given kind of analysis in an independent thread.'''
@@ -89,7 +86,7 @@ class AbstractAnalysisThread(object):
     def startup(self):
         # LOGGING
         notify("starting analysis: " + self.folderBasename)
-        print "# prepare " + self.folderBasename
+        print "# analyze " + self.folderBasename
 
     def teardown(self):
         # LOGGING
@@ -123,7 +120,7 @@ class AbstractAnalysisThread(object):
 
 
 # #################################################
-# preparation-thread implementations
+# analysis-thread implementations
 
 class GeneralAnalysisThread(AbstractAnalysisThread):
     @classmethod
@@ -226,9 +223,9 @@ class InteractionAnalysisThread(AbstractAnalysisThread):
 
 
 # #################################################
-# collection of preparation threads
+# collection of analysis threads
 
-# add all subclass of AbstractPreparationThread as available preparation kinds
+# add all subclass of AbstractAnalysisThread as available analysis kinds
 __analysiskinds = []
 for cls in AbstractAnalysisThread.__subclasses__():
     entry = (cls.getName(), cls)
@@ -267,10 +264,9 @@ def apply(kind, inputfile, options):
 
     # for each folder:
     for folder in folders:
-        # start preparations for this single folder
+        # start analysis for this single folder
 
-        # print __preparationkinds[kind].__name__
-        thread = kinds[kind](folder, options)  # get proper preparations thread and call it
+        thread = kinds[kind](folder, options)  # get proper analysis thread and call it
         thread.run()
 
 

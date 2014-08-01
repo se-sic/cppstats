@@ -76,38 +76,6 @@ _filepattern_c = ('.c', '.C')
 _filepattern_h = ('.h', '.H')
 _filepattern = _filepattern_c + _filepattern_h
 
-# FIXME do preliminaries
-# echo '### preliminaries ...'
-#
-# case `uname -s` in
-# Linux|linux) s2sml=src2srcml.linux; sml2s=srcml2src.linux;;
-# Darwin|darwin) s2sml=src2srcml.osx; sml2s=srcml2src.osx;;
-# *) echo '### program src2srcml missing'
-# echo '    see: http://www.sdml.info/projects/srcml/trunk/'
-# exit 1;;
-# esac
-#
-# which python > /dev/null
-# if [ $? -ne 0 ]; then
-# echo '### programm python missing!'
-# echo '    see: http://www.python.org/'
-# exit 1
-# fi
-#
-# which astyle > /dev/null
-# if [ $? -ne 0 ]; then
-# 	echo '### programm astyle missing!'
-# 	echo '    see: http://astyle.sourceforge.net/'
-# 	exit 1
-# fi
-#
-# which xsltproc > /dev/null
-# if [ $? -ne 0 ]; then
-# 	echo '### programm xsltproc missing!'
-# 	echo '    see: http://www.xmlsoft.org/XSLT/xsltproc2.html'
-# 	exit 1
-# fi
-
 
 # #################################################
 # helper functions
@@ -253,7 +221,6 @@ class AbstractPreparationThread(object):
 
     def backupCurrentFile(self):
         '''# backup file'''
-        # TODO check if nobak exists first!
         if (not self.options.nobak):
             bak = self.currentFile + ".bak" + str(self.backupCounter)
             shutil.copyfile(self.currentFile, bak)

@@ -14,6 +14,41 @@ In detail, cppstats was successfully tested under:
 - Cygwin, Python 2.7.3.
 
 Right now Python 3.x is NOT supported.
+Currently, cppstats does NOT work under xUbuntu 14.04 due to broken library dependencies.
+
+
+xUBUNTU 12.04
+-------------
+
+1. install git
+
+   $ sudo apt-get install git
+
+1.1 checkout repo
+
+    - NOTE: The old branch 'cygwin' is discontinued after version 0.8.
+    $ git clone https://github.com/clhunsen/cppstats.git
+
+2. install needed libraries (+ all dependencies)
+
+    $ sudo apt-get install ia32-libs  # 32bit compatibility libs (only on 64bit system needed)
+    $ sudo apt-get install libarchive12:i386  # libarchive 32bit for linking with srcML libs
+    $ sudo apt-get install astyle  # artistic style (code formatter)
+    $ sudo apt-get install xsltproc  # XSLT 1.0 command line processor
+    $ sudo apt-get install libxml2 libxml2-dev  # library for processing XML
+    $ sudo apt-get install python python-libxml2 python-lxml python-notify python-lxml  # Python and needed libraries
+    $ sudo apt-get install gcc  # GNU compiler collection
+
+2.1 (IMPORTANT) make soft links for updated libraries used by srcML
+
+    $ sudo ln -s /usr/lib/i386-linux-gnu/libarchive.so.12 /usr/lib/i386-linux-gnu/libarchive.so.2
+
+3. supply cppstats with the appropriate paths in cppstats_input.txt
+    - use full paths like
+        "/local/user/data/cpp-history/mpsolve/mpsolve-2.2"
+    - each project folder is structured as follows:
+        > /cygdrive/c/Users/hunsen/data/cpp-history/mpsolve/mpsolve-2.2/
+            > source/ (here are the C source files)
 
 
 CYGWIN
@@ -43,7 +78,7 @@ CYGWIN
     - go through installation process as before BUT:
     - add and select following download site:
         http://ftp-stud.fht-esslingen.de/pub/Mirrors/sourceware.org/cygwinports/
-    - install following packages (version number, newer versions should 
+    - install following packages (version number, newer versions should
       also work, except for Python 3.x):
         - All/Python/
             python (2.7.3-1)
@@ -63,8 +98,8 @@ CYGWIN
         + all dependencies you are prompted for
 
 3. supply cppstats with the appropriate paths in cppstats_input.txt
-    - use cygwin-paths like 
-        "/cygdrive/c/Users/hunsen/data/cpp-history/mpsolve/mpsolve-2.2"
+    - use cygwin-paths like
+        "/cygdrive/c/Users/user/data/cpp-history/mpsolve/mpsolve-2.2"
     - each project folder is structured as follows:
-        > /cygdrive/c/Users/hunsen/data/cpp-history/mpsolve/mpsolve-2.2/
+        > /cygdrive/c/Users/user/data/cpp-history/mpsolve/mpsolve-2.2/
             > source/ (here are the C source files)

@@ -196,13 +196,12 @@ def srcml2src(srcml, src):
 # #################################################
 # abstract preparation thread
 
-class AbstractPreparationThread(threading.Thread):
+class AbstractPreparationThread(object):
     '''This class prepares a single folder according to the given kind of preparations in an independent thread.'''
     __metaclass__ = ABCMeta
     sourcefolder = "source"
 
     def __init__(self, folder, options):
-        threading.Thread.__init__(self)
         self.folder = folder
         self.options = options
 
@@ -225,7 +224,7 @@ class AbstractPreparationThread(threading.Thread):
 
     def run(self):
         self.startup()
-
+        # TODO check if folder exists before copying (error otherwise)!
         # copy C and H files to self.subfolder
         self.copyToSubfolder()
 
@@ -310,8 +309,8 @@ class AbstractPreparationThread(threading.Thread):
         srcml2src(tmp_out, self.currentFile)
 
         # delete temp files
-        os.remove(tmp)
-        os.remove(tmp_out)
+        silentlyRemoveFile(tmp)
+        silentlyRemoveFile(tmp_out)
 
     def deleteWhitespace(self):
         """deletes leading, trailing and inter (# ... if) whitespaces,
@@ -324,7 +323,7 @@ class AbstractPreparationThread(threading.Thread):
         replacements = {
             '^[ \t]+': '',  # leading whitespaces
             '[ \t]+$': '',  # trailing whitespaces
-            '^#[ \t]+': '#',  # inter (# ... if) whitespaces
+            '#[ \t]+': '#',  # inter (# ... if) whitespaces # TODO '^#[ \t]+' or '#[ \t]+'
             '\t': ' ',  # tab to space
             '[ \t]{2,}': ' '  # multiple whitespace to one space
 
@@ -538,7 +537,6 @@ def getFoldersFromInputFile(inputfile):
 
 def apply(kind, inputfile, options):
     kinds = getKinds()
-    threads = []  # list of independent threads performing preparations steps
 
     # get the list of projects/folders to process
     folders = getFoldersFromInputFile(inputfile)
@@ -549,12 +547,7 @@ def apply(kind, inputfile, options):
 
         # print __preparationkinds[kind].__name__
         thread = kinds[kind](folder, options)  # get proper preparations thread and call it
-        threads.append(thread)
-        thread.start()
-
-    # join threads here
-    for t in threads:
-        t.join()
+        thread.run()
 
 
 def applyAll(inputfile, options):

@@ -72,12 +72,11 @@ def notify(message):
 # #################################################
 # abstract preparation thread
 
-class AbstractAnalysisThread(threading.Thread):
+class AbstractAnalysisThread(object):
     '''This class analyzes a whole project according to the given kind of analysis in an independent thread.'''
     __metaclass__ = ABCMeta
 
     def __init__(self, folder, options):
-        threading.Thread.__init__(self)
         self.folder = folder
         self.options = options
 
@@ -94,7 +93,7 @@ class AbstractAnalysisThread(threading.Thread):
 
     def teardown(self):
         # LOGGING
-        notify("finished analyses: " + self.folderBasename)
+        notify("finished analysis: " + self.folderBasename)
 
     def run(self):
         self.startup()
@@ -262,7 +261,6 @@ def getFoldersFromInputFile(inputfile):
 
 def apply(kind, inputfile, options):
     kinds = getKinds()
-    threads = []  # list of independent threads performing preparations steps
 
     # get the list of projects/folders to process
     folders = getFoldersFromInputFile(inputfile)
@@ -273,12 +271,7 @@ def apply(kind, inputfile, options):
 
         # print __preparationkinds[kind].__name__
         thread = kinds[kind](folder, options)  # get proper preparations thread and call it
-        threads.append(thread)
-        thread.start()
-
-    # join threads here
-    for t in threads:
-        t.join()
+        thread.run()
 
 
 def applyAll(inputfile, options):

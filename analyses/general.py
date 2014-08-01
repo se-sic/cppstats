@@ -446,7 +446,7 @@ def _prologCSV(folder, file, headings):
     return (fd, fdcsv)
 
 
-nestedIfdefsLevels = []
+__nestedIfdefsLevels = []
 def _countNestedIfdefs(root):
     """This function counts the number of nested ifdefs (conditionals)
     within the source-file."""
@@ -466,7 +466,7 @@ def _countNestedIfdefs(root):
     if (len(cnlist) > 0):
         nnimax = max(cnlist)
         nnitmp = filter(lambda n: n > 0, cnlist)
-        nestedIfdefsLevels.append(nnitmp)
+        __nestedIfdefsLevels.append(nnitmp)
         nnimean = pstat.stats.lmean(nnitmp)
     else:
         nnimax = 0
@@ -1069,6 +1069,7 @@ def _getScatteringTanglingValues(sigs, defines):
     defines according to the given mapping of a define to occurances
     in the signatures. The input is all feature-signatures and
     all defines."""
+    #TODO insert tuples into description!
 
     def __add(x, y):
         """This method is a helper function to add values
@@ -1085,8 +1086,8 @@ def _getScatteringTanglingValues(sigs, defines):
 
     # create dictionaries from sigs and defines and corresponding
     # scattering and tangling values
-    scatdict = dict(zip(defines, scat))
-    tangdict = dict(zip(sigs, tang))
+    scatdict = zip(defines, scat)
+    tangdict = zip(sigs, tang)
 
     return (scatdict, tangdict)
 
@@ -1361,20 +1362,21 @@ def apply(folder, options):
     (scatvalues, tangvalues) = \
         _getScatteringTanglingValues(_flatten(sigmap.values()),
             list(__defset))
+    scats = [x[1] for x in scatvalues]
+    tangs = [x[1] for x in tangvalues]
 
-    if (len(scatvalues)): sdegmean = pstat.stats.lmean(scatvalues.values())
+    if (len(scatvalues)): sdegmean = pstat.stats.lmean(scats)
     else: sdegmean = 0
-    if (len(scatvalues) > 1): sdegstd = pstat.stats.lstdev(scatvalues.values())
+    if (len(scatvalues) > 1): sdegstd = pstat.stats.lstdev(scats)
     else: sdegstd = 0
 
-    if (len(tangvalues)): tdegmean = pstat.stats.lmean(tangvalues.values())
+    if (len(tangvalues)): tdegmean = pstat.stats.lmean(tangs)
     else: tdegmean = 0
-    if (len(tangvalues) > 1): tdegstd = pstat.stats.lstdev(tangvalues.values())
+    if (len(tangvalues) > 1): tdegstd = pstat.stats.lstdev(tangs)
     else: tdegstd = 0
 
     # ANDAVG + ANDSTDEV
-    global nestedIfdefsLevels
-    nestedIfdefsLevels = _flatten(nestedIfdefsLevels)
+    nestedIfdefsLevels = _flatten(__nestedIfdefsLevels)
     nnimean = pstat.stats.lmean(nestedIfdefsLevels)
     if (len(nestedIfdefsLevels) > 1):
         nnistd = pstat.stats.lstdev(nestedIfdefsLevels)
@@ -1409,12 +1411,12 @@ def apply(folder, options):
     # write data to mectrics-values file
     if options.stf:
         stfrow[0] = "tangling"
-        tanglingstring = ';'.join(map(str, tangvalues.values()))
+        tanglingstring = ';'.join(map(str, tangs))
         stfrow[1] = tanglingstring
         stfwriter.writerow(stfrow)
 
         stfrow[0] = "scattering"
-        scatteringstring = ';'.join(map(str, scatvalues.values()))
+        scatteringstring = ';'.join(map(str, scats))
         stfrow[1] = scatteringstring
         stfwriter.writerow(stfrow)
 

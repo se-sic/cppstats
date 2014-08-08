@@ -71,7 +71,7 @@ import cpplib.cpplib as cpplib
 # #################################################
 # global constants
 
-__inputfile_default = "cppstats_input.txt"
+__inputlist_default = "cppstats_input.txt"
 _filepattern_c = ('.c', '.C')
 _filepattern_h = ('.h', '.H')
 _filepattern = _filepattern_c + _filepattern_h
@@ -84,11 +84,11 @@ def notify(message):
     if (__iscygwin):
         return
 
-    import pynotify  # for system notifications
-
-    pynotify.init("cppstats")
-    notice = pynotify.Notification(message)
-    notice.show()
+    # import pynotify  # for system notifications
+    #
+    # pynotify.init("cppstats")
+    # notice = pynotify.Notification(message)
+    # notice.show()
 
 
 # function for ignore pattern
@@ -169,40 +169,68 @@ class AbstractPreparationThread(object):
     __metaclass__ = ABCMeta
     sourcefolder = "source"
 
-    def __init__(self, folder, options):
-        self.folder = folder
+    def __init__(self, options, inputfolder=None, inputfile=None):
         self.options = options
+        self.notrunnable = False
 
-        self.folderBasename = os.path.basename(os.path.normpath(self.folder))
-        self.source = os.path.join(folder, self.sourcefolder)
+        if (inputfolder):
+            self.file = None
+            self.folder = inputfolder
+            self.source = os.path.join(self.folder, self.sourcefolder)
 
-        # get full path of subfolder
-        self.subfolder = os.path.join(self.folder, self.getSubfolder())
+            self.project = os.path.basename(self.folder)
 
+            # get full path of subfolder "_cppstats"
+            self.subfolder = os.path.join(self.folder, self.getSubfolder())
+
+        elif (inputfile):
+            self.file = inputfile
+            self.outfile = self.options.outfile
+            self.folder = os.path.dirname(self.file)
+
+            self.project = os.path.basename(self.file)
+
+            # get full path of temp folder for
+            import tempfile
+            self.subfolder = tempfile.mkdtemp(suffix=self.getSubfolder())
+
+
+        else:
+            self.notrunnable = True
 
     def startup(self):
         # LOGGING
-        notify("starting '" + self.getName() + "' preparations:\n " + self.folderBasename)
-        print "# starting '" + self.getName() + "' preparations: " + self.folderBasename
+        notify("starting '" + self.getPreparationName() + "' preparations:\n " + self.project)
+        print "# starting '" + self.getPreparationName() + "' preparations: " + self.project
 
     def teardown(self):
         # LOGGING
-        notify("finished '" + self.getName() + "' preparations:\n " + self.folderBasename)
-        print "# finished '" + self.getName() + "' preparations: " + self.folderBasename
+        notify("finished '" + self.getPreparationName() + "' preparations:\n " + self.project)
+        print "# finished '" + self.getPreparationName() + "' preparations: " + self.project
 
     def run(self):
-        self.startup()
-        # TODO check if folder exists before copying (error otherwise)!
-        # copy C and H files to self.subfolder
-        self.copyToSubfolder()
 
-        # for all files in the self.subfolder (only C and H files)
-        for root, subFolders, files in os.walk(self.subfolder):
-            for file in files:
-                f = os.path.join(root, file)
-                self.backupCounter = 0
-                self.currentFile = f
-                self.prepareFile()
+        if (self.notrunnable):
+            print "ERROR: No single file or input list of projects given!"
+            return
+
+        self.startup()
+
+        self.backupCounter = 0
+        if (self.file):
+            self.currentFile = os.path.join(self.subfolder, self.project)
+            shutil.copyfile(self.file, self.currentFile)
+            self.prepareFile()
+            shutil.copyfile(self.currentFile + ".xml", self.outfile)
+        else:
+            # copy C and H files to self.subfolder
+            self.copyToSubfolder()
+            # preparation for all files in the self.subfolder (only C and H files)
+            for root, subFolders, files in os.walk(self.subfolder):
+                for file in files:
+                    f = os.path.join(root, file)
+                    self.currentFile = f
+                    self.prepareFile()
 
         self.teardown()
 
@@ -228,7 +256,7 @@ class AbstractPreparationThread(object):
 
     @classmethod
     @abstractmethod
-    def getName(cls):
+    def getPreparationName(cls):
         pass
 
     @abstractmethod
@@ -362,7 +390,7 @@ class AbstractPreparationThread(object):
 
 class GeneralPreparationThread(AbstractPreparationThread):
     @classmethod
-    def getName(cls):
+    def getPreparationName(cls):
         return "general"
 
     def getSubfolder(self):
@@ -393,7 +421,7 @@ class GeneralPreparationThread(AbstractPreparationThread):
 
 class DisciplinePreparationThread(AbstractPreparationThread):
     @classmethod
-    def getName(cls):
+    def getPreparationName(cls):
         return "discipline"
 
     def getSubfolder(self):
@@ -427,7 +455,7 @@ class DisciplinePreparationThread(AbstractPreparationThread):
 
 class FeatureLocationsPreparationThread(AbstractPreparationThread):
     @classmethod
-    def getName(cls):
+    def getPreparationName(cls):
         return "featurelocations"
 
     def getSubfolder(self):
@@ -449,7 +477,7 @@ class FeatureLocationsPreparationThread(AbstractPreparationThread):
 
 class PrettyPreparationThread(AbstractPreparationThread):
     @classmethod
-    def getName(cls):
+    def getPreparationName(cls):
         return "pretty"
 
     def getSubfolder(self):
@@ -475,7 +503,7 @@ class PrettyPreparationThread(AbstractPreparationThread):
 # add all subclass of AbstractPreparationThread as available preparation kinds
 __preparationkinds = []
 for cls in AbstractPreparationThread.__subclasses__():
-    entry = (cls.getName(), cls)
+    entry = (cls.getPreparationName(), cls)
     __preparationkinds.append(entry)
 
 # exit, if there are no preparation threads available
@@ -492,35 +520,50 @@ def getKinds():
 # #################################################
 # main method
 
-def getFoldersFromInputFile(inputfile):
+
+def applyFile(kind, inputfile, options):
+    kinds = getKinds()
+
+    # get proper preparation thread and call it
+    threadClass = kinds[kind]
+    thread = threadClass(options, inputfile=inputfile)
+    thread.run()
+
+
+def getFoldersFromInputListFile(inputlist):
     ''' This method reads the given inputfile line-wise and returns the read lines without line breaks.'''
 
-    file = open(inputfile, 'r')  # open input file
+    file = open(inputlist, 'r')  # open input file
     folders = file.read().splitlines()  # read lines from file without line breaks
     file.close()  # close file
+
+    folders = filter(lambda f: not f.startswith("#"), folders)  # remove commented lines
+    folders = filter(os.path.isdir, folders)  # remove all non-directories
+    folders = map(os.path.normpath, folders) # normalize paths for easier transformations
 
     return folders
 
 
-def apply(kind, inputfile, options):
+def applyFolders(kind, inputlist, options):
     kinds = getKinds()
 
     # get the list of projects/folders to process
-    folders = getFoldersFromInputFile(inputfile)
+    folders = getFoldersFromInputListFile(inputlist)
 
     # for each folder:
     for folder in folders:
         # start preparations for this single folder
 
-        # print __preparationkinds[kind].__name__
-        thread = kinds[kind](folder, options)  # get proper preparations thread and call it
+        # get proper preparation thread and call it
+        threadClass = kinds[kind]
+        thread = threadClass(options, inputfolder=folder)
         thread.run()
 
 
-def applyAll(inputfile, options):
+def applyFoldersAll(inputlist, options):
     kinds = getKinds()
     for kind in kinds.keys():
-        apply(kind, inputfile, options)
+        applyFolders(kind, inputlist, options)
 
 
 if __name__ == '__main__':
@@ -530,24 +573,69 @@ if __name__ == '__main__':
     # options parsing
 
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
-    parser.add_argument("--kind", choices=kinds.keys(), dest="kind",
+
+    # kinds
+    kindgroup = parser.add_mutually_exclusive_group(required=False)
+    kindgroup.add_argument("--kind", choices=kinds.keys(), dest="kind",
                         default=kinds.keys()[0], metavar="<K>",
                         help="the preparation to be performed [default: %(default)s]")
-    parser.add_argument("--input", type=str, dest="inputfile", default=__inputfile_default, metavar="FILE",
-                        help="a FILE that contains the list of input projects/folders [default: %(default)s]")
-    parser.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
+    kindgroup.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
                         help="perform all available kinds of preparation [default: %(default)s]")
+
+    # input 1
+    inputgroup = parser.add_mutually_exclusive_group(required=False) # TODO check if True is possible some time...
+    inputgroup.add_argument("--list", type=str, dest="inputlist", metavar="LIST",
+                            nargs="?", default=__inputlist_default, const=__inputlist_default,
+                            help="a file that contains the list of input projects/folders [default: %(default)s]")
+    # input 2
+    inputgroup.add_argument("--file", type=str, dest="inputfile", nargs=2, metavar=("IN", "OUT"),
+                            help="a source file IN that is prepared, the preparation result is written to OUT"
+                                 "\n(--list is the default)")
+
+    # no backup files
     parser.add_argument("--nobak", action="store_true", dest="nobak", default=False,
                         help="do not backup files during preparation [default: %(default)s]")
 
-    group = parser.add_argument_group("Possible Kinds of Preparation <K>", ", ".join(kinds.keys()))
+    inputgroup = parser.add_argument_group("Possible Kinds of Preparation <K>".upper(), ", ".join(kinds.keys()))
 
+    # parse arguments
     options = parser.parse_args()
+
+    # constraints
+    if (options.allkinds == True and options.inputfile):
+        print "Using all kinds of preparation for a single input and output file is weird!"
+        sys.exit(1)
 
     # #################################################
     # main
 
-    if (options.allkinds):
-        applyAll(options.inputfile, options)
+    if (options.inputfile):
+
+        # split --file argument
+        options.infile = os.path.normpath(os.path.abspath(options.inputfile[0])) # IN
+        options.outfile = os.path.normpath(os.path.abspath(options.inputfile[1])) # OUT
+
+        # check if inputfile exists
+        if (not os.path.isfile(options.infile)):
+            print "ERROR: input file '{}' cannot be found!".format(options.infile)
+            sys.exit(1)
+
+        applyFile(options.kind, options.infile, options)
+
+    elif (options.inputlist):
+        # handle --list argument
+        options.inputlist = os.path.normpath(os.path.abspath(options.inputlist)) # LIST
+
+        # check if list file exists
+        if (not os.path.isfile(options.inputlist)):
+            print "ERROR: input file '{}' cannot be found!".format(options.inputlist)
+            sys.exit(1)
+
+        if (options.allkinds):
+            applyFoldersAll(options.inputlist, options)
+        else:
+            applyFolders(options.kind, options.inputlist, options)
+
     else:
-        apply(options.kind, options.inputfile, options)
+        print "This should not happen! No input file or list of projects given!"
+        sys.exit(1)

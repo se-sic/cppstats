@@ -15,6 +15,7 @@ from abc import ABCMeta, abstractmethod  # abstract classes
 import pynotify  # for system notifications
 from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict  # for ordered dictionaries
+import tempfile # for temporary files
 
 # #################################################
 # path adjustments, so that all imports can be done relative to these paths
@@ -35,7 +36,7 @@ import cpplib.cpplib as cpplib
 # #################################################
 # global constants
 
-__inputfile_default = "cppstats_input.txt"
+__inputlist_default = "cppstats_input.txt"
 
 
 # #################################################
@@ -60,51 +61,111 @@ __kinds = OrderedDict(__kinds)
 
 
 # #################################################
-# options parsing
-
-parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
-parser.add_argument("--kind", choices=__kinds.keys(), dest="kind",
-                  default=__kinds.keys()[0], metavar="<K>",
-                  help="the analysis to be performed (including preparation) [default: %(default)s]")
-parser.add_argument("--input", type=str, dest="inputfile", default=__inputfile_default, metavar="FILE",
-                  help="a FILE that contains the list of input projects/folders \n[default: %(default)s]")
-parser.add_argument("--all", action="store_true", dest="allkinds", default=False,
-                  help="perform all available kinds of analysis \n(overrides the --kind parameter) [default: %(default)s]")
-parser.add_argument("--nobak", action="store_true", dest="nobak", default=False,
-                        help="do not backup files during preparation [default: %(default)s]")
-
-parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(__kinds.keys()))
-
-
-# add options for each analysis kind
-for kind in __kinds.values():
-    analysisPart = kind[1]
-    analysisThread = analysis.getKinds().get(analysisPart)
-    analysisThread.addCommandLineOptions(parser)
-
-# parse options
-options = parser.parse_args()
-
-
-# #################################################
 # main method
 
 
-def apply(preparationKind, analysisKind, inputfile, options):
+def applyFile(kind, infile, outfile, options):
 
-    preparation.apply(preparationKind, inputfile, options)
-    analysis.apply(analysisKind, inputfile, options)
+    tmpfile = tempfile.mkstemp(suffix=".xml")[1] # temporary srcML file
 
+    # preparation
+    options.infile = infile
+    options.outfile = tmpfile
+    preparation.applyFile(kind, options.infile, options)
 
-def applyAll(inputfile):
-    for kind in __analysiskinds.keys():
-        apply(kind, inputfile)
+    # analysis
+    options.infile = tmpfile
+    options.outfile = outfile
+    analysis.applyFile(kind, options.infile, options)
+
+def applyFolders(option_kind, inputlist, options):
+    kind = __kinds.get(option_kind)
+    preparationKind = kind[0]
+    analysisKind = kind[1]
+
+    preparation.applyFolders(preparationKind, inputlist, options)
+    analysis.applyFolders(analysisKind, inputlist, options)
+
+def applyFoldersAll(inputlist, options):
+    for kind in __kinds.keys():
+        applyFolders(kind, inputlist, options)
 
 
 if __name__ == '__main__':
 
-    kind = __kinds.get(options.kind)
-    preparationKind = kind[0]
-    analysisKind = kind[1]
+    # #################################################
+    # options parsing
 
-    apply(preparationKind, analysisKind, options.inputfile, options)
+    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+
+    # kinds
+    kindgroup = parser.add_mutually_exclusive_group(required=False)
+    kindgroup.add_argument("--kind", choices=__kinds.keys(), dest="kind",
+                           default=__kinds.keys()[0], metavar="<K>",
+                           help="the preparation to be performed [default: %(default)s]")
+    kindgroup.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
+                           help="perform all available kinds of preparation [default: %(default)s]")
+
+    # input 1
+    inputgroup = parser.add_mutually_exclusive_group(required=False)  # TODO check if True is possible some time...
+    inputgroup.add_argument("--list", type=str, dest="inputlist", metavar="LIST",
+                            nargs="?", default=__inputlist_default, const=__inputlist_default,
+                            help="a file that contains the list of input projects/folders [default: %(default)s]")
+    # input 2
+    inputgroup.add_argument("--file", type=str, dest="inputfile", nargs=2, metavar=("IN", "OUT"),
+                            help="a source file IN that is prepared and analyzed, the analysis results are written to OUT"
+                                 "\n(--list is the default)")
+
+    # no backup files
+    parser.add_argument("--nobak", action="store_true", dest="nobak", default=False,
+                        help="do not backup files during preparation [default: %(default)s]")
+
+    parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(__kinds.keys()))
+
+    # add options for each analysis kind
+    for kind in __kinds.values():
+        analysisPart = kind[1]
+        analysisThread = analysis.getKinds().get(analysisPart)
+        analysisThread.addCommandLineOptions(parser)
+
+    # parse options
+    options = parser.parse_args()
+
+    # constraints
+    if (options.allkinds == True and options.inputfile):
+        print "Using all kinds of preparation for a single input and output file is weird!"
+        sys.exit(1)
+
+    # #################################################
+    # main
+
+    if (options.inputfile):
+
+        # split --file argument
+        options.infile = os.path.normpath(os.path.abspath(options.inputfile[0])) # IN
+        options.outfile = os.path.normpath(os.path.abspath(options.inputfile[1])) # OUT
+
+        # check if inputfile exists
+        if (not os.path.isfile(options.infile)):
+            print "ERROR: input file '{}' cannot be found!".format(options.infile)
+            sys.exit(1)
+
+        applyFile(options.kind, options.infile, options.outfile, options)
+
+    elif (options.inputlist):
+        # handle --list argument
+        options.inputlist = os.path.normpath(os.path.abspath(options.inputlist)) # LIST
+
+        # check if list file exists
+        if (not os.path.isfile(options.inputlist)):
+            print "ERROR: input file '{}' cannot be found!".format(options.inputlist)
+            sys.exit(1)
+
+        if (options.allkinds):
+            applyFoldersAll(options.inputlist, options)
+        else:
+            applyFolders(options.kind, options.inputlist, options)
+
+    else:
+        print "This should not happen! No input file or list of projects given!"
+        sys.exit(1)

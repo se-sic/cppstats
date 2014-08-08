@@ -30,9 +30,6 @@ except ImportError:
     print("programm terminating ...!")
     sys.exit(-1)
 
-#FIXME move libs to subfolder! (do not forget pstats)
-#FIXME merge scripts into a python script!
-
 # pyparsing module
 try:
     pversion = sys.version_info[0]
@@ -110,7 +107,7 @@ class FeatureLocation:
         namespace = '{' + _cppnscpp + '}'
         typeWithoutNamespace = '#' + type.replace(namespace, "")
 
-        self.filename = filename
+        self.filename = filename # TODO use relative paths here!
         self.startline = startline
         self.endline = endline
         self.type = typeWithoutNamespace
@@ -737,9 +734,15 @@ def addCommandLineOptionsMain(optionparser):
                   help="input folder [default=.]", default=".")
 
 
-
-def addCommandLineOptions(optionparser) :
+def addCommandLineOptions(optionparser):
     pass
+
+
+# ################################################
+# path of the main output file
+
+def getResultsFile():
+    return __outputfile
 
 
 ##################################################

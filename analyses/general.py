@@ -1318,6 +1318,7 @@ def apply(folder, options):
             'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO',
             'BP', 'BQ', 'BR', 'BS', 'BT', 'BU', 'BV', 'BW', 'BX',
             'BY', 'BZ']
+    # FIXME with separator line, functions must start in line 3! (other scripts, too?)
     excelfunc = [None]*len(__statsorder._keys)
     excelfunc[__statsorder.FILENAME.index] = "FUNCTIONS"
     excelfunc[__statsorder.LOC.index] = "=SUM(%s2:%s%s)" % \
@@ -1459,6 +1460,13 @@ def addCommandLineOptions(optionparser) :
     optionparser.add_argument("--stf", dest="stf", action="store_true",
         default=False, help="output a file '" + __metricvaluesfile + "' " \
         "that maps metrics to a list of all values that are collected during measurement")
+
+
+# ################################################
+# path of the main output file
+
+def getResultsFile():
+    return __outputfile
 
 
 ##################################################

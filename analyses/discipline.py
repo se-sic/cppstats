@@ -17,9 +17,6 @@ except ImportError:
     print("programm terminating ...!")
     sys.exit(-1)
 
-__cppnscpp = 'http://www.sdml.info/srcML/cpp'
-__cpprens = re.compile('{(.+)}(.+)')
-
 
 def returnFileNames(folder, extfilt = ['.xml']):
     '''This function returns all files of the input folder <folder>
@@ -57,6 +54,7 @@ class DisciplinedAnnotations:
     __cpprens = re.compile('{(.+)}(.+)')
     __conditionals = ['if', 'ifdef', 'ifndef', 'else', 'elif', 'endif']
     __conditions   = ['if', 'ifdef', 'ifndef']
+    outputfile = "cppstats_discipline.csv"
     ##################################################
 
     def __init__(self, folder, options):
@@ -620,7 +618,7 @@ class DisciplinedAnnotations:
         fd = open(
             os.path.join(
                 projectpath,
-                'cppstats_discipline.csv'
+                DisciplinedAnnotations.outputfile
             ), 'w')
 
         ratio = 0
@@ -690,6 +688,13 @@ def addCommandLineOptions(optionparser) :
     )
     optionparser.add_argument('--dall', dest='disc_all', action="store_true",
                               default=True, help='check all patterns [default=%(default)s] \n(overrides --check)')
+
+
+# ################################################
+# path of the main output file
+
+def getResultsFile():
+    return DisciplinedAnnotations.outputfile
 
 
 ##################################################

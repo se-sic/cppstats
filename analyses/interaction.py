@@ -1118,6 +1118,13 @@ def addCommandLineOptions(optionparser) :
     pass
 
 
+# ################################################
+# path of the main output file
+
+def getResultsFile():
+    return __outputfile
+
+
 ##################################################
 if __name__ == '__main__':
 

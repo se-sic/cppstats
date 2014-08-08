@@ -1389,7 +1389,10 @@ def apply(folder, options):
 
     # ANDAVG + ANDSTDEV
     nestedIfdefsLevels = _flatten(__nestedIfdefsLevels)
-    nnimean = pstat.stats.lmean(nestedIfdefsLevels)
+    if (len(nestedIfdefsLevels)): 
+        nnimean = pstat.stats.lmean(nestedIfdefsLevels)
+    else:
+        nnimean = 0
     if (len(nestedIfdefsLevels) > 1):
         nnistd = pstat.stats.lstdev(nestedIfdefsLevels)
     else:

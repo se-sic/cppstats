@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # modules from the std-library
@@ -111,10 +111,10 @@ class Ascope:
 		return listifdefs
   	  except IndexError:
 		  return []
-	
+
 	def __getParentTag__(self, tag):
 		parent = tag.getparent()
-		return parent.tag.split('}')[1]	
+		return parent.tag.split('}')[1]
 
 
 	def __checkDiscipline__(self, treeifdefs, loc, stats, statsU):
@@ -155,10 +155,10 @@ class Ascope:
 		        	result=""
 			else:
                 		result="!"
-            
+
 		context = etree.iterwalk(ifdef[idx])
 		for action, elem in context:
-			if action=="end": 
+			if action=="end":
 				if elem.tag.split('}')[1]=="name":
 					result=result+elem.text
 	        # print result;

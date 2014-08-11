@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # #################################################
@@ -103,13 +103,13 @@ class AbstractAnalysisThread(object):
 
     def startup(self):
         # LOGGING
-        notify("starting '" + self.getName() + "' preparations:\n " + self.project)
-        print "# starting '" + self.getName() + "' preparations: " + self.project
+        notify("starting '" + self.getName() + "' analysis:\n " + self.project)
+        print "# starting '" + self.getName() + "' analysis: " + self.project
 
     def teardown(self):
         # LOGGING
-        notify("finished '" + self.getName() + "' preparations:\n " + self.project)
-        print "# finished '" + self.getName() + "' preparations: " + self.project
+        notify("finished '" + self.getName() + "' analysis:\n " + self.project)
+        print "# finished '" + self.getName() + "' analysis: " + self.project
 
     def run(self):
 

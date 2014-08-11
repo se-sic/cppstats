@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # modules from the std-library
@@ -1389,7 +1389,7 @@ def apply(folder, options):
 
     # ANDAVG + ANDSTDEV
     nestedIfdefsLevels = _flatten(__nestedIfdefsLevels)
-    if (len(nestedIfdefsLevels)): 
+    if (len(nestedIfdefsLevels)):
         nnimean = pstat.stats.lmean(nestedIfdefsLevels)
     else:
         nnimean = 0

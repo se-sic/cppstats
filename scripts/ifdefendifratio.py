@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This tool determines, whether the ration of conditionals (ifdef) to
@@ -63,7 +63,7 @@ def apply(folder):
 	files = filter(lambda n: os.path.splitext(n)[1] == ".xml", files)
 
 	for file in files:
-	
+
 		try:
 			tree = etree.parse(file)
 		except etree.XMLSyntaxError:

@@ -41,11 +41,11 @@ __platform = sys.platform.lower()
 
 __iscygwin = False
 if (__platform.startswith("linux")):
-    __s2sml_executable = "src2srcml.linux"
-    __sml2s_executable = "srcml2src.linux"
+    __s2sml_executable = "linux/src2srcml"
+    __sml2s_executable = "linux/srcml2src"
 elif (__platform.startswith("darwin")):
-    __s2sml_executable = "src2srcml.osx"
-    __sml2s_executable = "srcml2src.osx"
+    __s2sml_executable = "darwin/src2srcml"
+    __sml2s_executable = "darwin/srcml2src"
 elif (__platform.startswith("cygwin")) :
     __s2sml_executable = "win/src2srcml.exe"
     __sml2s_executable = "win/srcml2src.exe"

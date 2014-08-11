@@ -10,14 +10,20 @@ cppstats should be runnable under following systems:
 - Cygwin.
 
 In detail, cppstats was successfully tested under:
-- Ubuntu 12.04, Python 2.7.3, and
-- Cygwin, Python 2.7.3.
+- Ubuntu 12.04 64-bit, Python 2.7.3,
+- Ubuntu 14.04 64-bit, Python 2.7.6, and
+- Cygwin 64-bit, Python 2.7.3.
 
 Right now Python 3.x is NOT supported.
-Currently, cppstats does NOT work under xUbuntu 14.04 due to broken library dependencies.
+
+Current shipped version of srcML within lib/srcml/:
+Trunk 19109c Thu May 22 09:18:31 2014 -0400
+- linux/:   Ubuntu 14.04 64-bit
+- darwin/:  OS X Mavericks
+- win/: Windows
 
 
-xUBUNTU 12.04
+xUBUNTU
 -------------
 
 1. install git
@@ -31,16 +37,25 @@ xUBUNTU 12.04
 
 2. install needed libraries (+ all dependencies)
 
-    $ sudo apt-get install ia32-libs  # 32bit compatibility libs (only on 64bit system needed)
-    $ sudo apt-get install libarchive12:i386  # libarchive 32bit for linking with srcML libs
     $ sudo apt-get install astyle  # artistic style (code formatter)
     $ sudo apt-get install xsltproc  # XSLT 1.0 command line processor
     $ sudo apt-get install libxml2 libxml2-dev  # library for processing XML
     $ sudo apt-get install python python-libxml2 python-lxml python-notify python-lxml  # Python and needed libraries
     $ sudo apt-get install gcc  # GNU compiler collection
 
-2.1 (IMPORTANT) make soft links for updated libraries used by srcML
+2.1 download srcML libraries (current shipped version of srcML is supplied above!)
+    - download a binary package that is sufficient for you from: http://www.srcml.org/lmcrs
+    - extract into subfolder lib/srcml/linux/, so that binaries are available there directly
+        > like "lib/srcml/linux/srcml2src"
 
+2.2 if using 32-bit srcML libraries on an 64-bit platform
+
+    $ sudo apt-get install ia32-libs  # 32bit compatibility libs (only on 64bit system needed)
+    $ sudo apt-get install libarchive12:i386  # libarchive 32bit for linking with srcML libs (12.04)
+    # or libarchive13:i386 if that one is current version (14.04)
+
+2.3 if using an old srcML version on an up-to-date system
+  - (IMPORTANT) make soft links for updated libraries used by srcML, e.g.:
     $ sudo ln -s /usr/lib/i386-linux-gnu/libarchive.so.12 /usr/lib/i386-linux-gnu/libarchive.so.2
 
 3. supply cppstats with the appropriate paths in cppstats_input.txt
@@ -96,6 +111,12 @@ CYGWIN
         - All/Devel/
             gcc (4.7.3-1)
         + all dependencies you are prompted for
+
+2.2 download srcML libraries (current shipped version of srcML is supplied above!)
+    - download a binary package that is sufficient for you from: http://www.srcml.org/lmcrs
+        > http://www.srcml.org/lmcrs/srcML-Win.zip
+    - extract into the subfolder lib/srcml/win/, so that binaries are available there directly
+        > like "lib/srcml/win/src2srcml.exe"
 
 3. supply cppstats with the appropriate paths in cppstats_input.txt
     - use cygwin-paths like

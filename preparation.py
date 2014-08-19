@@ -216,11 +216,14 @@ class AbstractPreparationThread(object):
 
         self.startup()
 
-        self.backupCounter = 0
         if (self.file):
+
             self.currentFile = os.path.join(self.subfolder, self.project)
             shutil.copyfile(self.file, self.currentFile)
+
+            self.backupCounter = 0
             self.prepareFile()
+
             shutil.copyfile(self.currentFile + ".xml", self.outfile)
         else:
             # copy C and H files to self.subfolder
@@ -230,6 +233,8 @@ class AbstractPreparationThread(object):
                 for file in files:
                     f = os.path.join(root, file)
                     self.currentFile = f
+
+                    self.backupCounter = 0
                     self.prepareFile()
 
         self.teardown()

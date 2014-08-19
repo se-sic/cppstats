@@ -436,12 +436,12 @@ def _getMacroSignature(ifdefnode):
     return res
 
 
-def _prologCSV(folder, file, headings):
+def _prologCSV(folder, file, headings, delimiter = ","):
     """prolog of the CSV-output file
     no corresponding _epilogCSV."""
     fd = open(os.path.join(folder, file), 'w')
-    fdcsv = csv.writer(fd, delimiter=',')
-    fdcsv.writerow(["sep=,"])
+    fdcsv = csv.writer(fd, delimiter=delimiter)
+    fdcsv.writerow(["sep=" + delimiter])
     fdcsv.writerow(headings)
     return (fd, fdcsv)
 
@@ -476,7 +476,7 @@ def _countNestedIfdefs(root):
     return (nnimax, nnimean, nnistd)
 
 
-def _getFeatureSignature(condinhist):
+def _getFeatureSignature(condinhist, options):
     """This method returns a feature signature that belongs to the
     current history of conditional inclusions held in condinhist."""
     # we need to rewrite the elements before joining them to one
@@ -506,7 +506,10 @@ def _getFeatureSignature(condinhist):
         if tag == 'else':
             continue
         if tag in ['if', 'elif']:
-            fsig = '(' + fsig + ') && (' + fname + ')'
+            if (options.noRewriteNestedIfdefs):
+                fsig = '(' + fsig + ') && (' + fname + ')'
+            else:
+                fsig = fname
             continue
     return fsig
 
@@ -562,7 +565,7 @@ def _parseAndAddDefine(node):
     __macrofuncs[iden] = (para, expn)
 
 
-def _getFeatures(root):
+def _getFeatures(root, options):
     """This function returns all features in the source-file.
     A feature is defined as an enframement of soure-code. The frame
     consists of an ifdef (conditional) and an endif-macro. The function
@@ -662,7 +665,7 @@ def _getFeatures(root):
             if fname: condinhist.append((tag, fname))
             else: condinhist.append((tag, ''))
 
-            fsig = _getFeatureSignature(condinhist)
+            fsig = _getFeatureSignature(condinhist, options)
             if (tag in __conditionals): fouter.append([])
             fouter[-1] += ([(fsig, elem)])
             flist.append(fsig)
@@ -1253,7 +1256,7 @@ def apply(folder, options):
 
         root = tree.getroot()
         try:
-            (features, _, featuresgrouter) = _getFeatures(root)
+            (features, _, featuresgrouter) = _getFeatures(root, options)
         except IfdefEndifMismatchError:
             print("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file)))
             continue
@@ -1449,20 +1452,24 @@ def apply(folder, options):
 def addCommandLineOptionsMain(optionparser):
     ''' add command line options for a direct call of this script'''
     optionparser.add_argument("--folder", dest="folder",
-        help="input folder [default=.]", default=".")
+        help="input folder [default=%(default)s]", default=".")
 
 
 def addCommandLineOptions(optionparser) :
     # TODO implement CSP solving?
     # optionparser.add_option("--csp", dest="csp", action="store_true",
-    #     default=False, help="make use of csp solver to check " \
-    #     "feature expression equality [default=False]")
+    # default=False, help="make use of csp solver to check " \
+    # "feature expression equality [default=False]")
     # optionparser.add_option("--str", dest="str", action="store_true",
     #     default=True, help="make use of simple string comparision " \
     #     "for checking feature expression equality [default=True]")
     optionparser.add_argument("--stf", dest="stf", action="store_true",
         default=False, help="output a file '" + __metricvaluesfile + "' " \
         "that maps metrics to a list of all values that are collected during measurement")
+    optionparser.add_argument("--norewritenestedifdefs", dest="noRewriteNestedIfdefs",
+                              action="store_false", default=True,
+                              help="rewrite nested #ifdefs as a conjunction of "
+                                   "inner and outer expressions [default=%(default)s]")
 
 
 # ################################################

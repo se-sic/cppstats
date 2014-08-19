@@ -1374,9 +1374,9 @@ def apply(folder, options):
             _getFeatureStats(afeatures)
 
     # SDEG + TDEG
-    (scatvalues, tangvalues) = \
-        _getScatteringTanglingValues(_flatten(sigmap.values()),
-            list(__defset))
+    sigs = _flatten(sigmap.values())
+    defs = list(__defset)
+    (scatvalues, tangvalues) = _getScatteringTanglingValues(sigs, defs)
     scats = [x[1] for x in scatvalues]
     tangs = [x[1] for x in tangvalues]
 
@@ -1428,6 +1428,8 @@ def apply(folder, options):
 
     # write data to mectrics-values file
     if options.stf:
+        # raw tangling, scattering and nesting metrics
+
         stfrow[0] = "tangling"
         tanglingstring = ';'.join(map(str, tangs))
         stfrow[1] = tanglingstring
@@ -1444,6 +1446,19 @@ def apply(folder, options):
         stfwriter.writerow(stfrow)
 
         stfhandle.close()
+
+        # SDEG merged values + TDEG merged values
+        (scatvalues_merged, tangvalues_merged) = _getScatteringTanglingValues(sigs,list(set(defs)))
+
+        sd, sdcsv = _prologCSV(os.path.join(folder, os.pardir), "merged_scattering_degrees.csv", ["define","SD"], delimiter=";")
+        for (define, scat) in scatvalues_merged:
+            sdcsv.writerow([define,scat])
+        sd.close()
+
+        td, tdcsv = _prologCSV(os.path.join(folder, os.pardir), "merged_tangling_degrees.csv", ["signature","TD"], delimiter=";")
+        for (sig, tang) in tangvalues_merged:
+            tdcsv.writerow([sig,tang])
+        td.close()
 
 
 # ##################################################

@@ -120,6 +120,17 @@ def returnFileNames(folder, extfilt = ['.xml']):
 
     return filesfound
 
+
+def _prologCSV(folder, file, headings, delimiter = ","):
+    """prolog of the CSV-output file
+    no corresponding _epilogCSV."""
+    fd = open(os.path.join(folder, file), 'w')
+    fdcsv = csv.writer(fd, delimiter=delimiter)
+    fdcsv.writerow(["sep=" + delimiter])
+    fdcsv.writerow(headings)
+    return (fd, fdcsv)
+
+
 def _flatten(l):
     """This function takes a list as input and returns a flatten version
     of the list. So all nested lists are unpacked and moved up to the
@@ -135,18 +146,6 @@ def _flatten(l):
                 l[i:i+1] = l[i]
         i += 1
     return l
-
-
-def dictinvert(d):
-    """This function inverses a dictionary that maps a key to a set of
-    values into a dictionary that maps the values to the corresponding
-    set of former keys."""
-    inv = dict()
-    for (k,v) in d.iteritems():
-        for value in v:
-            keys = inv.setdefault(value, [])
-            keys.append(k)
-    return inv
 
 
 def _collectDefines(d):
@@ -222,77 +221,6 @@ def _collapseSubElementsToList(node):
 
     # iterate over the elemtents and add them to a list
     return ''.join([it for it in itdesc])
-
-
-def _parseFeatureSignatureAndRewriteCSP(sig):
-    """This function parses a given feature-expresson and
-    rewrites the expression according to the given __pt mapping.
-    This one is used to make use of a csp solver without using
-    a predicate."""
-    __pt = {
-        #'defined' : 'defined_',
-        'defined' : '',
-        '!' : '!',
-        '&&': '&',
-        '||': '|',
-        '<' : '_lt_',
-        '>' : '_gt_',
-        '<=': '_le_',
-        '>=': '_ge_',
-        '==': '_eq_',
-        '!=': '_ne_',
-        '*' : '_mu_',
-        '/' : '_di_',
-        '%' : '_mo_',
-        '+' : '_pl_',
-        '-' : '_mi_',
-        '&' : '_ba_',
-        '|' : '_bo_',
-        '>>': '_sr_',
-        '<<': '_sl_',
-    }
-    mal = list()
-
-    def _rewriteOne(param):
-        """This function returns each one parameter function
-        representation for csp."""
-        op, ma = param[0]
-        mal.append(ma)
-        if op == '!': ret = __pt[op] + '(' + ma + ')'
-        if op == 'defined': ret = ma
-        return  ret
-
-    def _rewriteTwo(param):
-        """This function returns each two parameter function
-        representation for csp."""
-        mal.extend(param[0][0::2])
-        ret = __pt[param[0][1]]
-        ret = '(' + ret.join(map(str, param[0][0::2])) + ')'
-        return ret
-
-    operand = __hexadec | __integer | __string | \
-            __function | __identifier
-    compoperator = pypa.oneOf('< > <= >= == !=')
-    calcoperator = pypa.oneOf('+ - * / & | << >> %')
-    expr = pypa.operatorPrecedence(operand, [
-        ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
-        ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
-        (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
-        (compoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
-        ('&&', 2, pypa.opAssoc.LEFT, _rewriteTwo),
-        ('||', 2, pypa.opAssoc.LEFT, _rewriteTwo),
-    ])
-
-    try:
-        rsig = expr.parseString(sig)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-                (sig, e.col))
-        return sig
-    except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (sig))
-        return sig
-    return (mal, ''.join(rsig))
 
 
 def _parseFeatureSignatureAndRewrite(sig):
@@ -408,46 +336,6 @@ def _getMacroSignature(ifdefnode):
     return res
 
 
-def _prologCSV(folder, file, headings, delimiter = ","):
-    """prolog of the CSV-output file
-    no corresponding _epilogCSV."""
-    fd = open(os.path.join(folder, file), 'w')
-    fdcsv = csv.writer(fd, delimiter=delimiter)
-    fdcsv.writerow(["sep=" + delimiter])
-    fdcsv.writerow(headings)
-    return (fd, fdcsv)
-
-
-__nestedIfdefsLevels = []
-def _countNestedIfdefs(root):
-    """This function counts the number of nested ifdefs (conditionals)
-    within the source-file."""
-    cncur = 0
-    cnlist = []
-    elements = [it for it in root.iterdescendants()]
-
-    for elem in elements:
-        ns, tag = __cpprens.match(elem.tag).groups()
-        if ((tag in __conditionals_endif)
-                and (ns == __cppnscpp)): cncur -= 1
-        if ((tag in __conditionals)
-                and (ns == __cppnscpp)):
-            cncur += 1
-            cnlist.append(cncur)
-
-    if (len(cnlist) > 0):
-        nnimax = max(cnlist)
-        nnitmp = filter(lambda n: n > 0, cnlist)
-        __nestedIfdefsLevels.append(nnitmp)
-        nnimean = pstat.stats.lmean(nnitmp)
-    else:
-        nnimax = 0
-        nnimean = 0
-    if (len(cnlist) > 1): nnistd = pstat.stats.lstdev(cnlist)
-    else: nnistd = 0
-    return (nnimax, nnimean, nnistd)
-
-
 def _getFeatureSignature(condinhist, options):
     """This method returns a feature signature that belongs to the
     current history of conditional inclusions held in condinhist."""
@@ -484,36 +372,6 @@ def _getFeatureSignature(condinhist, options):
                 fsig = fname
             continue
     return fsig
-
-
-def _getASTHistory(node):
-    """This function returns a list with a AST History until
-    the given parameter node. The given node is the macro-conditional
-    node itself. """
-    ancs = [anc for anc in node.iterancestors()]
-    asth = []
-
-    for anc in ancs:
-        _, tag = __cpprens.match(anc.tag).groups()
-        asth.append(tag)
-    return asth
-
-
-def _getASTFuture(node):
-    """This function returns a list with a AST Future beginning from
-    the given parameter node. The given node is the macro-conditional
-    node itself."""
-
-    dess = []
-    while (node is not None):
-        dess += [sib for sib in node.itersiblings(preceding=False)]
-        node = node.getparent()
-
-    desh = []
-    for des in dess:
-        _, tag = __cpprens.match(des.tag).groups()
-        desh.append(tag)
-    return desh
 
 
 def _parseAndAddDefine(node):
@@ -635,10 +493,6 @@ def _getFeatures(root, options):
                 and (ns == __cppnscpp)):    # check the cpp:namespace
             parcon = False
 
-
-            print "#######"
-            print "3 %s -> %s (%s)" % (tag, condinhist, ifdef_number)
-
             # with else or elif we finish up the last if, therefor
             # we can applicate the wrapup
             if ((tag in __conditionals_else)
@@ -652,7 +506,6 @@ def _getFeatures(root, options):
             else: condinhist.append((tag, ''))
 
             fsig = _getFeatureSignature(condinhist, options)
-            # TODO print fname + " -> " + fsig
             if (tag in __conditionals): fouter.append([])
             fouter[-1] += ([(fsig, elem)])
             flist.append(fsig)
@@ -688,8 +541,6 @@ def _getFeatures(root, options):
                 and (ns == __cppnscpp)):    # check the cpp:namespace
             parend = False
 
-            print "1 %s -> %s (%s)" % (tag, condinhist, ifdef_number)
-
             (features, featuresgrinner, fcode, flist, finner) = \
                 _wrapFeatureUp(features, featuresgrinner,
                 fcode, flist, finner)
@@ -697,16 +548,12 @@ def _getFeatures(root, options):
             featuresgrouter, elem)
 
             while (condinhist[-1][0] != 'if'):
-                print "4 %s (%s)" % (condinhist[-1], ifdef_number)
                 if condinhist[-1][0] == 'else':
-                    print "#added2 (%s)" % ifdef_number
                     elses.append(ifdef_number)
-
                 condinhist = condinhist[:-1]
+
             condinhist = condinhist[:-1]
             ifdef_number += 1
-
-            print "2 %s -> %s (%s)" % (tag, condinhist, ifdef_number)
 
         # iterating the endif-node subtree
         if parend:
@@ -727,341 +574,41 @@ def _getFeatures(root, options):
     return (features, featuresgrinner, featuresgrouter, elses)
 
 
-def _getOuterGranularity(fnodes):
-    """This function determines and returns the outer granularity
-    metrics for each feature. Therefore we get a list holding all
-    features in order and their start and end node (conditionals)
-    from the xml-tree."""
-    grouter = list()
-
-    for (sig, selem, _) in fnodes:
-        tags = _getASTHistory(selem)[:-1]    # cut of unit-tag
-        grouter.append((sig, tags, selem.sourceline))
-    return grouter
-
-
-def _getOuterGranularityStats(lgran):
-    """This function determines the granularity level of the
-    given lgran elements. We distinguish the following levels:
-    - outer block gran (function, struct, union)
-    - inner block gran (if, for, while, do)
-    - expression gran (condition in if, for, while, do)
-    - statement gran
-    - parameter gran
-    """
-    gotopbgr = 0
-    gofunbgr = 0
-    gostrbrl = 0        # local
-    gostrbrg = 0        # global
-    goinnbgr = 0
-    goexpbgr = 0
-    gostmbgr = 0
-    gopambgr = 0
-    goerror  = 0
-
-    for (_, gran, line) in lgran:
-        if len(gran) == 0:
-            gotopbgr += 1
-            continue
-        if gran[0] in ['block']:
-            if len(gran) == 1:    # configure the method signature
-                gofunbgr += 1
-                continue
-            if gran[1] in ['function', 'extern', 'block']:
-                gofunbgr += 1
-            elif gran[1] in ['struct', 'union',
-                    'enum']:    # test_struct_union_enum.c
-                if 'function' in gran[2:]: gostrbrl += 1
-                else: gostrbrg += 1
-            elif gran[1] in ['expr']:
-                if 'function' in gran[2:]: gostrbrl += 1
-                else: gostrbrg += 1
-            elif gran[1] in ['while', 'for', 'then', 'do',
-                    'else', 'switch', 'case', 'default']:
-                goinnbgr += 1                # test_loop.c
-            elif gran[1] in ['decl']:        # test_struct_union_enum.c
-                if 'function' in gran[3:]: gostrbrl += 1
-                else: gostrbrg += 1
-            else:
-                print('ERROR: gran (%s) at this '
-                        'level unknown (line %s)' % (gran, line))
-                goerror += 1
-            continue
-        elif gran[0] in ['expr']:
-            if gran[1] in ['expr_stmt']:                # test_stmt.c
-                gostmbgr += 1
-            elif gran[1] in ['condition', 'return']:    # test_condition.c
-                goexpbgr += 1
-            elif gran[1] in ['argument']:                # test_call.c
-                gostmbgr += 1
-            elif gran[1] in ['block']:
-                if 'function' in gran[2:]: gostrbrl += 1
-                else: gostrbrg += 1
-            elif gran[1] in ['init', 'index']:            # test_stmt.c
-                gostmbgr += 1
-            else:
-                print('ERROR: gran (%s) at this level'
-                        'unknown (line %s)' % (gran, line))
-                goerror += 1
-            continue
-        elif gran[0] in ['while', 'do']:                # test_loop.c
-            goinnbgr += 1
-            continue
-        elif gran[0] in ['expr_stmt'] and len(gran) == 1:
-            gostmbgr += 1
-            continue
-        elif gran[:3] == ['expr_stmt', 'block', 'struct']:
-            if 'function' in gran[2:]: gostrbrl += 1
-            else: gostrbrg += 1
-            continue
-        elif gran[0] in ['decl_stmt']:            # test_stmt.c
-            gostmbgr += 1
-            continue
-        elif gran[0] in ['condition']:            # test_condition.c
-            goexpbgr += 1
-            continue
-        elif gran[0] in ['if', 'else', 'case', 'default',
-                'then', 'for']:    # test_condition.c
-            goinnbgr += 1
-            continue
-        elif gran[0] in ['parameter_list',
-                'argument_list']:        # test_call.c
-            gopambgr += 1
-            continue
-        elif gran[0] in ['argument'] and gran[1] in ['argument_list']:
-            gostmbgr += 1
-        elif gran[0] in ['init'] and gran[1] in ['decl']:    # test_stmt.c
-            gostmbgr += 1
-            continue
-        elif gran[0] in ['function']:            # function prototype
-            continue
-        else:
-            print('ERROR: outer granularity (%s, %s) not recognized!' % \
-                    (gran, line))
-            goerror += 1
-
-    return (gotopbgr, gofunbgr, gostrbrl, gostrbrg,
-            goinnbgr, goexpbgr, gostmbgr, gopambgr, goerror)
-
-
-def _getInnerGranularityStats(igran):
-    """This method returns a tuple with the information about the
-    inner granularity. We distinguish the following granularities:
-    - adding a named block, ... (a whole block with a name:
-            function, type, ...)
-    - adding a unnamed block, ... (a block without a name:
-            if, while, for, ...)
-    - adding a simple statement
-    - adding a expression
-    - adding a parameter
-    """
-    gmacrogr = 0
-    ginablgr = 0
-    giunblgr = 0
-    giexpbgr = 0
-    gistmbgr = 0
-    gipambgr = 0
-    gierror = 0
-
-    skiptilltag = ''
-
-    for (_, gran) in igran:
-        for (tag, event, line) in gran:
-            if (skiptilltag != ''):
-                if (tag == skiptilltag[0]
-                        and event == 'end'
-                        and line == skiptilltag[2]):
-                    skiptilltag = ''
-                continue
-
-            if tag in ['name', 'endif']: continue
-            elif tag in ['define', 'directive', 'include',
-                    'macro', 'undef']:
-                gmacrogr += 1
-            elif tag in ['struct', 'union', 'enum', 'function', 'extern',
-                    'function_decl', 'decl_stmt', 'typedef']:
-                ginablgr += 1
-            elif tag in ['if', 'while', 'return', 'then',
-                    'for', 'do', 'case', 'else', 'block']:
-                giunblgr += 1
-            elif tag in ['param', 'argument']:
-                gipambgr += 1
-            elif tag in ['expr']:
-                giexpbgr += 1
-            elif tag in ['condition']:
-                giexpbgr += 1
-            elif tag in ['expr_stmt', 'decl', 'init']:
-                gistmbgr += 1
-            else:
-                print('ERROR: inner granularity (%s, %s, %s)) '
-                        'not recognized!' % (tag, event, line))
-                gierror += 1
-                continue
-            if event == 'start': skiptilltag = (tag, event, line)
-
-    return (gmacrogr, ginablgr, giunblgr, giexpbgr, gistmbgr, gierror)
-
-
-def _getFeatureStats(features):
-    """This function determines and returns the following statistics
-    about the features:
-        - nof            # number of features
-        - nod            # number of defines
-        - lof            # lines of feature code (sum)
-        - lofmin         # minimum line of feature code
-        - lofmax         # maximum number of feature code lines
-        - lofmean        # mean of feature code lines
-        - lofstd         # std-deviation of feature code lines
-    """
-    lof = 0
-    nod = 0
-    lofmin = -1            # feature-code can be empty
-    lofmax = 0
-    lofmean = 0
-    lofstd = 0
-    nof = len(features.keys())
-    tmp = [item for (_, item) in features.itervalues()]
-    tmp = _flatten(tmp)
-    floflist = map(lambda n: n.count('\n'), tmp)
-
-    if (len(floflist)):
-        lofmin = min(floflist)
-        lofmax = max(floflist)
-        lof = reduce(lambda m,n: m+n, floflist)
-        lofmean = pstat.stats.lmean(floflist)
-
-    if (len(floflist) > 1):
-        lofstd = pstat.stats.lstdev(floflist)
-
-    return (nof, nod, lof, lofmin, lofmax, lofmean, lofstd)
-
-
+# FIXME rewrite this ne for xml-nodes
 def _getFeaturesDepthOne(features):
     """This function returns all features that have the depth of one."""
     nof1 = filter(lambda (sig, (depth, code)): depth == 1, features.iteritems())
     return nof1
 
 
-def _distinguishFeatures(features):
-    """This function returns a tuple with dicts, each holding
-    one type of feature. The determination is according to the
-    given macro-signatures. Following differentiation according
-    to the macro-signatures:
-    1. "||" -> shared code
-    2. "&&" -> derivative
-    3. "||" & "&&" -> ??
+__nestedIfdefsLevels = []
+def _countNestedIfdefs(root):
+    """This function counts the number of nested ifdefs (conditionals)
+    within the source-file."""
+    cncur = 0
+    cnlist = []
+    elements = [it for it in root.iterdescendants()]
 
-    Further more a differentiation according to the feature-code
-    is also done. We differ here:
-    1. het -> all code feature code excerpts are different
-    2. hom -> all feature code are the same
-    3. hethome -> the feature code is a mix of both
-    """
+    for elem in elements:
+        ns, tag = __cpprens.match(elem.tag).groups()
+        if ((tag in __conditionals_endif)
+                and (ns == __cppnscpp)): cncur -= 1
+        if ((tag in __conditionals)
+                and (ns == __cppnscpp)):
+            cncur += 1
+            cnlist.append(cncur)
 
-    def _compareFeatureCode(fcode):
-        """This function compares the each part, of the code the
-        belongs to a feature with all the other parts. We do this
-        in order to find out, what kind of "introduction" is made
-        at the feature signature points. For instance:
-        """
-        fcodes = set(fcode)
-
-        if (len(fcodes) == 1 and len(fcode) > 1):
-            return "hom"
-
-        if (len(fcode) == len(fcodes)):
-            return "het"
-
-        if (len(fcode) > len(fcodes)):
-            return "hethom"
-
-    scode = {}
-    deriv = {}
-    desc = {}
-    het = {}
-    hom = {}
-    hethom = {}
-
-    for (key, (_, item)) in features.iteritems():
-        # distinguish according to feature-signature
-        # shared code
-        if ('||' in key and (not '&&' in key)):
-            scode[key] = item
-
-        # derivative only &&
-        if ('&&' in key and (not '||' in key)):
-            deriv[key] = item
-
-        # combination shared code and derivative
-        if ('&&' in key and '||' in key):
-            desc[key] = item
-
-        # distinguish according to feature-code
-        ret = _compareFeatureCode(item)
-        if (ret == "het"):
-            het[key] = item
-        if (ret == "hom"):
-            hom[key] = item
-        if (ret == "hethom"):
-            hethom[key] = item
-
-    return (scode, deriv, desc, het, hom, hethom)
-
-
-def _getNumOfDefines(defset):
-    """This method returns the number of defines, that have the following
-    structure:
-    #define FEAT_A
-    #define FEAT_B 5
-    Both defines are macro-objects. macro-functions like the following
-    are not considered.
-    #define CHECKVERSION(x,y,z) x*100+y*10+z
-    All determined elements are derived from the ifdef macros.
-    """
-    # basic operation of this function is to check __defset against
-    # __macrofuncs
-    funcmacros = __macrofuncs.keys()
-    funcmacros = map(lambda n: n.split('(')[0], funcmacros)
-    funcmacros = set(funcmacros)
-
-    return len((defset - funcmacros))
-
-
-def _getScatteringTanglingDegrees(sigs, defines):
-    """This method returns the mean and the standard-deviation of
-    defines according to the given mapping of a define to occurances
-    in the signatures. The input is all feature-signatures and
-    a all defines.
-
-    The measurement of scattering and tangling degree is error-prone
-    since a define that is used in conditional inclusions might not
-    be defined at the moment of usage.
-    """
-
-    def __add(x, y):
-        """This method is a helper function to add values
-        of lists pairwise. See below for more information."""
-        return x+y
-
-    scat = list()            # relation define to signatures
-    tang = [0]*len(sigs)    # signatures overall
-    for d in defines:
-        dre = re.compile(r'\b'+d+r'\b')        # using word boundaries
-        vec = map(lambda s: not dre.search(s) is None, sigs)
-        scat.append(vec.count(True))
-        tang = map(__add, tang, vec)
-
-    if (len(scat)): sdegmean = pstat.stats.lmean(scat)
-    else: sdegmean = 0
-    if (len(scat) > 1): sdegstd = pstat.stats.lstdev(scat)
-    else: sdegstd = 0
-
-    if (len(tang)): tdegmean = pstat.stats.lmean(tang)
-    else: tdegmean = 0
-    if (len(tang) > 1): tdegstd = pstat.stats.lstdev(tang)
-    else: tdegstd = 0
-
-    return (sdegmean, sdegstd, tdegmean, tdegstd)
+    if (len(cnlist) > 0):
+        nnimax = max(cnlist)
+        nnitmp = filter(lambda n: n > 0, cnlist)
+        __nestedIfdefsLevels.append(nnitmp)
+        nnimean = pstat.stats.lmean(nnitmp)
+    else:
+        nnimax = 0
+        nnimean = 0
+    if (len(cnlist) > 1): nnistd = pstat.stats.lstdev(cnlist)
+    else: nnistd = 0
+    return (nnimax, nnimean, nnistd)
 
 
 def _getScatteringTanglingValues(sigs, defines):
@@ -1090,72 +637,6 @@ def _getScatteringTanglingValues(sigs, defines):
     tangdict = zip(sigs, tang)
 
     return (scatdict, tangdict)
-
-
-def _getGranularityStats(fcodetags):
-    """This method returns a tuple of NOO with decl_stmt, expr_stmt
-    and signature changes.
-    TODO which granularity to use?
-    if   -> block
-    for  -> block
-    expr -> expression
-    """
-    _interestingtags = [
-        'define',            # define statement
-        'include',            # include statement
-        'decl_stmt',        # declaration statement
-        'expr_stmt',        # expression statement
-        'function_decl',    # function declaration
-        'parameter_list',    # parameter list
-        'param',            # parameter
-    ]
-    _curskiptag = None        # holds the element we are going to skip for
-    _skipedtags = []        # if we find one of the elements above, we
-                            # start skipping the following tags, until
-                            # the corresponding endtag is found; if we
-                            # do not find the endtag, we are going to
-                            # start analyzing the elements in _skipedtags
-    granstats = dict()
-
-    for tag in _interestingtags:
-        granstats[tag] = 0
-
-    for (_, ftagsl) in fcodetags:
-        _curskiptag = None
-        _skipedtags = []
-        for (tag, _, sourceline) in ftagsl:
-            if _curskiptag == None and tag in _interestingtags:
-                _curskiptag = tag
-                continue
-            if _curskiptag != None and tag == _curskiptag:
-                granstats[tag] = granstats[tag] + 1
-                _curskiptag = None
-                _skipedtags = []
-                continue
-            if _curskiptag != None:
-                _skipedtags.append((tag, sourceline))
-                continue
-#        if _skipedtags != []:
-#            print("ERROR: ", _skipedtags)
-    return granstats
-
-
-def __getNumOfFilesPerFeatureStats(filetofeatureconstants):
-    featureconstantstofiles = dictinvert(filetofeatureconstants)
-    numbers = map(lambda v: len(v), featureconstantstofiles.values())
-
-    #mean
-    if (len(numbers) > 0):
-        numbersmean = pstat.stats.lmean(numbers)
-    else:
-        numbersmean = 0
-    # std
-    if (len(numbers) > 1):
-        numbersstd = pstat.stats.lstdev(numbers)
-    else:
-        numbersstd = 0
-
-    return (numbersmean,numbersstd)
 
 
 def _checkForEquivalentSig(l, sig):
@@ -1250,7 +731,6 @@ def apply(folder, options):
 
         # remove #else branches from feature list, since no rewriting wanted
         if not options.rewriteifdefs:
-
             elses = sorted(elses, reverse=True) # sort #else indices backwards for safe removal
             features = features.items() # transform OrderedDict to list
             for index in elses:

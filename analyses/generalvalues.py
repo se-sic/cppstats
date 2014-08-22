@@ -596,6 +596,8 @@ def _countNestedIfdefs(root):
         if ((tag in __conditionals)
                 and (ns == __cppnscpp)):
             cncur += 1
+            # FIXME implement nesting analysis by using the items in the next line!
+            # print "%s %s: %s" % (tag, _getMacroSignature(elem), cncur)
             cnlist.append(cncur)
 
     if (len(cnlist) > 0):

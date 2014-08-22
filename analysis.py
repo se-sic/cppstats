@@ -192,6 +192,35 @@ class GeneralAnalysisThread(AbstractAnalysisThread):
         general.apply(folder, self.options)
 
 
+class GeneralValuesAnalysisThread(AbstractAnalysisThread):
+    @classmethod
+    def getName(cls):
+        return "generalvalues"
+
+    @classmethod
+    def getPreparationFolder(self):
+        return "_cppstats"
+
+    @classmethod
+    def getResultsFile(self):
+        import generalvalues
+
+        return generalvalues.getResultsFile()
+
+    @classmethod
+    def addCommandLineOptions(cls, optionParser):
+        import generalvalues
+
+        title = "Options for analysis '" + cls.getName() + "'"
+        group = optionParser.add_argument_group(title.upper())
+        generalvalues.addCommandLineOptions(group)
+
+    def analyze(self, folder):
+        import generalvalues
+
+        generalvalues.apply(folder, self.options)
+
+
 class DisciplineAnalysisThread(AbstractAnalysisThread):
     @classmethod
     def getName(cls):

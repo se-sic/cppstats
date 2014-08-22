@@ -8,6 +8,7 @@ import re
 import sys
 import xmlrpclib
 from argparse import ArgumentParser, RawTextHelpFormatter
+from collections import OrderedDict
 
 
 # #################################################
@@ -86,35 +87,6 @@ __curfile = ''          # current processed xml-file
 __defset = set()        # macro-objects
 __defsetf = dict()      # macro-objects per file
 
-# collected statistics
-__statsorder = Enum(
-    'FILENAME',          # name of the file
-    'LOC',               # lines of code
-    'NOFC',              # number of feature constants
-    'LOF',               # number of feature code lines
-    'ANDAVG',            # average nested ifdefs depth
-    'ANDSTDEV',          # standard deviation for ifdefs
-    'SDEGMEAN',          # shared code degree: mean
-    'SDEGSTD',           # shared code degree: standard-deviation
-    'TDEGMEAN',          # tangled code degree: mean
-    'TDEGSTD',           # tangled code degree: standard-deviation
-    # type metrics
-    'HOM',               # homogenous features
-    'HET',               # heterogenous features
-    'HOHE',              # combination of het and hom features
-    # gran metrics
-    'GRANGL',            # global level (compilation unit)
-    'GRANFL',            # function and type level
-    'GRANBL',            # if/while/for/do block extension
-    'GRANSL',            # statement extension - includes string concat
-    'GRANEL',            # condition block extension - includes return
-    'GRANML',            # function parameter extension
-    'GRANERR',           # not determined granularity
-
-    'NDMAX',             # maximum nesting depth in a file
-    'NOFPFCMEAN',       # average number of files per feature constant
-    'NOFPFCSTD',        # standard deviation for same data as for NOFPFCMEAN
-)
 ##################################################
 
 
@@ -505,8 +477,11 @@ def _getFeatureSignature(condinhist, options):
             continue
         if tag == 'else':
             continue
-        if tag in ['if', 'elif']:
-            fsig = '(' + fsig + ') && (' + fname + ')'
+        if tag in [ 'if', 'elif']:
+            if (options.rewriteifdefs):
+                fsig = '(' + fsig + ') && (' + fname + ')'
+            else:
+                fsig = fname
             continue
     return fsig
 
@@ -612,7 +587,8 @@ def _getFeatures(root, options):
         featuresgrinner.append((itsig, itinner))
         return (features, featuresgrinner, fcode, flist, finner)
 
-    features = {}            # see above; return value
+    from collections import OrderedDict
+    features = OrderedDict({})            # see above; return value
     featuresgrinner = []    # see above; return value
     featuresgrouter = []    # see above; return value
     flist = []                # holds the features in order
@@ -632,6 +608,8 @@ def _getFeatures(root, options):
     parcon = False            # parse-conditional-flag
     parend = False            # parse-endif-flag
     _ = 0                    # else and elif depth
+    elses = []
+    ifdef_number = 0
 
     # iterate over all tags separately <start>- and <end>-tag
     for event, elem in etree.iterwalk(root, events=("start", "end")):
@@ -644,11 +622,22 @@ def _getFeatures(root, options):
                 and (ns == __cppnscpp)):    # check the cpp:namespace
             parcon = True
 
+        # hitting on conditional-macro else or elif
+        if (((tag in __conditionals_else) or (tag in __conditionals_elif))
+                and (event == 'start')
+                and (ns == __cppnscpp)):    # check the cpp:namespace
+            ifdef_number += 1
+
+
         # hitting next conditional macro; any of ifdef, else or elif
         if ((tag in __conditionals_all)
                 and (event == 'end')
                 and (ns == __cppnscpp)):    # check the cpp:namespace
             parcon = False
+
+
+            print "#######"
+            print "3 %s -> %s (%s)" % (tag, condinhist, ifdef_number)
 
             # with else or elif we finish up the last if, therefor
             # we can applicate the wrapup
@@ -663,6 +652,7 @@ def _getFeatures(root, options):
             else: condinhist.append((tag, ''))
 
             fsig = _getFeatureSignature(condinhist, options)
+            # TODO print fname + " -> " + fsig
             if (tag in __conditionals): fouter.append([])
             fouter[-1] += ([(fsig, elem)])
             flist.append(fsig)
@@ -698,6 +688,8 @@ def _getFeatures(root, options):
                 and (ns == __cppnscpp)):    # check the cpp:namespace
             parend = False
 
+            print "1 %s -> %s (%s)" % (tag, condinhist, ifdef_number)
+
             (features, featuresgrinner, fcode, flist, finner) = \
                 _wrapFeatureUp(features, featuresgrinner,
                 fcode, flist, finner)
@@ -705,8 +697,16 @@ def _getFeatures(root, options):
             featuresgrouter, elem)
 
             while (condinhist[-1][0] != 'if'):
+                print "4 %s (%s)" % (condinhist[-1], ifdef_number)
+                if condinhist[-1][0] == 'else':
+                    print "#added2 (%s)" % ifdef_number
+                    elses.append(ifdef_number)
+
                 condinhist = condinhist[:-1]
             condinhist = condinhist[:-1]
+            ifdef_number += 1
+
+            print "2 %s -> %s (%s)" % (tag, condinhist, ifdef_number)
 
         # iterating the endif-node subtree
         if parend:
@@ -724,7 +724,7 @@ def _getFeatures(root, options):
 
     if (flist):
         raise IfdefEndifMismatchError()
-    return (features, featuresgrinner, featuresgrouter)
+    return (features, featuresgrinner, featuresgrouter, elses)
 
 
 def _getOuterGranularity(fnodes):
@@ -1064,6 +1064,34 @@ def _getScatteringTanglingDegrees(sigs, defines):
     return (sdegmean, sdegstd, tdegmean, tdegstd)
 
 
+def _getScatteringTanglingValues(sigs, defines):
+    """This method returns the scattering and tangling VALUES of
+    defines according to the given mapping of a define to occurances
+    in the signatures. The input is all feature-signatures and
+    all defines."""
+    #TODO insert tuples into description!
+
+    def __add(x, y):
+        """This method is a helper function to add values
+        of lists pairwise. See below for more information."""
+        return x+y
+
+    scat = list()            # relation define to signatures
+    tang = [0]*len(sigs)    # signatures overall
+    for d in defines:
+        dre = re.compile(r'\b'+d+r'\b')        # using word boundaries
+        vec = map(lambda s: not dre.search(s) is None, sigs)
+        scat.append(vec.count(True))
+        tang = map(__add, tang, vec)
+
+    # create dictionaries from sigs and defines and corresponding
+    # scattering and tangling values
+    scatdict = zip(defines, scat)
+    tangdict = zip(sigs, tang)
+
+    return (scatdict, tangdict)
+
+
 def _getGranularityStats(fcodetags):
     """This method returns a tuple of NOO with decl_stmt, expr_stmt
     and signature changes.
@@ -1163,6 +1191,7 @@ def resetModule() :
 
 
 def apply(folder, options):
+
     """This function applies the analysis to all xml-files in that
     directory and take the results and joins them together. Results
     are getting written into the fdcsv-file."""
@@ -1194,18 +1223,14 @@ def apply(folder, options):
                 afeatures[sig] = (depth, list(code))
                 sigmap[psig] = [sig]
 
-    # outputfile
-    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, __statsorder._keys)
-    # fdfeat = open(os.path.join(folder, __outputfexp), 'w')
 
     global __curfile
     fcount = 0
     files = returnFileNames(folder, ['.xml'])
     files.sort()
-    fstats = [None]*len(__statsorder._keys)
     ftotal = len(files)
 
-    # get statistics for all files; write results into csv
+    # get statistics for all files
     # and merge the features
     for file in files:
         __curfile = file
@@ -1218,164 +1243,76 @@ def apply(folder, options):
 
         root = tree.getroot()
         try:
-            (features, _, featuresgrouter) = _getFeatures(root, options)
+            (features, _, featuresgrouter, elses) = _getFeatures(root, options)
         except IfdefEndifMismatchError:
             print("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file)))
             continue
 
+        # remove #else branches from feature list, since no rewriting wanted
+        if not options.rewriteifdefs:
+
+            elses = sorted(elses, reverse=True) # sort #else indices backwards for safe removal
+            features = features.items() # transform OrderedDict to list
+            for index in elses:
+                del features[index] # remove all #else branches
+            features = OrderedDict(features) # instantiate OrderedDict again
+
         _mergeFeatures(features)
+
+        (ndmax, andavg, andstdev) = _countNestedIfdefs(root)
+        # FIXME use this function to implement the nesting analysis
+        # enhance _countNestedIfdefs to distinguish between level-1-branches and also #if/#else/#elif
 
         # file successfully parsed
         fcount += 1
         print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
 
-        # granularity stats
-        grouter = _getOuterGranularity(featuresgrouter)
-        (gotopbgr, gofunbgr, gostrbrl, gostrbrg,
-        goinnbgr, goexpbgr, gostmbgr, gopambgr, goerror) = \
-                _getOuterGranularityStats(grouter)
-        fstats[__statsorder.GRANGL.index] = gotopbgr
-        fstats[__statsorder.GRANFL.index] = gofunbgr+gostrbrl+gostrbrg
-        fstats[__statsorder.GRANBL.index] = goinnbgr
-        fstats[__statsorder.GRANEL.index] = goexpbgr
-        fstats[__statsorder.GRANSL.index] = gostmbgr
-        fstats[__statsorder.GRANML.index] = gopambgr
-        fstats[__statsorder.GRANERR.index] = goerror
-
-        # general stats
-        fstats[__statsorder.FILENAME.index] = file
-        (ndmax, andavg, andstdev) = _countNestedIfdefs(root)
-        fstats[__statsorder.ANDAVG.index] = andavg
-        fstats[__statsorder.ANDSTDEV.index] = andstdev
-        fstats[__statsorder.NDMAX.index] = ndmax
-        tmp = [it for it in root.iterdescendants()]
-
-        if (len(tmp)): floc = tmp[-1].sourceline
-        else: floc = 0
-
-        fstats[__statsorder.LOC.index] = floc
-
-        # feature-amount
-        (_, _, lof, _, _, _, _) = \
-                _getFeatureStats(features)
-        if __defsetf.has_key(__curfile):
-            fstats[__statsorder.NOFC.index] = \
-                    _getNumOfDefines(__defsetf[__curfile])
-        else:
-            fstats[__statsorder.NOFC.index] = 0
-        fstats[__statsorder.LOF.index] = lof
-
-        # scattering and tangling
-        # not useful to compute the scattering per file, since a feature names
-        # may be defined later
-
-        fdcsv.writerow(fstats)
-
-
-    # writing convinience functions
-    fnum = fcount + 1            # +1 for the header of the table
-    excelcols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-            'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
-            'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE',
-            'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
-            'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW',
-            'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF',
-            'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO',
-            'BP', 'BQ', 'BR', 'BS', 'BT', 'BU', 'BV', 'BW', 'BX',
-            'BY', 'BZ']
-    # FIXME with separator line, functions must start in line 3! (other scripts, too?)
-    excelfunc = [None]*len(__statsorder._keys)
-    excelfunc[__statsorder.FILENAME.index] = "FUNCTIONS"
-    excelfunc[__statsorder.LOC.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.LOC.index], \
-            excelcols[__statsorder.LOC.index], fnum)
-    excelfunc[__statsorder.LOF.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.LOF.index], \
-            excelcols[__statsorder.LOF.index], fnum)
-    excelfunc[__statsorder.ANDAVG.index] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
-            (excelcols[__statsorder.ANDAVG.index], \
-            excelcols[__statsorder.ANDAVG.index], fnum, \
-            excelcols[__statsorder.ANDAVG.index], \
-            excelcols[__statsorder.ANDAVG.index], fnum)
-    excelfunc[__statsorder.ANDSTDEV.index] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
-            (excelcols[__statsorder.ANDSTDEV.index], \
-            excelcols[__statsorder.ANDSTDEV.index], fnum, \
-            excelcols[__statsorder.ANDAVG.index],          # it might be that mean 1 std 0
-            excelcols[__statsorder.ANDAVG.index], fnum)    # therefore we use mean here
-    excelfunc[__statsorder.GRANGL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANGL.index], \
-            excelcols[__statsorder.GRANGL.index], fnum)
-    excelfunc[__statsorder.GRANFL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANFL.index], \
-            excelcols[__statsorder.GRANFL.index], fnum)
-    excelfunc[__statsorder.GRANBL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANBL.index], \
-            excelcols[__statsorder.GRANBL.index], fnum)
-    excelfunc[__statsorder.GRANEL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANEL.index], \
-            excelcols[__statsorder.GRANEL.index], fnum)
-    excelfunc[__statsorder.GRANSL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANSL.index], \
-            excelcols[__statsorder.GRANSL.index], fnum)
-    excelfunc[__statsorder.GRANML.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANML.index], \
-            excelcols[__statsorder.GRANML.index], fnum)
-    excelfunc[__statsorder.GRANERR.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANERR.index], \
-            excelcols[__statsorder.GRANERR.index], fnum)
-    excelfunc[__statsorder.NDMAX.index] = "=MAX(%s2:%s%s)" % \
-            (excelcols[__statsorder.NDMAX.index], \
-            excelcols[__statsorder.NDMAX.index], fnum)
-    fdcsv.writerow(excelfunc)
-
-    # overall - stats
-    astats = [None]*len(__statsorder._keys)
-
-    # LOF
-    (_, _, lof, _, _, _, _) = \
-            _getFeatureStats(afeatures)
-
-    # SDEG + TDEG
+    # from pprint import pprint
+    # map(lambda (x, v): pprint(x + " --> " + str(v)), sigmap.items())
+    # get signatures and defines
     sigs = _flatten(sigmap.values())
     defs = list(__defset)
-    (sdegmean, sdegstd, tdegmean, tdegstd) = \
-        _getScatteringTanglingDegrees(sigs,defs)
 
-    # ANDAVG + ANDSTDEV
+    # raw tangling, scattering and nesting metrics (unmerged)
+    stfheadings = ['name', 'values']
+    stfrow = [None]*len(stfheadings)
+    stfhandle, stfwriter = _prologCSV(os.path.join(folder, os.pardir), __metricvaluesfile, stfheadings)
+
+    (scatvalues, tangvalues) = _getScatteringTanglingValues(sigs, defs)
+    scats = [x[1] for x in scatvalues]
+    tangs = [x[1] for x in tangvalues]
+
+    stfrow[0] = "tangling"
+    tanglingstring = ';'.join(map(str, tangs))
+    stfrow[1] = tanglingstring
+    stfwriter.writerow(stfrow)
+
+    stfrow[0] = "scattering"
+    scatteringstring = ';'.join(map(str, scats))
+    stfrow[1] = scatteringstring
+    stfwriter.writerow(stfrow)
+
     nestedIfdefsLevels = _flatten(__nestedIfdefsLevels)
-    if (len(nestedIfdefsLevels)):
-        nnimean = pstat.stats.lmean(nestedIfdefsLevels)
-    else:
-        nnimean = 0
-    if (len(nestedIfdefsLevels) > 1):
-        nnistd = pstat.stats.lstdev(nestedIfdefsLevels)
-    else:
-        nnistd = 0
 
-    # HOM, HET, HOHE
-    (_, _, _, het, hom, hethom) = _distinguishFeatures(afeatures)
+    stfrow[0] = "nestedIfdefsLevels"
+    ndstring = ';'.join(map(str, nestedIfdefsLevels))
+    stfrow[1] = ndstring
+    stfwriter.writerow(stfrow)
 
-    # NOFPFCMEAN, NOFPFCSTD
-    (nofpfcmean, nofpfcstd) = __getNumOfFilesPerFeatureStats(__defsetf)
+    stfhandle.close()
 
-    # write data
-    astats[__statsorder.FILENAME.index] = "ALL - MERGED"
-    astats[__statsorder.NOFC.index] = _getNumOfDefines(__defset)
-    astats[__statsorder.LOF.index] = lof
-    astats[__statsorder.ANDAVG.index] = nnimean
-    astats[__statsorder.ANDSTDEV.index] = nnistd
-    astats[__statsorder.HET.index] = len(het.keys())
-    astats[__statsorder.HOM.index] = len(hom.keys())
-    astats[__statsorder.HOHE.index] = len(hethom.keys())
-    astats[__statsorder.SDEGMEAN.index] = sdegmean
-    astats[__statsorder.SDEGSTD.index] = sdegstd
-    astats[__statsorder.TDEGMEAN.index] = tdegmean
-    astats[__statsorder.TDEGSTD.index] = tdegstd
-    astats[__statsorder.NOFPFCMEAN.index] = nofpfcmean
-    astats[__statsorder.NOFPFCSTD.index] = nofpfcstd
+    # scattering + tangling (merged)
+    (scatvalues_merged, tangvalues_merged) = _getScatteringTanglingValues(list(set(sigs)), defs)
 
-    fdcsv.writerow(astats)
-    fd.close()
+    sd, sdcsv = _prologCSV(os.path.join(folder, os.pardir), "merged_scattering_degrees.csv", ["define","SD"], delimiter=",")
+    for (define, scat) in scatvalues_merged:
+        sdcsv.writerow([define,scat])
+    sd.close()
+
+    td, tdcsv = _prologCSV(os.path.join(folder, os.pardir), "merged_tangling_degrees.csv", ["signature","TD"], delimiter=",")
+    for (sig, tang) in tangvalues_merged:
+        tdcsv.writerow([sig,tang])
+    td.close()
 
 
 # ##################################################
@@ -1395,7 +1332,14 @@ def addCommandLineOptions(optionparser) :
     # optionparser.add_option("--str", dest="str", action="store_true",
     #     default=True, help="make use of simple string comparision " \
     #     "for checking feature expression equality [default=True]")
-    pass
+    optionparser.add_argument("--norewriteifdefs", dest="rewriteifdefs",
+                              action="store_false", default=True,
+                              help="rewrite nested #ifdefs and #elifs as a conjunction of "
+                                   "inner and outer expressions [default=%(default)s]\n"
+                                   "(exception are #else tags, which ARE rewritten as "
+                                   "negation of the #if branch! see also --norewriteelse "
+                                   "of analysis GENERALVALUES)")
+    #FIXME add command line function to remove #else too!
 
 
 # ################################################

@@ -1,26 +1,27 @@
-                                cppstats                                
+                                cppstats
 
 
 What is it?
 -----------
 
-cppstats is a suite of analyses for measuring C preprocessor-based 
+cppstats is a suite of analyses for measuring C preprocessor-based
 variability in software product lines.
 
 Currently, cppstats supports following analyses:
     - general,
+    - generalvalues,
     - discipline,
     - featurelocations,
     - derivative, and
     - interaction.
-For detailed information on each kind of analysis, please refer to the 
+For detailed information on each kind of analysis, please refer to the
 corresponding paragraph below in this file.
 
 
 The Latest Version
 ------------------
 
-Details of the latest version can be found on the cppstats project site 
+Details of the latest version can be found on the cppstats project site
 at GitHub under https://github.com/clhunsen/cppstats/.
 
 
@@ -32,7 +33,7 @@ cppstats should be runnable under following systems:
 - Mac OS X, and
 - Cygwin.
 
-Please see the file called INSTALL for detailed instructions for each 
+Please see the file called INSTALL for detailed instructions for each
 system.
 
 In detail, cppstats was successfully tested under:
@@ -45,18 +46,18 @@ Right now Python 3.x is NOT supported.
 Quick Start
 ---------------------------------
 - supply cppstats with the appropriate paths in 'cppstats_input.txt'
-    * use full paths like 
-    "/local/repos/cpp-history/mpsolve/mpsolve-2.2" * each project 
+    * use full paths like
+    "/local/repos/cpp-history/mpsolve/mpsolve-2.2" * each project
     folder given in the file has to be structured as follows:
         > /local/repos/cpp-history/mpsolve/mpsolve-2.2/
             > source/ (here are the C source files)
 
 Then run:
 $ ./cppstats.py --kind <K>
-<K> must be one of the analyses listed in the introduction. Also, have 
+<K> must be one of the analyses listed in the introduction. Also, have
 a look on "./cppstats.py --help" for further command line options.
 
-The output files for each analysis are written to the folders given in 
+The output files for each analysis are written to the folders given in
 the file 'cppstats_input.txt'.
 
 
@@ -64,11 +65,21 @@ Analyses
 --------
 
 GENERAL:
-    - Measurement of CPP-related metrics regarding scattering, 
+    - Measurement of CPP-related metrics regarding scattering,
       tangling, and nesting
-    - returns a list of metrics for each file, and a list of metric 
+    - returns a list of metrics for each file, and a list of metric
       values for the whole project folder
-     
+
+GENERALVALUES:
+     - Calculation of scattering, tangling, and nesting values
+     - allows deactivation of the rewriting of #ifdefs to get a 'pure' result
+         # rewriting changes #else branches from no used constant to the
+          negation of the corresponding #if clause
+     - returns a list for each characteristic, which #ifdef or configuration
+       constant has which value (merged and unmerged)
+         # unmerged: each #ifdef expression is counted once per file
+         # merged: each #ifdef expression is counted once per project
+
 DISCIPLINE:
     - Analysis of the discipline of used CPP annotations
     - returns the number of occurences for the categories listed below
@@ -80,9 +91,9 @@ DISCIPLINE:
         (32) check param/argument enframement (parameter)
         (64) check expression enframement (expression)
         (128) check else enframement (NOT CLASSIFIED)
-        
+
 FEATURELOCATIONS:
-    - Analysis of the locations of CPP annotation blocks in the given 
+    - Analysis of the locations of CPP annotation blocks in the given
       file or project folder
     - returns a table with the following headers:
         # file
@@ -93,12 +104,12 @@ FEATURELOCATIONS:
         # involved configuration constants
 
 DERIVATIVE:
-    # Analysis of all derivatives in the given project folder 
-    # returns all CPP annotations that involve shared code (expression 
+    # Analysis of all derivatives in the given project folder
+    # returns all CPP annotations that involve shared code (expression
       contains '&&')
 
 INTERACTION:
-    # Analysis of pair-wise interactions of configurations constants 
+    # Analysis of pair-wise interactions of configurations constants
       that have been used alltogether in one expression (# of constants
       involved >= 3)
     # (A, B, C) -> |(A, B)? (A, C)? (B, C)? ...|

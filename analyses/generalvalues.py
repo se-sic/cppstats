@@ -336,6 +336,7 @@ def _getMacroSignature(ifdefnode):
     return res
 
 
+_elsePrefix = "###"
 def _getFeatureSignature(condinhist, options):
     """This method returns a feature signature that belongs to the
     current history of conditional inclusions held in condinhist."""
@@ -359,7 +360,11 @@ def _getFeatureSignature(condinhist, options):
 
     for (tag, fname, invert) in rewritelist:
         if invert:
-            fname = '!(' + fname + ')'
+            if (options.rewriteifdefs):
+                fname = '!(' + fname + ')'
+            else:
+                fname = _elsePrefix + '!(' + fname + ')'
+
         if fsig == '':
             fsig = fname
             continue
@@ -446,26 +451,26 @@ def _getFeatures(root, options):
         return (features, featuresgrinner, fcode, flist, finner)
 
     from collections import OrderedDict
-    features = OrderedDict({})            # see above; return value
+    features = OrderedDict({}) # see above; return value
     featuresgrinner = []    # see above; return value
     featuresgrouter = []    # see above; return value
-    flist = []                # holds the features in order
+    flist = []              # holds the features in order
                             # list empty -> no features to parse
                             # list used as a stack
                             # last element = top of stack;
                             # and the element we currently
                             # collecting source-code lines for
-    fouter = []                # holds the xml-nodes of the ifdefs/endifs
+    fouter = []             # holds the xml-nodes of the ifdefs/endifs
                             # in order like flist
-    fcode = []                # holds the code of the features in
+    fcode = []              # holds the code of the features in
                             # order like flist
-    finner = []                # holds the tags of the features in
+    finner = []             # holds the tags of the features in
                             # order like flist
-    condinhist = []            # order of the conditional includes
+    condinhist = []         # order of the conditional includes
                             # with feature names
-    parcon = False            # parse-conditional-flag
-    parend = False            # parse-endif-flag
-    _ = 0                    # else and elif depth
+    parcon = False          # parse-conditional-flag
+    parend = False          # parse-endif-flag
+    _ = 0                   # else and elif depth
     elses = []
     ifdef_number = 0
 
@@ -731,14 +736,13 @@ def apply(folder, options):
             print("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file)))
             continue
 
-        # remove #else branches from feature list, since no rewriting wanted
+        # remove #else branches from list of features as there is no existing signature in the source code!
         if not options.rewriteifdefs:
-            elses = sorted(elses, reverse=True) # sort #else indices backwards for safe removal
-            features = features.items() # transform OrderedDict to list
-            for index in elses:
-                del features[index] # remove all #else branches
-            features = OrderedDict(features) # instantiate OrderedDict again
+            features = OrderedDict((sig, value)
+                                   for sig, value in features.iteritems()
+                                   if not sig.startswith(_elsePrefix))
 
+        # merge features of file in the global list of features
         _mergeFeatures(features)
 
         (ndmax, andavg, andstdev) = _countNestedIfdefs(root)

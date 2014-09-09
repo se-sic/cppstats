@@ -45,7 +45,7 @@ __inputlist_default = "cppstats_input.txt"
 # add all kinds of analyses: (name -> (preparation, analysis))
 __kinds = []
 __kinds.append(('general', ('general', 'general')))
-__kinds.append(('generalvalues', ('general', 'generalvalues')))
+__kinds.append(('generalvalues', ('generalvalues', 'generalvalues')))
 __kinds.append(('discipline', ('discipline', 'discipline')))
 __kinds.append(('featurelocations', ('featurelocations', 'featurelocations')))
 __kinds.append(('derivative', ('discipline', 'derivative')))

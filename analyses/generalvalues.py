@@ -79,7 +79,9 @@ __conditionals_elif = ['elif']
 __conditionals_else = ['else']
 __conditionals_endif = ['endif']
 __conditionals_all = __conditionals + __conditionals_elif + \
-        __conditionals_else
+                     __conditionals_else
+__conditionals_ending = __conditionals_elif + __conditionals_else + \
+                        __conditionals_endif
 __macro_define = ['define']
 __macrofuncs = {}       # functional macros like: "GLIBVERSION(2,3,4)",
                         # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
@@ -574,43 +576,92 @@ def _getFeatures(root, options):
     return (features, featuresgrinner, featuresgrouter, elses)
 
 
-# FIXME rewrite this ne for xml-nodes
-def _getFeaturesDepthOne(features):
-    """This function returns all features that have the depth of one."""
-    nof1 = filter(lambda (sig, (depth, code)): depth == 1, features.iteritems())
-    return nof1
-
-
 __nestedIfdefsLevels = []
-def _countNestedIfdefs(root):
+__nestingDepthsOfBranches = []
+def _getNestingDepths(root):
     """This function counts the number of nested ifdefs (conditionals)
-    within the source-file."""
-    cncur = 0
-    cnlist = []
+    within the source-file in two different ways.
+     1) the nesting depth of each #ifdef block (nested or not nested, one value for #if/#elif/#else branches)
+        __nestedIfdefsLevels = [int]
+     2) the nesting depth of each top-level (non-nested) branch (#if/#elif/#else) separately
+        __nestingDepthsOfBranches = [(file path, xml element, feature signature, maximum nesting of this element)]
+    """
+
+    global __curfile, __nestedIfdefsLevels, __nestingDepthsOfBranches
+
     elements = [it for it in root.iterdescendants()]
+
+    cncur = 0
+    cnmax = -1
+    sigblockhist = []
+
+    # [] of integers
+    cnlist = []
+    # [(file path, xml element, feature signature, maximum nesting of this element)]
+    sighist = []
 
     for elem in elements:
         ns, tag = __cpprens.match(elem.tag).groups()
-        if ((tag in __conditionals_endif)
-                and (ns == __cppnscpp)): cncur -= 1
-        if ((tag in __conditionals)
-                and (ns == __cppnscpp)):
+
+        # if a branch ends somehow
+        if ((tag in __conditionals_ending)
+            and (ns == __cppnscpp)):
+
+            # reduce nesting level
+            cncur -= 1
+
+            # if we are back at top-level
+            if cncur == 0:
+
+                # insert max-nesting value to top-level element
+                (xfile, xelem, xsig, xdepth) = sigblockhist[-1]
+                sigblockhist[-1] = (xfile, xelem, xsig, cnmax)
+
+                # reset value, since branch is finished
+                cnmax = -1
+
+                # if an #endif is reached, a whole block of #if/#elif/#else is finished
+                if tag in __conditionals_endif:
+                    sighist += sigblockhist
+                    sigblockhist = []
+
+        # if hitting the next conditional
+        if ((tag in __conditionals_all)
+            and (ns == __cppnscpp)):
+
+            # increase nesting level
             cncur += 1
-            # FIXME implement nesting analysis by using the items in the next line!
-            # print "%s %s: %s" % (tag, _getMacroSignature(elem), cncur)
-            cnlist.append(cncur)
+
+            # gather the nesting depth of each #ifdef block (incl. #else/#elif branches)
+            if (tag in __conditionals):
+                cnlist.append(cncur)
+
+            # add top-level signatures to history
+            if cncur == 1:
+
+                # if #else is reached, its empty signature must be rewritten as
+                # negation of previous signatures within this #ifdef block
+                if tag in __conditionals_else:
+                    #FIXME how to do this if rewriting is enabled?!
+
+                    newsig = ['!(' + xsig + ')' for (_, _, xsig, _) in sigblockhist]
+                    sigblockhist.append((__curfile, elem, " && ".join(newsig), -1))
+
+                else:
+
+                    sigblockhist.append((__curfile, elem, _getMacroSignature(elem), -1))
+
+            # calculate current max of this branch
+            cnmax = max(cnmax, cncur)
+
+            # # DEBUG
+            # print "%s %s: %s (max: %s)" % (tag, _getMacroSignature(elem), cncur, cnmax)
 
     if (len(cnlist) > 0):
-        nnimax = max(cnlist)
         nnitmp = filter(lambda n: n > 0, cnlist)
-        __nestedIfdefsLevels.append(nnitmp)
-        nnimean = pstat.stats.lmean(nnitmp)
-    else:
-        nnimax = 0
-        nnimean = 0
-    if (len(cnlist) > 1): nnistd = pstat.stats.lstdev(cnlist)
-    else: nnistd = 0
-    return (nnimax, nnimean, nnistd)
+        __nestedIfdefsLevels += nnitmp
+
+    __nestingDepthsOfBranches += sighist
 
 
 def _getScatteringTanglingValues(sigs, defines):
@@ -665,12 +716,13 @@ def _checkForEquivalentSig(l, sig):
 
 
 def resetModule() :
-    global __macrofuncs, __defset, __defsetf, __nestedIfdefsLevels
+    global __macrofuncs, __defset, __defsetf, __nestedIfdefsLevels, __nestingDepthsOfBranches
     __macrofuncs = {}       # functional macros like: "GLIBVERSION(2,3,4)",
                             # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
     __defset = set()        # macro-objects
     __defsetf = dict()      # macro-objects per file
     __nestedIfdefsLevels = []
+    __nestingDepthsOfBranches = []
 
 
 def apply(folder, options):
@@ -739,30 +791,30 @@ def apply(folder, options):
                 del features[index] # remove all #else branches
             features = OrderedDict(features) # instantiate OrderedDict again
 
+        # merge features into global list
         _mergeFeatures(features)
 
-        (ndmax, andavg, andstdev) = _countNestedIfdefs(root)
-        # FIXME use this function to implement the nesting analysis
-        # enhance _countNestedIfdefs to distinguish between level-1-branches and also #if/#else/#elif
+        # calculate nesting depths (per block and per branch)
+        _getNestingDepths(root)
 
         # file successfully parsed
         fcount += 1
         print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
 
-    # from pprint import pprint
-    # map(lambda (x, v): pprint(x + " --> " + str(v)), sigmap.items())
     # get signatures and defines
     sigs = _flatten(sigmap.values())
     defs = list(__defset)
 
-    # raw tangling, scattering and nesting metrics (unmerged)
+    # preparation: opn file for writing
     stfheadings = ['name', 'values']
     stfrow = [None]*len(stfheadings)
     stfhandle, stfwriter = _prologCSV(os.path.join(folder, os.pardir), __metricvaluesfile, stfheadings)
 
+    # scattering and tangling values
+
     (scatvalues, tangvalues) = _getScatteringTanglingValues(sigs, defs)
-    scats = [x[1] for x in scatvalues]
-    tangs = [x[1] for x in tangvalues]
+    scats = sorted([x[1] for x in scatvalues])
+    tangs = sorted([x[1] for x in tangvalues])
 
     stfrow[0] = "tangling"
     tanglingstring = ';'.join(map(str, tangs))
@@ -774,14 +826,16 @@ def apply(folder, options):
     stfrow[1] = scatteringstring
     stfwriter.writerow(stfrow)
 
-    nestedIfdefsLevels = _flatten(__nestedIfdefsLevels)
+    # nesting values
 
     stfrow[0] = "nestedIfdefsLevels"
-    ndstring = ';'.join(map(str, nestedIfdefsLevels))
+    ndstring = ';'.join(map(str, __nestedIfdefsLevels))
     stfrow[1] = ndstring
     stfwriter.writerow(stfrow)
 
     stfhandle.close()
+
+    # MERGED VALUES
 
     # scattering + tangling (merged)
     (scatvalues_merged, tangvalues_merged) = _getScatteringTanglingValues(list(set(sigs)), defs)
@@ -795,6 +849,12 @@ def apply(folder, options):
     for (sig, tang) in tangvalues_merged:
         tdcsv.writerow([sig,tang])
     td.close()
+
+    # FIXME remove line number?!
+    nd, ndcsv = _prologCSV(os.path.join(folder, os.pardir), "nesting_degrees_toplevel_branches.csv", ["file", "linenumber", "signature", "ND"], delimiter=",")
+    for (file, elem, sig, depth) in __nestingDepthsOfBranches:
+        ndcsv.writerow([file, elem.sourceline - 1, sig, depth])
+    nd.close()
 
 
 # ##################################################

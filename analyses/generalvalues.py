@@ -814,6 +814,7 @@ def apply(folder, options):
     stfhandle, stfwriter = _prologCSV(os.path.join(folder, os.pardir), __metricvaluesfile, stfheadings)
 
     # scattering and tangling values
+    # each signature is used once per file
 
     (scatvalues, tangvalues) = _getScatteringTanglingValues(sigs, defs)
     scats = sorted([x[1] for x in scatvalues])
@@ -841,6 +842,7 @@ def apply(folder, options):
     # MERGED VALUES
 
     # scattering + tangling (merged)
+    # each signature is used only once per project (string equality)
     (scatvalues_merged, tangvalues_merged) = _getScatteringTanglingValues(list(set(sigs)), defs)
 
     sd, sdcsv = _prologCSV(os.path.join(folder, os.pardir), "merged_scattering_degrees.csv", ["define","SD"], delimiter=",")

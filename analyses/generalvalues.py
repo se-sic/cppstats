@@ -856,9 +856,9 @@ def apply(folder, options):
     td.close()
 
     # FIXME remove line number?!
-    nd, ndcsv = _prologCSV(os.path.join(folder, os.pardir), "nesting_degrees_toplevel_branches.csv", ["file", "linenumber", "signature", "ND"], delimiter=",")
+    nd, ndcsv = _prologCSV(os.path.join(folder, os.pardir), "nesting_degrees_toplevel_branches.csv", ["file", "signature", "ND"], delimiter=",") # , "linenumber"
     for (file, elem, sig, depth) in __nestingDepthsOfBranches:
-        ndcsv.writerow([file, elem.sourceline - 1, sig, depth])
+        ndcsv.writerow([file, sig, depth]) # , elem.sourceline - 1
     nd.close()
 
 

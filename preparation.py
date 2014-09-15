@@ -502,31 +502,6 @@ class PrettyPreparationThread(AbstractPreparationThread):
         self.deleteEmptyLines()
 
 
-class GeneralValuesPreparationThread(AbstractPreparationThread):
-    @classmethod
-    def getPreparationName(cls):
-        return "generalvalues"
-
-    def getSubfolder(self):
-        return "_cppstats_generalvalues"
-
-    def prepareFile(self):
-        # multiline macros
-        self.rewriteMultilineMacros()
-
-        # delete leading, trailing and inter (# ... if) whitespaces
-        self.deleteWhitespace()
-
-        # rewrite #if(n)def ... to #if (!)defined(...)
-        self.rewriteIfdefsAndIfndefs()
-
-        # removes include guards from H files
-        self.removeIncludeGuards()
-
-        # transform file to srcml
-        self.transformFileToSrcml()
-
-
 # #################################################
 # collection of preparation threads
 

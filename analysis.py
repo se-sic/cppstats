@@ -199,7 +199,7 @@ class GeneralValuesAnalysisThread(AbstractAnalysisThread):
 
     @classmethod
     def getPreparationFolder(self):
-        return "_cppstats_generalvalues"
+        return "_cppstats"
 
     @classmethod
     def getResultsFile(self):

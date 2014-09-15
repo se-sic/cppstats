@@ -1,0 +1,55 @@
+== EXAMPLE 1: nested #ifdefs and #elif branches
+
+#ifdef A
+	#ifdef B
+	#endif
+#endif
+
+options:
+1. conjoin the inner and outer #ifdef expressions.
+	#ifdef A
+		#ifdef A && B
+		#endif
+	#endif
+
+2. leave it as it is.
+
+current behavior: option 1.
+
+
+== EXAMPLE 2: #else branches
+(same for #elif branches)
+
+#ifdef A
+#else 
+#endif
+
+options:
+1. rewrite #else branch as negation of the "normal" branch.
+
+	#ifdef A
+	#else !A
+	#endif
+
+2. leave it as it is.
+
+current behavior: option 1.
+
+
+== EXAMPLE 3: #elif branches
+
+#ifdef A
+#elif B
+#endif
+
+options:
+1. conjoin expressions from #elif and (negated) #if.
+
+	#ifdef A
+	#elif (!A) && B
+	#endif
+
+2. leave it as it is.
+
+current behavior: option 1.
+

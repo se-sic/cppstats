@@ -1,0 +1,232 @@
+% ___ PLEASE README ________________________________________________________________
+%
+% Latex:
+%   I use lualatex (successor of pdflatex) of texlive-2013.
+%
+% Formatting:
+%   I use a new line for each sentence and have hard line-wrapping at 86 characters
+%   enabled. Feel free to append modelines for your editor at the end of the file.
+%
+%	Only one thing: please try to get your editor to respect the current newline
+%	character of a document or to use LF newlines (Unix style), as merging becomes
+%	really hell otherwise.
+%___________________________________________________________________________________
+
+\documentclass[a4paper]{scrartcl}
+
+% title
+\title{Handling \ifdef Expressions\\in \cppstats}
+\author{Claus Hunsen\\\url{hunsen@fim.uni-passau.de}}
+\date{September 2014}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{xspace}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+\usepackage{fixltx2e} % fix textsub- and -superscript
+\usepackage{paralist} % for inline lists
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{hyperref}
+
+
+% fixing commands (sub- and super-scripts)
+
+\newcommand\super[1]{\textsuperscript{#1}}
+\newcommand\sub[1]{\textsubscript{#1}}
+\newcommand\supersub[2]{\rlap{\super{#1}}\sub{#2}}
+
+
+% own commands
+
+% todo
+\newcommand{\todo}[1]{{\color{red}{\textbf{\textit{[#1]}}}}}
+\newcommand{\TODO}[1]{\todo{#1}}
+\newcommand{\todots}{\todo{\ldots}}
+\frenchspacing
+
+% typesetting
+\newcommand\code[1]{\texttt{#1}}
+\newcommand\feature[1]{\texttt{#1}}
+\newcommand\tool[1]{\textsc{#1}}
+\newcommand\metric[1]{{#1}}
+
+%instantiations
+\newcommand\ifdeff[1]{\code{\##1}\xspace}
+\newcommand\ifdef[0]{{\upshape\ifdeff{ifdef}}\xspace}
+\newcommand\ifdefs[0]{\ifdef{}s\xspace}
+
+\newcommand\cppstats[0]{\tool{cppstats}\xspace}
+\newcommand\cpp{\tool{cpp}\xspace}
+
+
+% listings
+
+\lstset{
+  basicstyle=\tt\small,
+  keywordstyle=\tt\small\bf,
+  commentstyle=\tt\small\it,
+  escapechar=@,
+  tabsize=2,
+  numbers=left,
+  firstline=1,
+  rulesepcolor=\color{black},
+  backgroundcolor=\color{white},
+  numbersep=0.65em,
+  xleftmargin=0.5em,
+%  xrightmargin=1em,
+  frame=top|bottom|left|right,
+  showstringspaces=false,
+  mathescape=true,
+  columns=fullflexible,
+%  escapeinside={(*@}{@*)},
+	otherkeywords={endif, ifdef, elif, else, \#}
+}
+
+
+\begin{document}
+
+\maketitle
+
+
+\begin{footnotesize}
+\noindent \cppstats was initially developed by J\"org Liebig at University of Passau for a set of studies \cite{LiebigALKS10,LiebigKA11}.
+In 2013, Claus Hunsen from the same university has taken over development.
+The most current version of \cppstats is available at \url{https://github.com/clhunsen/cppstats/}.
+Further information can be found at \url{http://fosd.net/cppstats}.
+\end{footnotesize}
+
+\section{Introduction}
+\cppstats is a tool for analyzing software systems regarding their variability.
+Therefore, we focus on software systems written in \tool{C} using the capabilities of the \cpp (the \tool{C} preprocessor) to express variability.
+\cppstats handles the expressions of the \cpp inclusion-guards (\ifdeff{if}, \ifdeff{elif}, \ifdeff{endif}, etc.) in a special way, which is why we provide the used procedure in this document.
+
+The handling of \ifdef expressions within \cppstats is divided in three parts:
+\begin{inparaenum}[\itshape 1\upshape)]
+\item light adaption of the expressions during \textit{preparation} part of \cppstats;
+\item collecting the expressions from the \tool{srcML} files and rewriting them by making implicit tangling explicit; and
+\item building a global expression pool for the analyzed software-project.
+\end{inparaenum}
+
+
+\section{Example}
+
+As \ifdefs are explained best by means of an example, the three common pattern of \cpp usage are shown in Figure~\ref{fig:examples}.
+Part~(a) shows nesting of \ifdefs, while Part~(b) and~(c) show the use of \ifdeff{else} and \ifdeff{elif} branches in correspondence to a single \ifdef.
+
+During this document, the reader is referenced to these small examples to illustrate all matters.
+
+\begin{figure}[ht]
+        \centering
+        \begin{subfigure}[b]{0.3\textwidth}
+					\begin{lstlisting}[language=C]
+#ifdef A
+	#ifdef B
+	#endif
+#endif
+					\end{lstlisting}
+					\caption{A nested \ifdef in file\,\code{X}.}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.3\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=5]
+#ifdef A
+#else 
+#endif
+					\end{lstlisting}
+					\caption{An \ifdeff{else} branch in file\,\code{Y}.}
+        \end{subfigure}
+				\hfill
+        \begin{subfigure}[b]{0.3\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=8]
+#ifdef B && C
+#elif D
+#endif
+					\end{lstlisting}
+					\caption{An \ifdeff{elif} branch in file\,\code{Z}.}
+        \end{subfigure}     
+        
+        \caption{Short examples of the patterns that occur while using \cpp and that are treated by \cppstats. 
+        	Each example and their rewriting rules are explained in this very document.}
+        \label{fig:examples}
+\end{figure}   
+
+%== EXAMPLE 2: #else branches
+%(same for #elif branches)
+%
+%
+%
+%options:
+%1. rewrite #else branch as negation of the "normal" branch.
+%
+%	#ifdef A
+%	#else !A
+%	#endif
+%
+%2. leave it as it is.
+%
+%current behavior: option 1.
+%
+%
+%== EXAMPLE 3: #elif branches
+%
+%%#ifdef A
+%%#elif B
+%%#endif
+%
+%options:
+%1. conjoin expressions from #elif and (negated) #if.
+%
+%	#ifdef A
+%	#elif (!A) && B
+%	#endif
+%
+%2. leave it as it is.
+%
+%current behavior: option 1.
+
+%\caption{The variable method \code{log\_file\_line} in \code{server/log.c} of \tool{Apache HTTP Server} (version 2.4.6)}
+%\label{fig:examplecode}
+%\end{figure}
+
+
+
+%options:
+%1. conjoin the inner and outer #ifdef expressions.
+%#ifdef A
+%  #if defined(A) && defined(B)
+%	#endif
+%#endif
+%
+%2. leave it as it is.
+%
+%current behavior: option 1.
+
+
+
+\section{Source-Code Preparation to \tool{srcML} files}
+
+%source code is transformed into srcml
+%part of this preparation is code normalization
+%this includes a light adaption of the \ifdef expressions:
+%- move multi-line expressions into one single line
+%- rewrite \ifdeff{ifdef *} to \ifdeff{if defined(*)}, and \ifdeff{ifndef *} to \ifdeff{if !defined(*)}.
+%- removal of include guards!
+
+\section{Collection of Expressions During File Analysis}
+
+% make implicit tangling explicit
+
+\section{Global Expression Pool}
+
+% each expression (string equality) is collected once per file!
+
+
+\bibliographystyle{alpha}
+\bibliography{references}
+
+\end{document}

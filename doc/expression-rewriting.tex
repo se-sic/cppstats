@@ -84,7 +84,7 @@
   mathescape=true,
   columns=fullflexible,
 %  escapeinside={(*@}{@*)},
-	otherkeywords={endif, ifdef, elif, else, \#}
+  otherkeywords={endif, ifdef, elif, else, define, ifndef, defined, \#}
 }
 
 
@@ -105,9 +105,9 @@ Further information can be found at \url{http://fosd.net/cppstats}.
 Therefore, we focus on software systems written in \tool{C} using the capabilities of the \cpp (the \tool{C} preprocessor) to express variability.
 \cppstats handles the expressions of the \cpp inclusion-guards (\ifdeff{if}, \ifdeff{elif}, \ifdeff{endif}, etc.) in a special way, which is why we provide the used procedure in this document.
 
-The handling of \ifdef expressions within \cppstats is divided in three parts:
+There is handling of \ifdef expressions within \cppstats during three different parts of the whole program:
 \begin{inparaenum}[\itshape 1\upshape)]
-\item light adaption of the expressions during \textit{preparation} part of \cppstats;
+\item light adaption of the expressions during \textit{preparation} part of \cppstats, before generating \tool{srcML} files from the source code;
 \item collecting the expressions from the \tool{srcML} files and rewriting them by making implicit tangling explicit; and
 \item building a global expression pool for the analyzed software-project.
 \end{inparaenum}
@@ -116,7 +116,8 @@ The handling of \ifdef expressions within \cppstats is divided in three parts:
 \section{Example}
 
 As \ifdefs are explained best by means of an example, the three common pattern of \cpp usage are shown in Figure~\ref{fig:examples}.
-Part~(a) shows nesting of \ifdefs, while Part~(b) and~(c) show the use of \ifdeff{else} and \ifdeff{elif} branches in correspondence to a single \ifdef.
+Each part of the example is present in a different file.
+Part~(a) shows nesting of \ifdefs, while Part~(b) and~(c) show the use of \ifdeff{else} and \ifdeff{elif} branches in an \ifdef cascade.
 
 During this document, the reader is referenced to these small examples to illustrate all matters.
 
@@ -129,25 +130,32 @@ During this document, the reader is referenced to these small examples to illust
 	#endif
 #endif
 					\end{lstlisting}
-					\caption{A nested \ifdef in file\,\code{X}.}
+					\caption{Nested \ifdef in file\,\code{X.c}.\\\,}
+					\label{fig:examples:a}
         \end{subfigure}
         \hfill
         \begin{subfigure}[b]{0.3\textwidth}
 					\begin{lstlisting}[language=C, firstnumber=5]
-#ifdef A
+#if  defined(A) \
+		 && defined(B)
 #else 
 #endif
 					\end{lstlisting}
-					\caption{An \ifdeff{else} branch in file\,\code{Y}.}
+					\caption{\ifdeff{else} branch in file\,\code{Y.c}.\\\,}
+					\label{fig:examples:b}
         \end{subfigure}
 				\hfill
         \begin{subfigure}[b]{0.3\textwidth}
 					\begin{lstlisting}[language=C, firstnumber=8]
-#ifdef B && C
+#ifndef Z_H
+#define Z_H
+#if C
 #elif D
 #endif
+#endif // Z_H
 					\end{lstlisting}
-					\caption{An \ifdeff{elif} branch in file\,\code{Z}.}
+					\caption{\ifdeff{elif} branch and include~guard in file\,\code{Z.h}.}
+					\label{fig:examples:c}
         \end{subfigure}     
         
         \caption{Short examples of the patterns that occur while using \cpp and that are treated by \cppstats. 
@@ -210,12 +218,79 @@ During this document, the reader is referenced to these small examples to illust
 
 \section{Source-Code Preparation to \tool{srcML} files}
 
-%source code is transformed into srcml
-%part of this preparation is code normalization
-%this includes a light adaption of the \ifdef expressions:
-%- move multi-line expressions into one single line
-%- rewrite \ifdeff{ifdef *} to \ifdeff{if defined(*)}, and \ifdeff{ifndef *} to \ifdeff{if !defined(*)}.
-%- removal of include guards!
+The first part of a \cppstats run is the source-code preparation that transforms the plain-text source code to \tool{srcML}\footnote{http://www.srcml.org/} files.
+\tool{srcML} is an XML format for source code that preserves line numbers and preprocessor information.
+
+Before transforming the source code to \tool{srcML}, there are several code-normalization steps, which heavily depend on the code analysis to be performed.
+For the different preparation types, please refer to the file \code{preparation.py} of \cppstats.
+
+There are up to three possible steps in the preparation that can have effect on the \ifdef expressions, though all have only cosmetic effect:
+\begin{inparaenum}[\itshape 1\upshape)]
+\item the handling of multi-line expressions;
+\item the rewriting of the shortcut expressions \ifdeff{ifdef} and \ifdeff{ifndef}; and
+\item the removal of include guards.
+\end{inparaenum}
+
+
+\subsection{Multi-Line \ifdef Expressions}
+
+A multi-line \ifdef expression is shown in Fig.\ \ref{fig:examples:b} on Lines~5 and~6.
+This expressions is rewritten as a single-line expression, so that \cppstats does not have to handle line breaks in \ifdef expressions later.
+The line numbers are preserved during this step.
+
+The output, after applying this change to Fig.\ \ref{fig:multiline:a}, is shown in Fig.\ \ref{fig:multiline:b}.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+		\begin{lstlisting}[language=C, firstnumber=5]
+#if defined(A) \
+		 && defined(B)
+#else 
+#endif
+		\end{lstlisting}
+		\caption{Repetition of Fig.\ \ref{fig:examples:b}, containing a multi-line expression on Lines 5 and 6.}
+		\label{fig:multiline:a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+		\begin{lstlisting}[language=C, firstnumber=5]
+#if defined(A) && defined(B)
+
+#else 
+#endif
+		\end{lstlisting}
+		\caption{The same code with single-line expressions.}
+		\label{fig:multiline:b}
+  \end{subfigure}
+  
+  \caption{An \ifdeff{else} branch in file\,\code{Y}, (a) before and (b) after rewriting multi-line expressions into single-line fashion.}
+  
+\end{figure}
+
+
+\subsection{Rewriting of \ifdeff{ifdef} and \ifdeff{ifndef}}
+
+As another step, the \ifdef expressions are more streamlined by rewriting the conditionals \ifdeff{ifdef} and \ifdeff{ifndef} to their long forms.
+This yields \ifdeff{if defined(X)} for the conditional \ifdeff{ifdef X}, and \ifdeff{if\,!defined(Y)} for \ifdeff{ifndef Y}.
+
+
+\subsection{Removal of Include Guards}
+
+The last preparation step that affects \ifdef expressions is the removal of include guards.
+Include guards are used to prevent the multiple inclusion of header files and would bias the results of \cppstats, because they are not a mechanism to implement variability.
+
+An inclusion guard, as shown in Fig.\ \ref{fig:examples:c} consists of three parts:
+\begin{inparaenum}[\itshape 1\upshape)]
+\item a conditional-inclusion guard checking if the file was already included (Line~8);
+\item the definition of the file guard for that is checked in Line~8 (Line~9); and
+\item the closing \ifdeff{endif} for the \ifdeff{ifndef} (Line~13).
+\end{inparaenum}
+
+When a header file containing this construct is included again, the conditional in Line~8 will be false, because \feature{Z\_H} is already defined.
+The preprocessor will skip over the entire contents of the file, and the compiler will not see it twice.
+
+
 
 \section{Collection of Expressions During File Analysis}
 

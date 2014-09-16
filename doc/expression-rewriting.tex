@@ -67,9 +67,9 @@
 % listings
 
 \lstset{
-  basicstyle=\tt\small,
-  keywordstyle=\tt\small\bf,
-  commentstyle=\tt\small\it,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\ttfamily\small\bfseries,
+  commentstyle=\ttfamily\small\itshape,
   escapechar=@,
   tabsize=2,
   numbers=left,
@@ -87,10 +87,16 @@
   otherkeywords={endif, ifdef, elif, else, define, ifndef, defined, \#}
 }
 
+% remove warnings
+
+\addtokomafont{sectioning}{\rmfamily} % for \ifdef in section headings
+
+
 
 \begin{document}
 
 \maketitle
+
 
 
 \begin{footnotesize}
@@ -103,7 +109,7 @@ Further information can be found at \url{http://fosd.net/cppstats}.
 \section{Introduction}
 \cppstats is a tool for analyzing software systems regarding their variability.
 Therefore, we focus on software systems written in \tool{C} using the capabilities of the \cpp (the \tool{C} preprocessor) to express variability.
-\cppstats handles the expressions of the \cpp inclusion-guards (\ifdeff{if}, \ifdeff{elif}, \ifdeff{endif}, etc.) in a special way, which is why we provide the used procedure in this document.
+\cppstats handles the expressions of the \cpp inclusion-guards (\ifdeff{if}, \ifdeff{elif}, \ifdeff{endif}, etc.) in a special way, which is why we provide the used procedure in this document.\footnote{We mainly describe the mechanism that are performed in the \tool{GENERAL} analysis (\code{analyses/general.py}), but the mechanisms relate to the other analyses, too.}
 
 There is handling of \ifdef expressions within \cppstats during three different parts of the whole program:
 \begin{inparaenum}[\itshape 1\upshape)]
@@ -111,6 +117,7 @@ There is handling of \ifdef expressions within \cppstats during three different 
 \item collecting the expressions from the \tool{srcML} files and rewriting them by making implicit tangling explicit; and
 \item building a global expression pool for the analyzed software-project.
 \end{inparaenum}
+
 
 
 \section{Example}
@@ -149,8 +156,8 @@ During this document, the reader is referenced to these small examples to illust
 					\begin{lstlisting}[language=C, firstnumber=8]
 #ifndef Z_H
 #define Z_H
-#if C
-#elif D
+#ifdef C
+#elif defined(D)
 #endif
 #endif // Z_H
 					\end{lstlisting}
@@ -161,7 +168,7 @@ During this document, the reader is referenced to these small examples to illust
         \caption{Short examples of the patterns that occur while using \cpp and that are treated by \cppstats. 
         	Each example and their rewriting rules are explained in this very document.}
         \label{fig:examples}
-\end{figure}   
+\end{figure}
 
 %== EXAMPLE 2: #else branches
 %(same for #elif branches)
@@ -217,6 +224,7 @@ During this document, the reader is referenced to these small examples to illust
 
 
 \section{Source-Code Preparation to \tool{srcML} files}
+\label{sec:preparation}
 
 The first part of a \cppstats run is the source-code preparation that transforms the plain-text source code to \tool{srcML}\footnote{http://www.srcml.org/} files.
 \tool{srcML} is an XML format for source code that preserves line numbers and preprocessor information.
@@ -231,8 +239,11 @@ There are up to three possible steps in the preparation that can have effect on 
 \item the removal of include guards.
 \end{inparaenum}
 
+After all steps of the preparation, \cppstats has generated proper \tool{srcML} files for each source file.
+Based on these files, \cppstats performs the analyses.
 
-\subsection{Multi-Line \ifdef Expressions}
+
+\subsection{Multi-Line \ifdef Expressions {\footnotesize (\code{preparations/rewriteMultilineMacros.py})}}
 
 A multi-line \ifdef expression is shown in Fig.\ \ref{fig:examples:b} on Lines~5 and~6.
 This expressions is rewritten as a single-line expression, so that \cppstats does not have to handle line breaks in \ifdef expressions later.
@@ -269,13 +280,13 @@ The output, after applying this change to Fig.\ \ref{fig:multiline:a}, is shown 
 \end{figure}
 
 
-\subsection{Rewriting of \ifdeff{ifdef} and \ifdeff{ifndef}}
+\subsection{Rewriting of \ifdeff{ifdef} and \ifdeff{ifndef} {\footnotesize (\code{preparations/rewriteIfdefs.py})}}
 
 As another step, the \ifdef expressions are more streamlined by rewriting the conditionals \ifdeff{ifdef} and \ifdeff{ifndef} to their long forms.
 This yields \ifdeff{if defined(X)} for the conditional \ifdeff{ifdef X}, and \ifdeff{if\,!defined(Y)} for \ifdeff{ifndef Y}.
 
 
-\subsection{Removal of Include Guards}
+\subsection{Removal of Include Guards {\footnotesize (\code{preparations/deleteIncludeGuards.py})}}
 
 The last preparation step that affects \ifdef expressions is the removal of include guards.
 Include guards are used to prevent the multiple inclusion of header files and would bias the results of \cppstats, because they are not a mechanism to implement variability.
@@ -290,14 +301,70 @@ An inclusion guard, as shown in Fig.\ \ref{fig:examples:c} consists of three par
 When a header file containing this construct is included again, the conditional in Line~8 will be false, because \feature{Z\_H} is already defined.
 The preprocessor will skip over the entire contents of the file, and the compiler will not see it twice.
 
+As a result of this preparation step, the source-code lines corresponding to the include guard (Lines 8, 9, and 13) are removed from the file and exchanged with blank lines, so that line numbers are preserved.
 
 
-\section{Collection of Expressions During File Analysis}
 
-% make implicit tangling explicit
+\section{Processing of Expressions During File Analysis}
+\label{sec:processing}
+
+\cppstats performs its analyses based on the \tool{srcML} files that are generated at the end of the preparation step.
+The \ifdef expressions are collected while traversing the \tool{XML} tree of the input files, the main functionality is implemented in the function \code{\_getFeatures} (\code{analyses/general.py}, Line 565ff.).
+During this action, the nesting hierarchy of the conditionals is remembered and used to rewrite the \ifdef expressions accordingly in the function \code{\_getFeatureSignature} (Lines~479ff.).
+Implicit tangling of \ifdef expressions are made explicit in this step, while preserving all nesting-depth information.
+
+For example, \cppstats rewrites all nested \ifdefs, each with a condition that conjoins their own conditional expression with the enclosing ones, because the inner expression depends on the evaluation of its own condition and, additionally, on the evaluation of the surrounding \ifdef expression.
+This is done also for \ifdeff{else} and \ifdeff{elif} expressions.
+ 
+The result of these mechanisms is shown in Fig.\ \ref{fig:examples2}.
+
+\begin{figure}[ht]
+        \centering
+        \begin{subfigure}[t]{\textwidth}
+					\begin{lstlisting}[language=C]
+#if defined(A)
+	#if defined(A) && defined(B)
+	#endif
+#endif
+					\end{lstlisting}
+					\caption{Nested \ifdef in file\,\code{X.c}.\vspace{1em}}
+					\label{fig:examples2:a}
+        \end{subfigure}
+        \vspace{1em}
+        \begin{subfigure}[t]{\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=5]
+#if defined(A) && defined(B)
+
+#else 
+#endif
+					\end{lstlisting}
+					\caption{\ifdeff{else} branch in file\,\code{Y.c}.}
+					\label{fig:examples2:b}
+        \end{subfigure}
+        \begin{subfigure}[t]{\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=8]
+
+
+#if defined(C)
+#elif !defined(C) && defined(D)
+#endif
+
+					\end{lstlisting}
+					\caption{\ifdeff{elif} branch and include~guard in file\,\code{Z.h}.}
+					\label{fig:examples2:c}
+        \end{subfigure}     
+        
+        \caption{Rewritten \ifdef expressions from Fig.\ \ref{fig:examples}, also including all changes from Section~\ref{sec:preparation}.\\
+        				{\footnotesize (Note that the files are formatted as \tool{srcML} actually, but, for better understanding, the source-code representations are shown here.)}}
+        \label{fig:examples2}
+\end{figure}
+
+
 
 \section{Global Expression Pool}
+\label{sec:pool}
 
+The processed \ifdef expressions from Section~\ref{sec:processing}
 % each expression (string equality) is collected once per file!
 
 

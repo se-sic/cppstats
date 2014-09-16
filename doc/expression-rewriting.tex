@@ -109,7 +109,8 @@ Further information can be found at \url{http://fosd.net/cppstats}.
 \section{Introduction}
 \cppstats is a tool for analyzing software systems regarding their variability.
 Therefore, we focus on software systems written in \tool{C} using the capabilities of the \cpp (the \tool{C} preprocessor) to express variability.
-\cppstats handles the expressions of the \cpp inclusion-guards (\ifdeff{if}, \ifdeff{elif}, \ifdeff{endif}, etc.) in a special way, which is why we provide the used procedure in this document.\footnote{We mainly describe the mechanism that are performed in the \tool{GENERAL} analysis (\code{analyses/general.py}), but the mechanisms relate to the other analyses, too.}
+\cppstats handles the expressions of the \cpp inclusion-guards (\ifdeff{if}, \ifdeff{elif}, \ifdeff{endif}, etc.) in a special way, which is why we provide the used procedure in this document.\footnote{We mainly describe the mechanism that are performed in the \tool{GENERAL} analysis (\code{analyses/general.py}) as the main analysis of \cppstats, but the mechanisms relate to the other analyses, too.}
+The handling directly affect the scattering and tangling analyses of \cppstats.
 
 There is handling of \ifdef expressions within \cppstats during three different parts of the whole program:
 \begin{inparaenum}[\itshape 1\upshape)]
@@ -135,6 +136,8 @@ During this document, the reader is referenced to these small examples to illust
 #ifdef A
 	#ifdef B
 	#endif
+#endif
+#ifdef A
 #endif
 					\end{lstlisting}
 					\caption{Nested \ifdef in file\,\code{X.c}.\\\,}
@@ -169,57 +172,6 @@ During this document, the reader is referenced to these small examples to illust
         	Each example and their rewriting rules are explained in this very document.}
         \label{fig:examples}
 \end{figure}
-
-%== EXAMPLE 2: #else branches
-%(same for #elif branches)
-%
-%
-%
-%options:
-%1. rewrite #else branch as negation of the "normal" branch.
-%
-%	#ifdef A
-%	#else !A
-%	#endif
-%
-%2. leave it as it is.
-%
-%current behavior: option 1.
-%
-%
-%== EXAMPLE 3: #elif branches
-%
-%%#ifdef A
-%%#elif B
-%%#endif
-%
-%options:
-%1. conjoin expressions from #elif and (negated) #if.
-%
-%	#ifdef A
-%	#elif (!A) && B
-%	#endif
-%
-%2. leave it as it is.
-%
-%current behavior: option 1.
-
-%\caption{The variable method \code{log\_file\_line} in \code{server/log.c} of \tool{Apache HTTP Server} (version 2.4.6)}
-%\label{fig:examplecode}
-%\end{figure}
-
-
-
-%options:
-%1. conjoin the inner and outer #ifdef expressions.
-%#ifdef A
-%  #if defined(A) && defined(B)
-%	#endif
-%#endif
-%
-%2. leave it as it is.
-%
-%current behavior: option 1.
 
 
 
@@ -309,7 +261,7 @@ As a result of this preparation step, the source-code lines corresponding to the
 \label{sec:processing}
 
 \cppstats performs its analyses based on the \tool{srcML} files that are generated at the end of the preparation step.
-The \ifdef expressions are collected while traversing the \tool{XML} tree of the input files, the main functionality is implemented in the function \code{\_getFeatures} (\code{analyses/general.py}, Line 565ff.).
+The \ifdef expressions are collected while traversing the \tool{XML} tree of the input files, the main functionality is implemented in the function \code{\_getFeatures} (\code{analyses/general.py}, Lines 565ff.).
 During this action, the nesting hierarchy of the conditionals is remembered and used to rewrite the \ifdef expressions accordingly in the function \code{\_getFeatureSignature} (Lines~479ff.).
 Implicit tangling of \ifdef expressions are made explicit in this step, while preserving all nesting-depth information.
 
@@ -326,6 +278,8 @@ The result of these mechanisms is shown in Fig.\ \ref{fig:examples2}.
 	#if defined(A) && defined(B)
 	#endif
 #endif
+#if defined(A)
+#endif
 					\end{lstlisting}
 					\caption{Nested \ifdef in file\,\code{X.c}.\vspace{1em}}
 					\label{fig:examples2:a}
@@ -335,7 +289,7 @@ The result of these mechanisms is shown in Fig.\ \ref{fig:examples2}.
 					\begin{lstlisting}[language=C, firstnumber=5]
 #if defined(A) && defined(B)
 
-#else 
+#elif !(defined(A) && defined(B))
 #endif
 					\end{lstlisting}
 					\caption{\ifdeff{else} branch in file\,\code{Y.c}.}
@@ -346,13 +300,13 @@ The result of these mechanisms is shown in Fig.\ \ref{fig:examples2}.
 
 
 #if defined(C)
-#elif !defined(C) && defined(D)
+#elif (!(defined(C))) && (defined(D))
 #endif
 
 					\end{lstlisting}
 					\caption{\ifdeff{elif} branch and include~guard in file\,\code{Z.h}.}
 					\label{fig:examples2:c}
-        \end{subfigure}     
+        \end{subfigure}
         
         \caption{Rewritten \ifdef expressions from Fig.\ \ref{fig:examples}, also including all changes from Section~\ref{sec:preparation}.\\
         				{\footnotesize (Note that the files are formatted as \tool{srcML} actually, but, for better understanding, the source-code representations are shown here.)}}
@@ -361,14 +315,55 @@ The result of these mechanisms is shown in Fig.\ \ref{fig:examples2}.
 
 
 
-\section{Global Expression Pool}
+\section{Global \ifdef Expression Pool}
 \label{sec:pool}
 
-The processed \ifdef expressions from Section~\ref{sec:processing}
-% each expression (string equality) is collected once per file!
+There are two steps for building a global pool of expressions:
+\begin{inparaenum}[\itshape 1\upshape)]
+\item constructing a list of \ifdef expressions per file; and
+\item combining all file list to a global pool.
+\end{inparaenum}
 
+
+\subsection{Listing of \ifdef Expressions per File}
+
+The first step is already processed during the mechanisms of Section~\ref{sec:processing}:
+Each distinct \ifdef expression is added to the list of expressions per file only once!
+The equality of expressions is checked via string equality (\code{wrapFeatureUp} in \code{analyses/general.py}, Lines~592ff.).
+Accordingly, the expression list for the file \code{X.c} from Fig.\ \ref{fig:examples2:a} is \feature{[defined(A), defined(A) \&\& defined(B)]}.
+Note that the second expression \feature{defined(A)} from Line~5 is \textbf{not} added.
+
+
+\subsection{Construction of Global Expression Pool}
+
+After a file is processed entirely and its list of expressions is built, the list is added to the global pool of expressions in \code{\_mergeFeatures} (\code{analyses/general.py}, Lines~1175ff.).
+Afterwards, the processed \ifdef expressions from Fig.\ \ref{fig:examples2} are added to a global pool of expressions called \code{sigmap} (Line~1172).
+The resulting global pool for scattering and tangling analyses is shown in Fig.\ \ref{fig:pool}.
+
+\begin{figure}
+\begin{lstlisting}
+(defined(A)) && (defined(B))
+defined(A) && defined(B)
+(!(defined(C))) && (defined(D))
+!(defined(A) && defined(B))
+defined(A)
+defined(C)
+\end{lstlisting}
+\caption{The resulting (unordered) global expression pool for the example files from Fig.\ \ref*{fig:examples} that is used for tangling and scattering analyses.}
+\label{fig:pool}
+\end{figure}
+
+
+%\section{Notes on the Nesting Analysis}
+%
+%For the nesting analysis, the resulting global pool from Section~\ref{sec:pool} is used, but the nesting depth of each \ifdef block is inserted into a global list.
+%This way, the nesting analysis is totally independent of the actual \ifdef expressions that are contained by the global pool, as they are not important for this analysis.
+%
+%The global list of nesting depths for the example files from Fig.\ \ref{fig:examples} is \code{[[1, 2, 1], [1], [1]]}.
+%This list is used to obtain the average nesting depth of a system, for example (\metric{ND\sub{avg}} is $1.2$, here).
 
 \bibliographystyle{alpha}
 \bibliography{references}
+
 
 \end{document}

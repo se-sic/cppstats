@@ -110,7 +110,7 @@ Further information can be found at \url{http://fosd.net/cppstats}.
 \cppstats is a tool for analyzing software systems regarding their variability.
 Therefore, we focus on software systems written in \tool{C} using the capabilities of the \cpp (the \tool{C} preprocessor) to express variability.
 \cppstats handles the expressions of the \cpp inclusion-guards (\ifdeff{if}, \ifdeff{elif}, \ifdeff{endif}, etc.) in a special way, which is why we provide the used procedure in this document.\footnote{We mainly describe the mechanism that are performed in the \tool{GENERAL} analysis (\code{analyses/general.py}) as the main analysis of \cppstats, but the mechanisms relate to the other analyses, too.}
-The handling directly affect the scattering and tangling analyses of \cppstats.
+The handling directly affects the scattering and tangling analyses of \cppstats.\footnote{Only the scattering and tangling measurements over \ifdefs, not the ones that measure over files!}
 
 There is handling of \ifdef expressions within \cppstats during three different parts of the whole program:
 \begin{inparaenum}[\itshape 1\upshape)]
@@ -125,7 +125,7 @@ There is handling of \ifdef expressions within \cppstats during three different 
 
 As \ifdefs are explained best by means of an example, the three common pattern of \cpp usage are shown in Figure~\ref{fig:examples}.
 Each part of the example is present in a different file.
-Part~(a) shows nesting of \ifdefs, while Part~(b) and~(c) show the use of \ifdeff{else} and \ifdeff{elif} branches in an \ifdef cascade.
+Part~(a) shows nesting of \ifdefs and duplicate expressions, while Part~(b) and~(c) show the use of \ifdeff{else} and \ifdeff{elif} branches in an \ifdef cascade, while Part~(c) also contains an include guard.
 
 During this document, the reader is referenced to these small examples to illustrate all matters.
 For reproducibility, the example files are included in the folder \code{example}, right next to this document.
@@ -177,7 +177,7 @@ Run an analysis of \cppstats directly on this folder to reproduce the data.
 
 
 
-\section{Source-Code Preparation to \tool{srcML} files}
+\section{Source-Code Preparation Before Generating \tool{srcML} files}
 \label{sec:preparation}
 
 The first part of a \cppstats run is the source-code preparation that transforms the plain-text source code to \tool{srcML}\footnote{http://www.srcml.org/} files.
@@ -186,7 +186,7 @@ The first part of a \cppstats run is the source-code preparation that transforms
 Before transforming the source code to \tool{srcML}, there are several code-normalization steps, which heavily depend on the code analysis to be performed.
 For the different preparation types, please refer to the file \code{preparation.py} of \cppstats.
 
-There are up to three possible steps in the preparation that can have effect on the \ifdef expressions, though all have only cosmetic effect:
+There are up to three possible steps in the preparation that can have effect on the \ifdef expressions, though all have only cosmetic effect regarding the actual variability implementation:
 \begin{inparaenum}[\itshape 1\upshape)]
 \item the handling of multi-line expressions;
 \item the rewriting of the shortcut expressions \ifdeff{ifdef} and \ifdeff{ifndef}; and
@@ -194,7 +194,7 @@ There are up to three possible steps in the preparation that can have effect on 
 \end{inparaenum}
 
 After all steps of the preparation, \cppstats has generated proper \tool{srcML} files for each source file.
-Based on these files, \cppstats performs the analyses.
+Based on these files, \cppstats performs the actual measurements.
 
 
 \subsection{Multi-Line \ifdef Expressions {\footnotesize (\code{preparations/rewriteMultilineMacros.py})}}
@@ -203,7 +203,8 @@ A multi-line \ifdef expression is shown in Fig.\ \ref{fig:examples:b} on Lines~5
 This expressions is rewritten as a single-line expression, so that \cppstats does not have to handle line breaks in \ifdef expressions later.
 The line numbers are preserved during this step.
 
-The output, after applying this change to Fig.\ \ref{fig:multiline:a}, is shown in Fig.\ \ref{fig:multiline:b}.
+The output, after applying this change to Fig.\ \ref{fig:examples:b}, is shown in Fig.\ \ref{fig:multiline:b}.
+The other files are not changed.
 
 \begin{figure}[ht]
   \centering
@@ -229,7 +230,7 @@ The output, after applying this change to Fig.\ \ref{fig:multiline:a}, is shown 
 		\label{fig:multiline:b}
   \end{subfigure}
   
-  \caption{An \ifdeff{else} branch in file\,\code{Y}, (a) before and (b) after rewriting multi-line expressions into single-line fashion.}
+  \caption{An \ifdef expression in file\,\code{Y.c}, (a) before and (b) after rewriting multi-line expressions into single-line fashion.}
   
 \end{figure}
 
@@ -237,7 +238,7 @@ The output, after applying this change to Fig.\ \ref{fig:multiline:a}, is shown 
 \subsection{Rewriting of \ifdeff{ifdef} and \ifdeff{ifndef} {\footnotesize (\code{preparations/rewriteIfdefs.py})}}
 
 As another step, the \ifdef expressions are more streamlined by rewriting the conditionals \ifdeff{ifdef} and \ifdeff{ifndef} to their long forms.
-This yields \ifdeff{if defined(X)} for the conditional \ifdeff{ifdef X}, and \ifdeff{if\,!defined(Y)} for \ifdeff{ifndef Y}.
+This yields \ifdeff{if defined(E)} for the conditional \ifdeff{ifdef E}, and \ifdeff{if\,!defined(F)} for \ifdeff{ifndef F}.
 
 
 \subsection{Removal of Include Guards {\footnotesize (\code{preparations/deleteIncludeGuards.py})}}
@@ -263,14 +264,15 @@ As a result of this preparation step, the source-code lines corresponding to the
 \label{sec:processing}
 
 \cppstats performs its analyses based on the \tool{srcML} files that are generated at the end of the preparation step.
-The \ifdef expressions are collected while traversing the \tool{XML} tree of the input files, the main functionality is implemented in the function \code{\_getFeatures} (\code{analyses/general.py}, Lines 565ff.).
+The \ifdef expressions are collected while traversing the \tool{XML} tree of the input files;
+the main functionality is implemented in the function \code{\_getFeatures} (\code{analyses/general.py}, Lines 565ff.).
 During this action, the nesting hierarchy of the conditionals is remembered and used to rewrite the \ifdef expressions accordingly in the function \code{\_getFeatureSignature} (Lines~479ff.).
 Implicit tangling of \ifdef expressions are made explicit in this step, while preserving all nesting-depth information.
 
 For example, \cppstats rewrites all nested \ifdefs, each with a condition that conjoins their own conditional expression with the enclosing ones, because the inner expression depends on the evaluation of its own condition and, additionally, on the evaluation of the surrounding \ifdef expression.
-This is done also for \ifdeff{else} and \ifdeff{elif} expressions.
+This rewriting is analogously done also for \ifdeff{else} and \ifdeff{elif} expressions.
  
-The result of these mechanisms is shown in Fig.\ \ref{fig:examples2}.
+The result of these mechanisms, after applying them on the files from Fig.\ \ref{fig:examples}, is shown in Fig.\ \ref{fig:examples2}.
 
 \begin{figure}[ht]
         \centering
@@ -304,13 +306,13 @@ The result of these mechanisms is shown in Fig.\ \ref{fig:examples2}.
 #if defined(C)
 #elif (!(defined(C))) && (defined(D))
 #endif
-
+@\phantom{\,}@
 					\end{lstlisting}
 					\caption{\ifdeff{elif} branch and include~guard in file\,\code{Z.h}.}
 					\label{fig:examples2:c}
         \end{subfigure}
         
-        \caption{Rewritten \ifdef expressions from Fig.\ \ref{fig:examples}, also including all changes from Section~\ref{sec:preparation}.\\
+        \caption{Rewritten \ifdef expressions from Fig.\ \ref{fig:examples}, also including all changes from Section~\ref{sec:preparation}.
         				{\footnotesize (Note that the files are formatted as \tool{srcML} actually, but, for better understanding, the source-code representations are shown here.)}}
         \label{fig:examples2}
 \end{figure}
@@ -323,14 +325,14 @@ The result of these mechanisms is shown in Fig.\ \ref{fig:examples2}.
 There are two steps for building a global pool of expressions:
 \begin{inparaenum}[\itshape 1\upshape)]
 \item constructing a list of \ifdef expressions per file; and
-\item combining all file list to a global pool.
+\item combining all per-file lists to a global pool.
 \end{inparaenum}
 
 
 \subsection{Listing of \ifdef Expressions per File}
 
 The first step is already processed during the mechanisms of Section~\ref{sec:processing}:
-Each distinct \ifdef expression is added to the list of expressions per file only once!
+Each distinct \ifdef expression is added to the list of expressions \textbf{only once per file}!
 The equality of expressions is checked via string equality (\code{wrapFeatureUp} in \code{analyses/general.py}, Lines~592ff.).
 Accordingly, the expression list for the file \code{X.c} from Fig.\ \ref{fig:examples2:a} is \feature{[defined(A), defined(A) \&\& defined(B)]}.
 Note that the second expression \feature{defined(A)} from Line~5 is \textbf{not} added.
@@ -339,10 +341,10 @@ Note that the second expression \feature{defined(A)} from Line~5 is \textbf{not}
 \subsection{Construction of Global Expression Pool}
 
 After a file is processed entirely and its list of expressions is built, the list is added to the global pool of expressions in \code{\_mergeFeatures} (\code{analyses/general.py}, Lines~1175ff.).
-Afterwards, the processed \ifdef expressions from Fig.\ \ref{fig:examples2} are added to a global pool of expressions called \code{sigmap} (Line~1172).
+Afterwards, the processed \ifdef expressions from Fig.\ \ref{fig:examples2} are added to a global pool of expressions, called \code{sigmap} (Line~1172).
 The resulting global pool for scattering and tangling analyses is shown in Fig.\ \ref{fig:pool}.
 
-\begin{figure}
+\begin{figure}[htp]
 \begin{lstlisting}
 (defined(A)) && (defined(B))
 defined(A) && defined(B)

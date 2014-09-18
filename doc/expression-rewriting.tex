@@ -55,6 +55,7 @@
 \newcommand\tool[1]{\textsc{#1}}
 \newcommand\metric[1]{{#1}}
 
+
 %instantiations
 \newcommand\ifdeff[1]{\code{\##1}\xspace}
 \newcommand\ifdef[0]{{\upshape\ifdeff{ifdef}}\xspace}
@@ -63,6 +64,7 @@
 \newcommand\cppstats[0]{\tool{cppstats}\xspace}
 \newcommand\cpp{\tool{cpp}\xspace}
 
+\newcommand\affected{\textcolor{red}{*}\xspace}
 
 % listings
 
@@ -111,6 +113,7 @@ Further information can be found at \url{http://fosd.net/cppstats}.
 Therefore, we focus on software systems written in \tool{C} using the capabilities of the \cpp (the \tool{C} preprocessor) to express variability.
 \cppstats handles the expressions of the \cpp inclusion-guards (\ifdeff{if}, \ifdeff{elif}, \ifdeff{endif}, etc.) in a special way, which is why we provide the used procedure in this document.\footnote{We mainly describe the mechanism that are performed in the \tool{GENERAL} analysis (\code{analyses/general.py}) as the main analysis of \cppstats, but the mechanisms relate to the other analyses, too.}
 The handling directly affects the scattering and tangling analyses of \cppstats.\footnote{Only the scattering and tangling measurements over \ifdefs, not the ones that measure over files!}
+Processing steps that affect these analyses are marked with \affected in the headline.
 
 There is handling of \ifdef expressions within \cppstats during three different parts of the whole program:
 \begin{inparaenum}[\itshape 1\upshape)]
@@ -260,7 +263,7 @@ As a result of this preparation step, the source-code lines corresponding to the
 
 
 
-\section{Processing of Expressions During File Analysis}
+\section{Processing of Expressions During File Analysis \affected}
 \label{sec:processing}
 
 \cppstats performs its analyses based on the \tool{srcML} files that are generated at the end of the preparation step.
@@ -324,12 +327,12 @@ The result of these mechanisms, after applying them on the files from Fig.\ \ref
 
 There are two steps for building a global pool of expressions:
 \begin{inparaenum}[\itshape 1\upshape)]
-\item constructing a list of \ifdef expressions per file; and
+\item constructing a list of \ifdef expressions per file \affected; and
 \item combining all per-file lists to a global pool.
 \end{inparaenum}
 
 
-\subsection{Listing of \ifdef Expressions per File}
+\subsection{Listing of \ifdef Expressions per File \affected}
 
 The first step is already processed during the mechanisms of Section~\ref{sec:processing}:
 Each distinct \ifdef expression is added to the list of expressions \textbf{only once per file}!

@@ -20,7 +20,7 @@
 \date{September 2014}
 
 % Packages
-\usepackage[utf8]{inputenc}
+\usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{xspace}
 \usepackage{graphicx}
@@ -104,6 +104,7 @@
 \begin{footnotesize}
 \noindent \cppstats was initially developed by J\"org Liebig at University of Passau for a set of studies \cite{LiebigALKS10,LiebigKA11}.
 In 2013, Claus Hunsen from the same university has taken over development.
+Later, \cppstats was used in another study \cite{HunsenZSKLBA}.
 The most current version of \cppstats is available at \url{https://github.com/clhunsen/cppstats/}.
 Further information can be found at \url{http://fosd.net/cppstats}.
 \end{footnotesize}
@@ -327,12 +328,12 @@ The result of these mechanisms, after applying them on the files from Fig.\ \ref
 
 There are two steps for building a global pool of expressions:
 \begin{inparaenum}[\itshape 1\upshape)]
-\item constructing a list of \ifdef expressions per file \affected; and
-\item combining all per-file lists to a global pool.
+\item constructing a local pool of \ifdef expressions per file \affected; and
+\item combining all local pools to a global pool.
 \end{inparaenum}
 
 
-\subsection{Listing of \ifdef Expressions per File \affected}
+\subsection{Construction of Local Expression Pools \affected}
 
 The first step is already processed during the mechanisms of Section~\ref{sec:processing}:
 Each distinct \ifdef expression is added to the list of expressions \textbf{only once per file}!
@@ -369,6 +370,7 @@ defined(C)
 %The global list of nesting depths for the example files from Fig.\ \ref{fig:examples} is \code{[[1, 2, 1], [1], [1]]}.
 %This list is used to obtain the average nesting depth of a system, for example (\metric{ND\sub{avg}} is $1.2$, here).
 
+\nocite{*}
 \bibliographystyle{alpha}
 \bibliography{references}
 

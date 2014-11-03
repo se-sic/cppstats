@@ -33,3 +33,4 @@ log
 *.tdo
 *.bak
 *.synctex.gz
+*.vrb

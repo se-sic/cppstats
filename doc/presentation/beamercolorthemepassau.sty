@@ -1,0 +1,58 @@
+% Copyright 2003 by Till Tantau <tantau@users.sourceforge.net>.
+%
+% This program can be colorPassauAlertistributed and/or modified under the terms
+% of the GNU Public License, version 2.
+
+\mode<presentation>
+
+\definecolor{colorPassauOrange}{RGB}{255, 153, 46}
+\definecolor{colorPassauDarkGrey}{RGB}{98, 98, 98}
+\definecolor{colorPassauLightGrey}{RGB}{224,224,224}
+\definecolor{colorPassauAlert}{RGB}{255,0,0}
+\definecolor{colorPassauExample}{RGB}{0,100,0}
+\setbeamercolor*{colorPassauLightGrey}{bg=colorPassauLightGrey}
+
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamercolor{structure}{fg=black}
+ 
+\setbeamercolor{alerted text}{fg=colorPassauAlert!85!black}
+\setbeamercolor{example text}{fg=colorPassauExample!85!black}
+
+\setbeamercolor{item projected}{use=item,fg=white,bg=colorPassauDarkGrey}
+
+\setbeamercolor*{palette primary}{fg=white,bg=colorPassauDarkGrey}
+\setbeamercolor*{palette secondary}{fg=white,bg=colorPassauDarkGrey}
+\setbeamercolor*{palette tertiary}{fg=black!100!colorPassauAlert}
+\setbeamercolor*{palette quaternary}{fg=black!1!colorPassauAlert}
+
+\setbeamercolor*{sidebar}{parent=palette primary}
+
+\setbeamercolor*{palette sidebar primary}{fg=colorPassauDarkGrey}
+\setbeamercolor*{palette sidebar secondary}{fg=colorPassauAlert}
+\setbeamercolor*{palette sidebar tertiary}{fg=colorPassauDarkGrey}
+\setbeamercolor*{palette sidebar quaternary}{fg=colorPassauAlert}
+
+\setbeamercolor{framesubtitle}{fg=white}
+\setbeamercolor*{subtitle}{fg=white}
+
+\setbeamercolor*{block title}{fg=black,bg=colorPassauLightGrey}
+\setbeamercolor*{block title alerted}{parent=alerted text, bg=colorPassauLightGrey}
+\setbeamercolor*{block title example}{parent=example text, bg=colorPassauLightGrey}
+\setbeamercolor*{block body}{}
+\setbeamercolor*{block body alerted}{}
+\setbeamercolor*{block body example}{}
+
+\setbeamercolor*{titlelike}{parent=palette secondary}
+
+\setbeamercolor*{author in head/foot}{fg=black,bg=colorPassauOrange}
+\setbeamercolor*{title in head/foot}{fg=white,bg=colorPassauDarkGrey}
+\setbeamercolor*{date in head/foot}{fg=black,bg=colorPassauLightGrey}
+
+\setbeamercolor*{section in head/foot}{parent=palette tertiary}
+\setbeamercolor*{subsection in head/foot}{parent=palette primary}
+
+
+
+
+\mode
+<all>

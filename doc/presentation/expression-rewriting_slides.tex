@@ -1,0 +1,699 @@
+\documentclass{beamer} 
+\usetheme{passau}      
+
+%% for handouts!
+% \usepackage{pgfpages}
+% \pgfpagesuselayout{4 on 1}[a4paper, landscape, border shrink=5mm]
+% \pgfpageslogicalpageoptions{1}{border code=\pgfusepath{stroke}}
+% \pgfpageslogicalpageoptions{2}{border code=\pgfusepath{stroke}}
+% \pgfpageslogicalpageoptions{3}{border code=\pgfusepath{stroke}}
+% \pgfpageslogicalpageoptions{4}{border code=\pgfusepath{stroke}}
+
+% \setbeameroption{show notes} 
+%  \hypersetup{pdfpagemode=FullScreen}
+  
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+\usepackage{fixltx2e} % fix textsub- and -superscript
+\usepackage{listings}
+\usepackage{paralist} % for inline lists
+\usepackage{xspace}
+\usepackage[compatibility=false]{caption}
+\usepackage{subcaption}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{ulem} % for line-through
+   
+\DeclareGraphicsExtensions{.png,.jpg,.pdf,.mps,.gif,.eps}
+
+
+% fixing commands (sub- and super-scripts)
+
+\newcommand\super[1]{\textsuperscript{#1}}
+\newcommand\sub[1]{\textsubscript{#1}}
+\newcommand\supersub[2]{\rlap{\super{#1}}\sub{#2}}
+\newcommand{\etalchar}[1]{$^{#1}$}
+
+% own commands
+
+% todo
+\newcommand{\todo}[1]{{\color{red}{\textbf{\textit{[#1]}}}}}
+\newcommand{\TODO}[1]{\todo{#1}}
+\newcommand{\todots}{\todo{\ldots}}
+\frenchspacing
+
+% typesetting
+\newcommand\code[1]{\texttt{#1}}
+\newcommand\feature[1]{\texttt{#1}}
+\newcommand\tool[1]{\textsc{#1}}
+\newcommand\metric[1]{{#1}}
+
+%instantiations
+\newcommand\ifdeff[1]{\code{\##1}\xspace}
+\newcommand\ifdef[0]{{\upshape\ifdeff{ifdef}}\xspace}
+\newcommand\ifdefs[0]{\ifdef{}s\xspace}
+
+\newcommand\cppstats[0]{\tool{cppstats}\xspace}
+\newcommand\cpp{\tool{cpp}\xspace}
+
+
+% listings
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\ttfamily\scriptsize\bfseries,
+  commentstyle=\ttfamily\scriptsize\itshape,
+  escapechar=@,
+  tabsize=2,
+  numbers=left,
+  firstline=1,
+  rulesepcolor=\color{black},
+  backgroundcolor=\color{white},
+  numbersep=0.65em,
+  xleftmargin=0.5em,
+%  xrightmargin=1em,
+  frame=top|bottom|left|right,
+  showstringspaces=false,
+  mathescape=true,
+  columns=fullflexible,
+%  escapeinside={(*@}{@*)},
+  otherkeywords={endif, ifdef, elif, else, define, ifndef, defined, \#}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% beamer options %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                
+\beamertemplatenavigationsymbolsempty
+\setbeamercovered{dynamic}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% title page definition %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title[Handling \ifdef Expressions in \cppstats]{Handling \ifdef Expressions\\in \cppstats}   
+% \subtitle{Untertitel} 
+\author[Claus Hunsen]{Claus Hunsen}
+%%\author{F.~Author\inst{1} \and S.~Another\inst{2}}
+\institute{University of Passau}
+% % \institute[Universities of] 
+% % { 
+% % \inst{1}%
+% % Faculty of Informatics and Mathematics\\
+% % University of Passau
+% % \and
+% % \inst{2}%
+% % Department of Theoretical Philosophy\\
+% % Univ of E}
+\titlegraphic{\includegraphics[height=1cm]{unilogo.pdf} \hspace*{10pt} \includegraphics[height=1cm]{SPLGroup.pdf}}
+\date[September 2014]{September 2014}
+
+% - Use the \inst{?} command only if the authors have different
+%   affiliation.  
+% \author{\inst{1}} 
+
+% - Use the \inst command only if there are several affiliations.
+% - Keep it simple, no one is interested in your street address.
+
+
+% Delete this, if you do not want the table of contents to pop up at
+% the beginning of each subsection:
+% \AtBeginSection[]
+% {
+% 	\begin{frame}<beamer>
+% 	\frametitle{Outline}
+% 		\tableofcontents[currentsection,currentsubsection]
+% 	\end{frame}
+% } 
+
+% If you wish to uncover everything in a step-wise fashion, uncomment
+% the following command:
+
+%\beamerdefaultoverlayspecification{<+->}
+ 
+\definecolor{pb}{RGB}{108,166,205}
+\definecolor{ftb}{RGB}{238,92,66}
+\definecolor{fam}{RGB}{102,205,0}
+ 
+\newcommand{\coloredSquare}[1]{\color{#1}\ensuremath{\blacksquare}}
+ 
+\begin{document}
+   
+% --------------------------------------------------- Slide --
+\begin{frame}[plain]
+  \titlepage
+\end{frame} 
+
+\begin{frame}
+  \frametitle{Outline} %
+  \tableofcontents  
+\end{frame} 
+
+
+\section[Introduction]{Introduction}
+\stepcounter{subsection}
+
+
+\begin{frame}
+\frametitle{Outline of the \cppstats Mechanisms}
+
+\begin{itemize}
+\item Source-Code Preparation Before Generating \tool{srcML} files
+	\begin{itemize}
+	\item Multi-Line \ifdef Expressions
+	\item Rewriting of \ifdeff{ifdef} and \ifdeff{ifndef}
+	\item Removal of Include Guards
+	\end{itemize}
+\item Processing of Expressions During File Analysis \textcolor{colorPassauAlert}{*}
+\item Global \ifdef Expression Pool
+	\begin{itemize}
+	\item Listing of \ifdef Expressions per File \textcolor{colorPassauAlert}{*}
+	\item Construction of Global Expression Pool
+	\end{itemize}
+\end{itemize}
+
+\vfill
+
+\textcolor{colorPassauAlert}{*} -- affects scattering and tangling measurement over \ifdefs
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Studies using \cppstats}
+
+This algorithm have been used in the following studies:
+
+\nocite{*}
+\bibliographystyle{alpha}
+\begin{thebibliography}{LAL{\etalchar{+}}10}
+\footnotesize
+
+\bibitem[LAL{\etalchar{+}}10]{LiebigALKS10}
+J{\"o}rg Liebig, Sven Apel, Christian Lengauer, Christian K{\"a}stner, and
+  Michael Schulze. 
+{\itshape An Analysis of the Variability in Forty Preprocessor-Based Software
+  Product Lines}.
+In {\em ICSE}, pages
+  105--114. ACM, 2010.
+
+\bibitem[LKA11]{LiebigKA11}
+J{\"o}rg Liebig, Christian K{\"a}stner, and Sven Apel.
+{\itshape Analyzing the Discipline of Preprocessor Annotations in 30 Million
+  Lines of {C} Code}.
+In {\em AOSD}, pages 191--202. ACM, 2011.
+
+\bibitem[HZS{\etalchar{+}}14]{HunsenZSKLBA}
+Claus Hunsen, Bo~Zhang, Janet Siegmund, Christian K{\"a}stner, Olaf
+  Le{\ss}enich, Martin Becker, and Sven Apel.
+{\itshape Preprocessor-Based Variability in Open-Source and Industrial
+  Software Systems: An Empirical Study}.
+{\em {Empirical Software Engineering}}, 2014.
+Submitted.
+
+\end{thebibliography}
+
+\end{frame}
+
+
+\AtBeginSection[] {
+    \begin{frame}<beamer>
+    \frametitle{Outline} %
+    \tableofcontents[currentsection]  
+    \end{frame}
+}
+
+\section{Example}
+\stepcounter{subsection}
+
+  
+\begin{frame}[fragile]
+\frametitle{Example of Three Files}
+
+
+\begin{figure}[ht]
+        \centering
+        \small
+        \begin{subfigure}[b]{0.3\textwidth}
+					\begin{lstlisting}[language=C]
+#ifdef A
+  #ifdef B
+  #endif
+#endif
+#ifdef A
+#endif
+					\end{lstlisting}
+					\caption{Nested \ifdef in file\,\code{X.c}.\vspace{1.15em}}
+					\label{fig:examples:a}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.3\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=5]
+#if  defined(A) \
+     && defined(B)
+#else 
+#endif
+					\end{lstlisting}
+					\caption{\ifdeff{else} branch in file\,\code{Y.c}.\vspace{1.15em}}
+					\label{fig:examples:b}
+        \end{subfigure}
+				\hfill
+        \begin{subfigure}[b]{0.3\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=8]
+#ifndef Z_H
+#define Z_H
+#ifdef C
+#elif defined(D)
+#endif
+#endif // Z_H
+					\end{lstlisting}
+					\caption{\ifdeff{elif} branch and include~guard in file\,\code{Z.h}.}
+					\label{fig:examples:c}
+        \end{subfigure}     
+        
+        \caption{Short examples of the patterns that occur while using \cpp and that are treated by \cppstats. 
+        	Each example and their rewriting rules are explained in this very document.}
+        \label{fig:examples}
+\end{figure}
+
+
+\end{frame}
+
+
+\section[Preparation]{Source-Code Preparation Before Generating \tool{srcML} files}
+\stepcounter{subsection}
+
+\begin{frame}[fragile]
+\frametitle{Multi-Line \ifdef Expressions}
+
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+		\begin{lstlisting}[language=C, firstnumber=5]
+#if defined(A) \
+		 && defined(B)
+#else 
+#endif
+		\end{lstlisting}
+		\caption{Repetition of Fig.\ \ref{fig:examples:b}, containing a multi-line expression on Lines 5 and 6.}
+		\label{fig:multiline:a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+		\begin{lstlisting}[language=C, firstnumber=5]
+#if defined(A) && defined(B)
+
+#else 
+#endif
+		\end{lstlisting}
+		\caption{The same code with single-line expressions.\vspace{1.15em}}
+		\label{fig:multiline:b}
+  \end{subfigure}
+  
+  \caption{An \ifdef expression in file\,\code{Y.c}, (a) before and (b) after rewriting multi-line expressions into single-line fashion.}
+  
+\end{figure}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Rewriting of \ifdeff{ifdef} and \ifdeff{ifndef}}
+
+\vfill
+\ifdeff{ifdef E} \hfill $\xrightarrow{\hspace*{4em}}$ \hfill \ifdeff{if defined(E)}
+
+\vfill
+
+\ifdeff{ifndef F} \hfill $\xrightarrow{\hspace*{4em}}$ \hfill \ifdeff{if !defined(F)}
+
+\vfill
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Removal of Include Guards}
+
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[b]{0.4\textwidth}
+	\begin{lstlisting}[language=C, firstnumber=8]
+#ifndef Z_H
+#define Z_H
+#ifdef C
+#elif defined(D)
+#endif
+#endif // Z_H
+		\end{lstlisting}
+		\caption{Include~guard in file\,\code{Z.h} (Lines 8, 9, and 13).}
+		\label{fig:includeguard:a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.52\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=8]
+
+
+#if defined(C)
+#elif (!(defined(C))) && (defined(D))
+#endif
+@\phantom{\,}@
+					\end{lstlisting}
+		\caption{The example after removal of the include guard.}
+		\label{fig:includeguard:b}
+  \end{subfigure}
+  
+  \caption{The file\,\code{Z.h} (a) before and (b) after removal of the include guard.}
+  
+\end{figure}
+
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Preparation: Before and After}
+
+
+\begin{figure}[ht]
+        \centering
+        \small
+        \begin{subfigure}[b]{0.4\textwidth}
+					\begin{lstlisting}[language=C]
+#ifdef A
+  #ifdef B
+  #endif
+#endif
+#ifdef A
+#endif
+					\end{lstlisting}
+					\begin{lstlisting}[language=C, firstnumber=5]
+#if  defined(A) \
+     && defined(B)
+#else 
+#endif
+					\end{lstlisting}
+					\begin{lstlisting}[language=C, firstnumber=8]
+#ifndef Z_H
+#define Z_H
+#ifdef C
+#elif defined(D)
+#endif
+#endif // Z_H
+					\end{lstlisting}
+					\caption{\scriptsize Before preparation.}
+        \end{subfigure}   
+        \hfill
+        \begin{subfigure}[b]{0.4\textwidth}
+					\begin{lstlisting}[language=C]
+#if defined(A)
+  #if defined(B)
+  #endif
+#endif
+#if defined(A)
+#endif
+					\end{lstlisting}
+					\begin{lstlisting}[language=C, firstnumber=5]
+#if  defined(A) && defined(B)
+
+#else 
+#endif
+					\end{lstlisting}
+					\begin{lstlisting}[language=C, firstnumber=8]
+
+
+#if defined(C)
+#elif defined(D)
+#endif
+@\phantom{a}@
+					\end{lstlisting}
+					\caption{\scriptsize After preparation.}
+%					\label{fig:examples:a}
+        \end{subfigure}         
+        
+        \label{fig:examples2_5}
+\end{figure}
+
+\end{frame}
+
+
+\section[Processing *]{Processing of Expressions During File Analysis *}
+\stepcounter{subsection}
+
+
+\begin{frame}
+\frametitle{Processing Steps}
+
+
+\begin{itemize}
+
+\item Look at each \ifdef expression.
+\item Rewrite if nested, \ifdeff{elif}, or \ifdeff{else}  \textcolor{colorPassauAlert}{*}
+	\begin{itemize}
+	\item[\itshape nested] conjoin expressions from inner and outer \ifdefs
+	\item[\itshape \ifdeff{elif}] conjoin expression with negation of all previous expressions
+	\item[\itshape \ifdeff{else}] use conjunction of all previous expressions as negations
+	\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Processing \ifdef Expressions \textcolor{colorPassauAlert}{*}}
+
+
+\begin{figure}[ht]
+        \centering
+        \small
+        \begin{subfigure}[b]{0.4\textwidth}
+					\begin{lstlisting}[language=C]
+#if defined(A)
+  #if defined(B)
+  #endif
+#endif
+#if defined(A)
+#endif
+					\end{lstlisting}
+					\begin{lstlisting}[language=C, firstnumber=5]
+#if  defined(A) && defined(B)
+
+#else 
+#endif
+					\end{lstlisting}
+					\begin{lstlisting}[language=C, firstnumber=8]
+
+
+#if defined(C)
+#elif defined(D)
+#endif
+@\phantom{a}@
+					\end{lstlisting}
+					\caption{\scriptsize Before processing.}
+%					\label{fig:examples:a}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.525\textwidth}
+					\begin{lstlisting}[language=C]
+#if defined(A)
+  #if @\textbf{\textcolor{colorPassauAlert}{defined(A) \&\& }}@defined(B)
+  #endif
+#endif
+#if defined(A)
+#endif
+					\end{lstlisting}
+					\begin{lstlisting}[language=C, firstnumber=5]
+#if  defined(A) && defined(B)
+
+@\textbf{\textcolor{colorPassauAlert}{\#elif !(defined(A) \&\& defined(B))}}@
+#endif
+					\end{lstlisting}
+					\begin{lstlisting}[language=C, firstnumber=8]
+
+
+#if defined(C)
+#elif @\textbf{\textcolor{colorPassauAlert}{(!(defined(C))) \&\& }}@(defined(D))
+#endif
+@\phantom{a}@
+					\end{lstlisting}
+					\caption{\scriptsize After processing.}
+%					\label{fig:examples:a}
+        \end{subfigure}   
+        
+        \label{fig:examples2}
+\end{figure}
+
+\end{frame}
+
+  
+  
+\section[Global Pool *]{Global \ifdef Expression Pool *}
+\stepcounter{subsection}
+
+
+\begin{frame}
+\frametitle{Global \ifdef Expression Pool}
+
+\begin{itemize}
+
+\item Local \ifdef Expression Pools \textcolor{colorPassauAlert}{*}
+	\begin{itemize}
+	\item Take each expression \textbf{only once} per file
+	\item Comparison via string equality
+	\end{itemize}
+
+\item Construction of Global Expression Pool
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Local \ifdef Expression Pools \textcolor{colorPassauAlert}{*}}
+
+
+
+\begin{figure}[ht]
+        \centering
+        \small
+        \begin{subfigure}[c]{0.52\textwidth}
+					\begin{lstlisting}[language=C]
+#if defined(A)
+	#if defined(A) && defined(B)
+	#endif
+#endif
+#if defined(A)
+#endif
+					\end{lstlisting}
+				\end{subfigure}
+				\hfill
+        \begin{subfigure}[c]{0.43\textwidth}
+					\begin{lstlisting}[language=C]
+@\phantom{\,}@defined(A)
+defined(A) && defined(B)
+@\textbf{\textcolor{colorPassauAlert}{\sout{defined(A)}}}@
+					\end{lstlisting}					
+				\end{subfigure}	
+\end{figure}%	
+\begin{figure}[ht]
+        \centering
+        \small
+        \begin{subfigure}[c]{0.52\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=5]
+#if  defined(A) && defined(B)
+
+#elif !(defined(A) && defined(B))
+#endif
+					\end{lstlisting}
+				\end{subfigure}
+				\hfill
+        \begin{subfigure}[c]{0.43\textwidth}
+					\begin{lstlisting}[language=C]
+@\phantom{\,}@defined(A) && defined(B)
+!(defined(A) && defined(B))
+					\end{lstlisting}					
+				\end{subfigure}	
+\end{figure}%	
+\begin{figure}[ht]
+        \centering
+        \small
+        \begin{subfigure}[c]{0.52\textwidth}
+					\begin{lstlisting}[language=C, firstnumber=8]
+
+
+#if defined(C)
+#elif (!(defined(C))) && (defined(D))
+#endif
+@\phantom{a}@
+					\end{lstlisting}
+				\end{subfigure}
+				\hfill
+        \begin{subfigure}[c]{0.43\textwidth}
+					\begin{lstlisting}[language=C]
+@\phantom{\,}@defined(C)
+(!(defined(C))) && (defined(D))
+					\end{lstlisting}					
+				\end{subfigure}	
+\end{figure}			
+
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Construction of Global Expression Pool}
+
+\begin{figure}
+
+	\begin{subfigure}[c]{0.45\textwidth}
+
+		\begin{lstlisting}[language=C]
+@\phantom{\,}@defined(A)
+defined(A) && defined(B)
+		\end{lstlisting}
+
+		\begin{lstlisting}[language=C]
+@\phantom{\,}@defined(A) && defined(B)
+!(defined(A) && defined(B))
+		\end{lstlisting}		
+	
+		\begin{lstlisting}[language=C]
+@\phantom{\,}@defined(C)
+(!(defined(C))) && (defined(D))
+		\end{lstlisting}
+	
+	\caption{\scriptsize Pools per file.}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}[c]{0.45\textwidth}
+
+		\begin{lstlisting}[language=C]
+@\phantom{\,}@defined(A)
+defined(A) && defined(B)
+defined(A) && defined(B)
+!(defined(A) && defined(B))
+defined(C)
+(!(defined(C))) && (defined(D))
+		\end{lstlisting}
+	
+	\caption{\scriptsize Global expression pool.}
+	\end{subfigure}
+
+
+\end{figure}
+
+\begin{block}{Note}
+
+Scattering and tangling analyses are performed based on the global pool!
+
+\end{block}
+
+\end{frame}
+
+
+\section{Summary}
+\stepcounter{subsection}
+
+\begin{frame}
+\frametitle{Summary}
+
+\begin{itemize}
+
+\item Processing of \ifdef expressions and construction of local expression pools (one per file) affect scattering and tangling analyses that work per \ifdef.
+\item Nesting analyses is not affected.
+
+\end{itemize}
+
+\end{frame}
+  
+\end{document}

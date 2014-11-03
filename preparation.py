@@ -105,7 +105,7 @@ def runBashCommand(command, shell=False, stdout=None):
     if type(command) is str:
         command = command.split()
 
-    process = subprocess.Popen(command, shell=shell, stdout=stdout)
+    process = subprocess.Popen(command, shell=shell, stdout=stdout, stderr=stdout)
     out, err = process.communicate() # TODO do something with the output
     process.wait()
 
@@ -146,7 +146,7 @@ def src2srcml(src, srcml):
         #srcml = getCygwinPath(srcml)
         _s2sml = getCygwinPath(_s2sml)
 
-    runBashCommand(_s2sml + " --language=C " + src, stdout = open(srcml, 'w+'))# + " -o " + srcml)
+    runBashCommand([_s2sml, src, "--language=C"], stdout = open(srcml, 'w+'))# + " -o " + srcml)
     # FIXME incorporate "|| rm ${f}.xml" from bash
 
 
@@ -158,7 +158,7 @@ def srcml2src(srcml, src):
         srcml = getCygwinPath(srcml)
         _sml2s = getCygwinPath(_sml2s)
 
-    runBashCommand(_sml2s + " " + srcml, stdout = open(src, 'w+'))# + " -o " + src)
+    runBashCommand([_sml2s, srcml], stdout = open(src, 'w+'))# + " -o " + src)
 
 
 # #################################################
@@ -303,7 +303,7 @@ class AbstractPreparationThread(object):
         src2srcml(self.currentFile, tmp)
 
         # delete all comments in the xml and write to another file
-        runBashCommand("xsltproc -o " + tmp_out + " " + getPreparationScript("deleteComments.xsl") + " " + tmp)
+        runBashCommand(["xsltproc", "-o", tmp_out, getPreparationScript("deleteComments.xsl"), tmp])
 
         # re-transform the xml to a normal source file
         srcml2src(tmp_out, self.currentFile)

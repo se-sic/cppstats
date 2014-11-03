@@ -1,5 +1,5 @@
-                                cppstats
-
+cppstats
+========
 
 What is it?
 -----------
@@ -17,12 +17,22 @@ Currently, cppstats supports following analyses:
 For detailed information on each kind of analysis, please refer to the
 corresponding paragraph below in this file.
 
+For further information, please see the tool's homepage at:
+http://www.fosd.net/cppstats
+
 
 The Latest Version
 ------------------
 
 Details of the latest version can be found on the cppstats project site
 at GitHub under https://github.com/clhunsen/cppstats/.
+
+
+Contributors
+------------
+
+Jörg Liebig <joliebig@fim.uni-passau.de>, University of Passau
+Claus Hunsen <hunsen@fim.uni-passau.de>, University of Passau
 
 
 Installation

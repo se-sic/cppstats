@@ -43,8 +43,8 @@ except ImportError:
 try:
     pversion = sys.version_info[0]
 
-    if pversion == 2: import pyparsing.pyparsing_py2 as pypa
-    else: import pyparsing.pyparsing_py3 as pypa
+    if pversion == 2: import lib.pyparsing.pyparsing_py2 as pypa
+    else: import lib.pyparsing.pyparsing_py3 as pypa
     pypa.ParserElement.enablePackrat()        # speed up parsing
     sys.setrecursionlimit(4000)               # handle larger expressions
 except ImportError:

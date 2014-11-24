@@ -21,14 +21,14 @@ from collections import OrderedDict  # for ordered dictionaries
 __analysis_lib_subfolder = "lib"
 __analysis_scripts_subfolder = "analyses"
 
-sys.path.append(os.path.abspath(__analysis_lib_subfolder))  # lib subfolder
+# sys.path.append(os.path.abspath(__analysis_lib_subfolder))  # lib subfolder
 sys.path.append(os.path.abspath(__analysis_scripts_subfolder))  # analysis scripts
 
 # #################################################
 # imports from subfolders
 
 # different kinds of analyses are imported later within the corresponding classes
-import cpplib.cpplib as cpplib
+# import cpplib.cpplib as cpplib
 
 
 # #################################################
@@ -107,6 +107,11 @@ class AbstractAnalysisThread(object):
         print "# starting '" + self.getName() + "' analysis: " + self.project
 
     def teardown(self):
+
+        # delete temp folder for file-based preparation
+        if (self.file):
+            shutil.rmtree(self.tmpfolder)
+
         # LOGGING
         notify("finished '" + self.getName() + "' analysis:\n " + self.project)
         print "# finished '" + self.getName() + "' analysis: " + self.project

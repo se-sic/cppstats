@@ -21,7 +21,7 @@ __preparation_scripts_subfolder = "preparations"
 __preparation_lib_subfolder = "lib"
 __preparation_lib_srcml_subfolder = "srcml"
 
-sys.path.append(os.path.abspath(__preparation_lib_subfolder))  # lib subfolder
+# sys.path.append(os.path.abspath(__preparation_lib_subfolder))  # lib subfolder
 sys.path.append(os.path.abspath(__preparation_scripts_subfolder))  # preparation scripts
 
 
@@ -65,7 +65,7 @@ _sml2s = getLib(os.path.join(__preparation_lib_srcml_subfolder, __sml2s_executab
 # for deletion of include guards in H files
 import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
 
-import cpplib.cpplib as cpplib
+import lib.cpplib.cpplib as cpplib
 
 
 # #################################################
@@ -204,6 +204,11 @@ class AbstractPreparationThread(object):
         print "# starting '" + self.getPreparationName() + "' preparations: " + self.project
 
     def teardown(self):
+
+        # delete temp folder for file-based preparation
+        if (self.file):
+            shutil.rmtree(self.subfolder)
+
         # LOGGING
         notify("finished '" + self.getPreparationName() + "' preparations:\n " + self.project)
         print "# finished '" + self.getPreparationName() + "' preparations: " + self.project

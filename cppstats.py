@@ -22,7 +22,7 @@ import tempfile # for temporary files
 
 __cppstats_lib_subfolder = "lib"
 
-sys.path.append(os.path.abspath(__cppstats_lib_subfolder))  # lib subfolder
+# sys.path.append(os.path.abspath(__cppstats_lib_subfolder))  # lib subfolder
 
 # #################################################
 # imports from subfolders
@@ -30,7 +30,7 @@ sys.path.append(os.path.abspath(__cppstats_lib_subfolder))  # lib subfolder
 # import different kinds of analyses
 import preparation, analysis
 
-import cpplib.cpplib as cpplib
+# import cpplib.cpplib as cpplib
 
 
 # #################################################
@@ -78,6 +78,9 @@ def applyFile(kind, infile, outfile, options):
     options.infile = tmpfile
     options.outfile = outfile
     analysis.applyFile(kind, options.infile, options)
+
+    # delete temp file
+    os.remove(tmpfile)
 
 def applyFolders(option_kind, inputlist, options):
     kind = __kinds.get(option_kind)

@@ -855,9 +855,19 @@ def apply(folder, options):
         tdcsv.writerow([sig,tang])
     td.close()
 
-    # FIXME remove line number?!
     nd, ndcsv = _prologCSV(os.path.join(folder, os.pardir), "nesting_degrees_toplevel_branches.csv", ["file", "signature", "ND"], delimiter=",") # , "linenumber"
     for (file, elem, sig, depth) in __nestingDepthsOfBranches:
+
+        #adjust file name if wanted
+        if options.filenamesRelative : # relative file name (root is project folder (not included in path))
+            file = os.path.relpath(file, folder)
+
+        if options.filenames == options.FILENAME_SRCML : # cppstats file names
+            pass # nothing to do here, as the file path is the cppstats path by default
+        if options.filenames == options.FILENAME_SOURCE : # source file name
+            file = file.replace(".xml", "").replace("/_cppstats/", "/source/", 1)
+
+        # print information to file
         ndcsv.writerow([file, sig, depth]) # , elem.sourceline - 1
     nd.close()
 

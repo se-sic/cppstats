@@ -126,6 +126,14 @@ if __name__ == '__main__':
 
     parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(__kinds.keys()))
 
+    # add general CLI options applying for all or several analyses
+    parser.add_argument("--filenames", choices=[0,1], dest="filenames", default=0,
+                        help="determines the file paths to print [default: %(default)s]\n"
+                             "(0=paths to srcML files, 1=paths to source files)")
+    parser.add_argument("--filenamesRelative", action="store_true", dest="filenamesRelative", default=False,
+                        help="print relative file names [default: %(default)s]\n"
+                             "e.g., '/projects/apache/_cppstats/afile.c.xml' gets 'afile.c.xml'.")
+
     # add options for each analysis kind
     for kind in __kinds.values():
         analysisPart = kind[1]
@@ -134,6 +142,11 @@ if __name__ == '__main__':
 
     # parse options
     options = parser.parse_args()
+
+    # add option constants
+      # --filenames
+    options.FILENAME_SRCML = 0
+    options.FILENAME_SOURCE = 1
 
     # constraints
     if (options.allkinds == True and options.inputfile):

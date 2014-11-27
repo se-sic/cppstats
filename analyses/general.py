@@ -1242,6 +1242,15 @@ def apply(folder, options):
         fstats[__statsorder.GRANML.index] = gopambgr
         fstats[__statsorder.GRANERR.index] = goerror
 
+        #adjust file name if wanted
+        if options.filenamesRelative : # relative file name (root is project folder (not included in path))
+            file = os.path.relpath(file, folder)
+
+        if options.filenames == options.FILENAME_SRCML : # cppstats file names
+            pass # nothing to do here, as the file path is the cppstats path by default
+        if options.filenames == options.FILENAME_SOURCE : # source file name
+            file = file.replace(".xml", "").replace("/_cppstats/", "/source/", 1)
+
         # general stats
         fstats[__statsorder.FILENAME.index] = file
         (ndmax, andavg, andstdev) = _countNestedIfdefs(root)

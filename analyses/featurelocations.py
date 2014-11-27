@@ -716,6 +716,17 @@ def apply(folder, options):
 
     # print each feature location as one line into output file
     for floc in featurelocations:
+
+        #adjust file name if wanted
+        if options.filenamesRelative : # relative file name (root is project folder (not included in path))
+            floc.filename = os.path.relpath(floc.filename, folder)
+
+        if options.filenames == options.FILENAME_SRCML : # cppstats file names
+            pass # nothing to do here, as the file path is the cppstats path by default
+        if options.filenames == options.FILENAME_SOURCE : # source file name
+            floc.filename = floc.filename.replace(".xml", "").replace("/_cppstats/", "/source/", 1)
+
+        # print floc information to CSV file
         row = floc.getCSVList()
         fdcsv.writerow(row)
 

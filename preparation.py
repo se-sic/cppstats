@@ -15,19 +15,14 @@ from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to t
 from collections import OrderedDict
 
 # #################################################
-# path adjustments
+# paths
 
 __preparation_scripts_subfolder = "preparations"
 __preparation_lib_subfolder = "lib"
 __preparation_lib_srcml_subfolder = "srcml"
 
-# sys.path.append(os.path.abspath(__preparation_lib_subfolder))  # lib subfolder
-sys.path.append(os.path.abspath(__preparation_scripts_subfolder))  # preparation scripts
-
-
 def getPreparationScript(filename):
     return os.path.join(__preparation_scripts_subfolder, filename)
-
 
 def getLib(path):
     return os.path.abspath(os.path.join(__preparation_lib_subfolder, path))
@@ -63,9 +58,9 @@ _sml2s = getLib(os.path.join(__preparation_lib_srcml_subfolder, __sml2s_executab
 # for rewriting of #ifdefs to "if defined(..)"
 # for turning multiline macros to oneliners
 # for deletion of include guards in H files
-import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
+from preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
 
-import lib.cpplib.cpplib as cpplib
+from lib.cpplib import cpplib
 
 
 # #################################################

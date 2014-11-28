@@ -16,19 +16,10 @@ from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to t
 from collections import OrderedDict  # for ordered dictionaries
 
 # #################################################
-# path adjustments, so that all imports can be done relative to these paths
-
-__analysis_lib_subfolder = "lib"
-__analysis_scripts_subfolder = "analyses"
-
-# sys.path.append(os.path.abspath(__analysis_lib_subfolder))  # lib subfolder
-sys.path.append(os.path.abspath(__analysis_scripts_subfolder))  # analysis scripts
-
-# #################################################
 # imports from subfolders
 
-# different kinds of analyses are imported later within the corresponding classes
-# import cpplib.cpplib as cpplib
+# import different kinds of analyses
+from analyses import general, generalvalues, discipline, featurelocations, derivative, interaction
 
 
 # #################################################
@@ -179,21 +170,15 @@ class GeneralAnalysisThread(AbstractAnalysisThread):
 
     @classmethod
     def getResultsFile(self):
-        import general
-
         return general.getResultsFile()
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
-        import general
-
         title = "Options for analysis '" + cls.getName() + "'"
         group = optionParser.add_argument_group(title.upper())
         general.addCommandLineOptions(group)
 
     def analyze(self, folder):
-        import general
-
         general.apply(folder, self.options)
 
 
@@ -208,21 +193,15 @@ class GeneralValuesAnalysisThread(AbstractAnalysisThread):
 
     @classmethod
     def getResultsFile(self):
-        import generalvalues
-
         return generalvalues.getResultsFile()
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
-        import generalvalues
-
         title = "Options for analysis '" + cls.getName() + "'"
         group = optionParser.add_argument_group(title.upper())
         generalvalues.addCommandLineOptions(group)
 
     def analyze(self, folder):
-        import generalvalues
-
         generalvalues.apply(folder, self.options)
 
 
@@ -237,21 +216,15 @@ class DisciplineAnalysisThread(AbstractAnalysisThread):
 
     @classmethod
     def getResultsFile(self):
-        import discipline
-
         return discipline.getResultsFile()
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
-        import discipline
-
         title = "Options for analysis '" + cls.getName() + "'"
         group = optionParser.add_argument_group(title.upper())
         discipline.addCommandLineOptions(group)
 
     def analyze(self, folder):
-        import discipline
-
         discipline.DisciplinedAnnotations(folder, self.options)
 
 
@@ -266,21 +239,15 @@ class FeatureLocationsAnalysisThread(AbstractAnalysisThread):
 
     @classmethod
     def getResultsFile(self):
-        import featurelocations
-
         return featurelocations.getResultsFile()
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
-        import featurelocations
-
         title = "Options for analysis '" + cls.getName() + "'"
         group = optionParser.add_argument_group(title.upper())
         featurelocations.addCommandLineOptions(group)
 
     def analyze(self, folder):
-        import featurelocations
-
         featurelocations.apply(folder, self.options)
 
 
@@ -295,21 +262,15 @@ class DerivativeAnalysisThread(AbstractAnalysisThread):
 
     @classmethod
     def getResultsFile(self):
-        import derivative
-
         return derivative.getResultsFile()
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
-        import derivative
-
         title = "Options for analysis '" + cls.getName() + "'"
         group = optionParser.add_argument_group(title.upper())
         derivative.addCommandLineOptions(group)
 
     def analyze(self, folder):
-        import derivative
-
         derivative.apply(folder)
 
 
@@ -324,21 +285,15 @@ class InteractionAnalysisThread(AbstractAnalysisThread):
 
     @classmethod
     def getResultsFile(self):
-        import interaction
-
         return interaction.getResultsFile()
 
     @classmethod
     def addCommandLineOptions(cls, optionParser):
-        import interaction
-
         title = "Options for analyses '" + cls.getName() + "'"
         group = optionParser.add_argument_group(title.upper())
         interaction.addCommandLineOptions(group)
 
     def analyze(self, folder):
-        import interaction
-
         interaction.apply(folder, self.options)
 
 

@@ -18,19 +18,10 @@ from collections import OrderedDict  # for ordered dictionaries
 import tempfile # for temporary files
 
 # #################################################
-# path adjustments, so that all imports can be done relative to these paths
-
-__cppstats_lib_subfolder = "lib"
-
-# sys.path.append(os.path.abspath(__cppstats_lib_subfolder))  # lib subfolder
-
-# #################################################
 # imports from subfolders
 
 # import different kinds of analyses
 import preparation, analysis
-
-# import cpplib.cpplib as cpplib
 
 
 # #################################################

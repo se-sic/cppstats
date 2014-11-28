@@ -14,6 +14,7 @@ import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
 from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict  # for ordered dictionaries
+import cppstats # main cppstats file
 
 # #################################################
 # imports from subfolders
@@ -375,6 +376,9 @@ if __name__ == '__main__':
     # options parsing
 
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+
+    # version
+    parser.add_argument('--version', action='version', version=cppstats.version())
 
     # kinds
     kindgroup = parser.add_mutually_exclusive_group(required=False)

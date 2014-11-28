@@ -27,6 +27,7 @@ import preparation, analysis
 # #################################################
 # global constants
 
+__version__ = "v3.8.4"
 __inputlist_default = "cppstats_input.txt"
 
 
@@ -50,6 +51,13 @@ if (len(__kinds) == 0) :
     sys.exit(1)
 
 __kinds = OrderedDict(__kinds)
+
+
+# #################################################
+# version
+
+def version() :
+    return "cppstats " + __version__
 
 
 # #################################################
@@ -92,6 +100,9 @@ if __name__ == '__main__':
     # options parsing
 
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+
+    # version
+    parser.add_argument('--version', action='version', version=version())
 
     # kinds
     kindgroup = parser.add_mutually_exclusive_group(required=False)

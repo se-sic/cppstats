@@ -14,10 +14,11 @@ import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
 from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict  # for ordered dictionaries
-import cppstats # main cppstats file
 
 # #################################################
 # imports from subfolders
+
+import cppstats, cli
 
 # import different kinds of analyses
 from analyses import general, generalvalues, discipline, featurelocations, derivative, interaction
@@ -375,55 +376,7 @@ if __name__ == '__main__':
     # #################################################
     # options parsing
 
-    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
-
-    # version
-    parser.add_argument('--version', action='version', version=cppstats.version())
-
-    # kinds
-    kindgroup = parser.add_mutually_exclusive_group(required=False)
-    kindgroup.add_argument("--kind", choices=kinds.keys(), dest="kind",
-                           default=kinds.keys()[0], metavar="<K>",
-                           help="the preparation to be performed [default: %(default)s]")
-    kindgroup.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
-                           help="perform all available kinds of preparation [default: %(default)s]")
-
-    # input 1
-    inputgroup = parser.add_mutually_exclusive_group(required=False)  # TODO check if True is possible some time...
-    inputgroup.add_argument("--list", type=str, dest="inputlist", metavar="LIST",
-                            nargs="?", default=__inputlist_default, const=__inputlist_default,
-                            help="a file that contains the list of input projects/folders [default: %(default)s]")
-    # input 2
-    inputgroup.add_argument("--file", type=str, dest="inputfile", nargs=2, metavar=("IN", "OUT"),
-                            help="a srcML file IN that is analyzed, the analysis results are written to OUT"
-                                 "\n(--list is the default)")
-
-    parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(kinds.keys()))
-
-    # add general CLI options applying for all or several analyses
-    parser.add_argument("--filenames", choices=[0,1], dest="filenames", default=0,
-                        help="determines the file paths to print [default: %(default)s]\n"
-                             "(0=paths to srcML files, 1=paths to source files)")
-    parser.add_argument("--filenamesRelative", action="store_true", dest="filenamesRelative", default=False,
-                        help="print relative file names [default: %(default)s]\n"
-                             "e.g., '/projects/apache/_cppstats/afile.c.xml' gets 'afile.c.xml'.")
-
-    # add options for each analysis kind
-    for cls in kinds.values():
-        cls.addCommandLineOptions(parser)
-
-    # parse options
-    options = parser.parse_args()
-
-    # add option constants
-      # --filenames
-    options.FILENAME_SRCML = 0
-    options.FILENAME_SOURCE = 1
-
-    # constraints
-    if (options.allkinds == True and options.inputfile):
-        print "Using all kinds of preparation for a single input and output file is weird!"
-        sys.exit(1)
+    options = cli.getOptions(kinds, step=cli.steps.ANALYSIS)
 
     # #################################################
     # main

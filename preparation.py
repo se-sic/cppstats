@@ -13,7 +13,6 @@ import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
 from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict
-import cppstats # main cppstats file
 
 # #################################################
 # paths
@@ -56,13 +55,14 @@ _sml2s = getLib(os.path.join(__preparation_lib_srcml_subfolder, __sml2s_executab
 # #################################################
 # imports from subfolders
 
+import cppstats, cli
+
 # for rewriting of #ifdefs to "if defined(..)"
 # for turning multiline macros to oneliners
 # for deletion of include guards in H files
 from preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
 
 from lib.cpplib import cpplib
-
 
 # #################################################
 # global constants
@@ -578,42 +578,7 @@ if __name__ == '__main__':
     # #################################################
     # options parsing
 
-    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
-
-    # version
-    parser.add_argument('--version', action='version', version=cppstats.version())
-
-    # kinds
-    kindgroup = parser.add_mutually_exclusive_group(required=False)
-    kindgroup.add_argument("--kind", choices=kinds.keys(), dest="kind",
-                        default=kinds.keys()[0], metavar="<K>",
-                        help="the preparation to be performed [default: %(default)s]")
-    kindgroup.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
-                        help="perform all available kinds of preparation [default: %(default)s]")
-
-    # input 1
-    inputgroup = parser.add_mutually_exclusive_group(required=False) # TODO check if True is possible some time...
-    inputgroup.add_argument("--list", type=str, dest="inputlist", metavar="LIST",
-                            nargs="?", default=__inputlist_default, const=__inputlist_default,
-                            help="a file that contains the list of input projects/folders [default: %(default)s]")
-    # input 2
-    inputgroup.add_argument("--file", type=str, dest="inputfile", nargs=2, metavar=("IN", "OUT"),
-                            help="a source file IN that is prepared, the preparation result is written to OUT"
-                                 "\n(--list is the default)")
-
-    # no backup files
-    parser.add_argument("--nobak", action="store_true", dest="nobak", default=False,
-                        help="do not backup files during preparation [default: %(default)s]")
-
-    inputgroup = parser.add_argument_group("Possible Kinds of Preparation <K>".upper(), ", ".join(kinds.keys()))
-
-    # parse arguments
-    options = parser.parse_args()
-
-    # constraints
-    if (options.allkinds == True and options.inputfile):
-        print "Using all kinds of preparation for a single input and output file is weird!"
-        sys.exit(1)
+    options = cli.getOptions(kinds, step = cli.steps.PREPARATION)
 
     # #################################################
     # main

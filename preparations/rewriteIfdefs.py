@@ -13,7 +13,7 @@ def rewriteFile(fname, out = sys.stdout):
 
 	for line in fd:
 		if line.startswith('#ifdef') or line.startswith('#ifndef'):
-			ifdef, identifier = line.split(None, 1)
+			ifdef, identifier = line.split(None, 1) # FIXME if there is a comment after the constant, it is incorporated into the brackets! this may lead to errors.
 			identifier = identifier.strip()
 
 			if ifdef == '#ifdef':

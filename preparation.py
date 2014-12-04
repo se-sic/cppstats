@@ -96,14 +96,18 @@ def filterForFiles(dirpath, contents, pattern=_filepattern):
     return mylist
 
 
-def runBashCommand(command, shell=False, stdout=None):
+def runBashCommand(command, shell=False, stdin=None, stdout=None):
     # split command if not a list/tuple is given already
     if type(command) is str:
         command = command.split()
 
-    process = subprocess.Popen(command, shell=shell, stdout=stdout, stderr=stdout)
+    process = subprocess.Popen(command, shell=shell, stdin=stdin, stdout=stdout, stderr=stdout)
     out, err = process.communicate() # TODO do something with the output
     process.wait()
+
+    # FIXME do something with return value of process.wait()!
+    # if ret is not 0:
+    #     print "#### " + " ".join(command) + " returned " + str(ret)
 
 
 def replaceMultiplePatterns(replacements, infile, outfile):
@@ -286,13 +290,15 @@ class AbstractPreparationThread(object):
         os.remove(tmp)  # remove temp file
 
     def formatCode(self):
+        tmp = self.currentFile + "tmp.txt"
+
         self.backupCurrentFile()  # backup file
 
         # call astyle to format file in Java-style
-        runBashCommand("astyle --style=java " + self.currentFile)
+        shutil.move(self.currentFile, tmp)  # move for script
+        runBashCommand(["astyle", "--style=java"], stdin=open(tmp, 'r'), stdout=open(self.currentFile, 'w+'))
 
-        # try remove astyle backup file
-        silentlyRemoveFile(self.currentFile + ".orig")
+        os.remove(tmp)  # remove temp file
 
     def deleteComments(self):
         tmp = self.currentFile + "tmp.xml"
@@ -304,7 +310,7 @@ class AbstractPreparationThread(object):
         src2srcml(self.currentFile, tmp)
 
         # delete all comments in the xml and write to another file
-        runBashCommand(["xsltproc", "-o", tmp_out, getPreparationScript("deleteComments.xsl"), tmp])
+        runBashCommand(["xsltproc", getPreparationScript("deleteComments.xsl"), tmp], stdout=open(tmp_out, 'w+'))
 
         # re-transform the xml to a normal source file
         srcml2src(tmp_out, self.currentFile)
@@ -471,6 +477,9 @@ class FeatureLocationsPreparationThread(AbstractPreparationThread):
         # multiline macros
         self.rewriteMultilineMacros()
 
+        # delete comments
+        self.deleteComments()
+
         # delete leading, trailing and inter (# ... if) whitespaces
         self.deleteWhitespace()
 
@@ -496,11 +505,11 @@ class PrettyPreparationThread(AbstractPreparationThread):
         # format the code
         self.formatCode()
 
-        # delete comments
-        self.deleteComments()
-
-        # delete empty lines
-        self.deleteEmptyLines()
+        # # delete comments
+        # self.deleteComments()
+        #
+        # # delete empty lines
+        # self.deleteEmptyLines()
 
 
 # #################################################

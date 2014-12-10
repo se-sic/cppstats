@@ -27,8 +27,7 @@ import cli, preparation, analysis
 # #################################################
 # global constants
 
-__version__ = "v3.8.4"
-__inputlist_default = "cppstats_input.txt"
+__version__ = "v0.8.4"
 
 
 # #################################################

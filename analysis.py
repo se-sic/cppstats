@@ -27,7 +27,6 @@ from analyses import general, generalvalues, discipline, featurelocations, deriv
 # #################################################
 # global constants
 
-__inputlist_default = "cppstats_input.txt"
 
 
 # #################################################

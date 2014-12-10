@@ -4,6 +4,7 @@ __author__ = 'hunsen'
 # #################################################
 # imports from the std-library
 
+import sys
 from argparse import ArgumentParser, RawTextHelpFormatter, _VersionAction  # for parameters to this script
 
 # #################################################
@@ -16,7 +17,6 @@ from lib.enum import Enum
 # #################################################
 # global constants
 
-__version__ = "v3.8.4"
 __inputlist_default = "cppstats_input.txt"
 
 
@@ -54,8 +54,8 @@ class CppstatsVersionAction(_VersionAction):
         # parser.exit(message=formatter.format_help())
 
         # change output to sys.stdout and exit then without a message
-        parser._print_message(message=formatter.format_help(), file=sys.stdout, status=0)
-        parser.exit()
+        parser._print_message(message=formatter.format_help(), file=sys.stdout)
+        parser.exit(status=0)
 
 
 # #################################################

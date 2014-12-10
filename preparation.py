@@ -67,7 +67,6 @@ from lib.cpplib import cpplib
 # #################################################
 # global constants
 
-__inputlist_default = "cppstats_input.txt"
 _filepattern_c = ('.c', '.C')
 _filepattern_h = ('.h', '.H')
 _filepattern = _filepattern_c + _filepattern_h

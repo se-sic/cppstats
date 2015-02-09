@@ -81,6 +81,10 @@ __curfile = ''  # current processed xml-file
 __defset = set()  # macro-objects
 __defsetf = dict()  # macro-objects per file
 
+# list of function-macro names to be treated specially as abstract feature-names
+__functionMacrosWatchlist = ["IS_ENABLED", "IS_SUBSYSTEM_ENABLED"]
+__functionMacrosMapping = {} # a mapping of function-macro calls to abstract feature names
+
 # collected statistics
 __statsorder = Enum(
     'FILENAME',  # name of the file
@@ -199,6 +203,31 @@ def _collectDefines(d):
         __defsetf[__curfile] = set([d[0]])
     return d
 
+def _collectFunctionMacros(f):
+    """This functions adds all function macros to a set.
+    e.g. #if IS_ENABLED(SYSTEM)
+    and #if defined(A) && IS_SUBSYSTEM_ENABLED(SYSTEM)
+    """
+
+    #FIXME port this logic to other analyses
+    #FIXME more streamlining throughout detection (e.g., see parseAndAddDefine())
+
+    def transform2Identifier(function_macro):
+        return "_".join(function_macro)
+
+    def transform2FunctionCall(function_macro):
+        rewrittenFM = function_macro[0] + "(" + ','.join(function_macro[1:]) + ")"
+        return rewrittenFM
+
+    if (f[0][0] in __functionMacrosWatchlist): # if name of function macro is in watchlist
+        iden = transform2Identifier(f[0])
+        _collectDefines([iden])
+
+        # add mapping of actual function call to a map, so that we can replace the call later
+        functionCall = transform2FunctionCall(f[0])
+        __functionMacrosMapping[functionCall] = iden
+
+    return f
 
 # possible operands:
 #   - hexadecimal number
@@ -226,14 +255,17 @@ __integer = \
     pypa.Optional(pypa.Suppress(pypa.Literal('L'))) + \
     pypa.Optional(pypa.Suppress(pypa.Literal('L')))
 
-__identifier = \
-    pypa.Word(pypa.alphanums + '_' + '-' + '@' + '$').setParseAction(_collectDefines)
-__arg = pypa.Word(pypa.alphanums + '_')
-__args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + \
-                                 __arg)
-__fname = pypa.Word(pypa.alphas, pypa.alphanums + '_')
-__function = pypa.Group(__fname + pypa.Literal('(').suppress() + \
-                        __args + pypa.Literal(')').suppress())
+__identifier = pypa.Word(pypa.alphas, pypa.alphanums + '_').setParseAction(_collectDefines)
+__arg = __integer | __identifier # another __function is not possible (although logical)
+__args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + __arg)
+__function_identifier = pypa.Word(pypa.alphas, pypa.alphanums + '_')
+__function = pypa.Group(__function_identifier + pypa.Literal('(').suppress() + \
+                        __args + pypa.Literal(')').suppress()).setParseAction(_collectFunctionMacros)
+__operand = __string | __hexadec | __integer | \
+              __function | __identifier
+
+__compoperator = pypa.oneOf('< > <= >= == !=')
+__calcoperator = pypa.oneOf('+ - * / & | << >> %')
 
 
 class NoEquivalentSigError(Exception):
@@ -307,15 +339,11 @@ def _parseFeatureSignatureAndRewrite(sig):
             ret = '(true &and ' + ret + ')'
         return ret
 
-    operand = __string | __hexadec | __integer | \
-              __function | __identifier
-    compoperator = pypa.oneOf('< > <= >= == !=')
-    calcoperator = pypa.oneOf('+ - * / & | << >> %')
-    expr = pypa.operatorPrecedence(operand, [
+    expr = pypa.operatorPrecedence(__operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!', 1, pypa.opAssoc.RIGHT, _rewriteOne),
-        (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
-        (compoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
+        (__calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
+        (__compoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
         ('&&', 2, pypa.opAssoc.LEFT, _rewriteTwo),
         ('||', 2, pypa.opAssoc.LEFT, _rewriteTwo),
     ])
@@ -362,7 +390,7 @@ def _parseAndAddDefine(node):
     except pypa.ParseException:
         return
 
-    iden = ''.join(map(str, res[0]))
+    iden = '_'.join(map(str, res[0]))
     expn = res[-1]
     para = res[1:-1]
     __macrofuncs[iden] = (para, expn)
@@ -458,6 +486,9 @@ def _getFeatures(root, featlocations):
             sig = itouter[i][0]
             elem = itouter[i][1]
 
+            # remove commas in function calls for better handling later
+            sig = sig.replace(", ", ",")
+
             # start of next location is the end of the current one,
             # or else the #endif in eelem
             end = itouter[i + 1][1] if (i < len(itouter) - 1) else eelem
@@ -483,6 +514,7 @@ def _getFeatures(root, featlocations):
         if (features.has_key(itsig)):
             features[itsig][1].append(itcode)
         else:
+            itsig = itsig.replace(", ", ",") # remove commas in function calls for better handling later
             features[itsig] = (len(flist) + 1, [itcode])
 
         # handle the inner granularity
@@ -606,6 +638,7 @@ def _getFeatures(root, featlocations):
 
             if (ns == __cppnsdef or tag not in __conditionals_all):
                 finner[-1].append((tag, event, elem.sourceline))
+                # FIXME rewrite nested #ifdefs?! (except from #else branches?)
 
     if (flist):
         raise IfdefEndifMismatchError()
@@ -616,7 +649,15 @@ def _getFeatures(root, featlocations):
 def _getFeaturesAtLocations(flocations, defines):
     """TODO"""
 
+    def replaceFunctionMacros(f):
+        for k, v in __functionMacrosMapping.iteritems():
+            f = f.replace(k, v)
+        return f
+
     sigs = [x.expression for x in flocations]
+
+    # rewrite sigs here with actract feature names of specific function macros
+    sigs = map(lambda x: replaceFunctionMacros(x), sigs)
 
     for d in defines:
         dre = re.compile(r'\b' + d + r'\b')  # using word boundaries
@@ -645,11 +686,12 @@ def _prologCSV(folder, file, headings):
 # main method
 
 def resetModule() :
-    global __macrofuncs, __defset, __defsetf
-    __macrofuncs = {}       # functional macros like: "GLIBVERSION(2,3,4)",
-                            # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
-    __defset = set()        # macro-objects
-    __defsetf = dict()      # macro-objects per file
+    global __macrofuncs, __defset, __defsetf, __functionMacrosMapping
+    __macrofuncs = {}            # functional macros like: "GLIBVERSION(2,3,4)",
+                                 # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
+    __defset = set()             # macro-objects
+    __defsetf = dict()           # macro-objects per file
+    __functionMacrosMapping = {} # a mapping of function-macro calls to abstract feature names
 
 
 def apply(folder, options):

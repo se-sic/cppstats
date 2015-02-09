@@ -482,6 +482,8 @@ class FeatureLocationsPreparationThread(AbstractPreparationThread):
         # delete leading, trailing and inter (# ... if) whitespaces
         self.deleteWhitespace()
 
+        # FIXME remove include guards?!
+
         # rewrite #if(n)def ... to #if (!)defined(...)
         self.rewriteIfdefsAndIfndefs()
 
@@ -554,6 +556,8 @@ def getFoldersFromInputListFile(inputlist):
     folders = filter(lambda f: not f.startswith("#"), folders)  # remove commented lines
     folders = filter(os.path.isdir, folders)  # remove all non-directories
     folders = map(os.path.normpath, folders) # normalize paths for easier transformations
+
+    #TODO log removed folders
 
     return folders
 

@@ -1,8 +1,61 @@
-tmp
+### cppstats folders
+## log folder
+log/
+## temporary files folder
+tmp/
+## folder of sample projects used locally
+projects/
+
+
+### cppstats temporary files
+## sample cppstats list-input
+cppstats_input.txt
+
+## backup or compiled files
 *.pyc
 *.orig
 *.bak
 *.swp
 *.swo
-cppstats_input.txt
-log
+
+
+### JetBrains files
+# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
+.idea/
+
+
+### TeX files
+## Core latex/pdflatex auxiliary files:
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+
+## Bibliography auxiliary files (bibtex/biblatex/biber):
+*.bbl
+*.bcf
+*.blg
+*-blx.aux
+*-blx.bib
+*.brf
+*.run.xml
+
+## Build tool auxiliary files:
+*.fdb_latexmk
+*.synctex
+*.synctex.gz
+*.synctex.gz(busy)
+*.pdfsync
+
+## Auxiliary and intermediate files from other packages:
+
+# beamer
+*.nav
+*.snm
+*.vrb
+
+# todonotes
+*.tdo

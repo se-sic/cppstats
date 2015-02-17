@@ -12,7 +12,7 @@ import threading  # for parallelism
 import subprocess  # for calling other commands
 import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
-import pynotify  # for system notifications
+#import pynotify  # for system notifications
 from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict  # for ordered dictionaries
 import tempfile # for temporary files

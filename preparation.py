@@ -71,6 +71,8 @@ _filepattern_c = ('.c', '.C')
 _filepattern_h = ('.h', '.H')
 _filepattern = _filepattern_c + _filepattern_h
 
+_cvs_pattern = (".git", ".cvs", ".svn")
+
 
 # #################################################
 # helper functions
@@ -88,11 +90,15 @@ def notify(message):
 
 # function for ignore pattern
 def filterForFiles(dirpath, contents, pattern=_filepattern):
-    mylist = [filename for filename in contents if
+    filesToIgnore = [filename for filename in contents if
               not filename.endswith(pattern) and
               not os.path.isdir(os.path.join(dirpath, filename))
     ]
-    return mylist
+    foldersToIgnore = [dir for dir in contents if
+              dir in _cvs_pattern and
+              os.path.isdir(os.path.join(dirpath, dir))
+    ]
+    return filesToIgnore + foldersToIgnore
 
 
 def runBashCommand(command, shell=False, stdin=None, stdout=None):

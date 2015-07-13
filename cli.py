@@ -11,7 +11,13 @@ from argparse import ArgumentParser, RawTextHelpFormatter, _VersionAction  # for
 # imports from subfolders
 
 import cppstats, preparation, analysis
-from lib.enum import Enum
+
+
+# #################################################
+# external modules
+
+# enums
+from enum import Enum
 
 
 # #################################################

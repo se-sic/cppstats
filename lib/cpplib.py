@@ -7,18 +7,9 @@ Created on Jun 11, 2010
 import sys
 
 # pyparsing module
-try:
-    pversion = sys.version_info[0]
-
-    if pversion == 2: import lib.pyparsing.pyparsing_py2 as pypa
-    else: import lib.pyparsing.pyparsing_py3 as pypa
-    pypa.ParserElement.enablePackrat()        # speed up parsing
-    sys.setrecursionlimit(2000)               # handle larger expressions
-except ImportError:
-    print("pyparsing module not found! (python-pyparsing)")
-    print("see http://pyparsing.wikispaces.com/")
-    print("programm terminating ...!")
-    sys.exit(-1)
+import pyparsing as pypa
+pypa.ParserElement.enablePackrat()        # speed up parsing
+sys.setrecursionlimit(2000)               # handle larger expressions
 
 # possible operands:
 #   - hexadecimal number

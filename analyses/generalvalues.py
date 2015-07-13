@@ -18,41 +18,19 @@ __lib_subfolder = "lib"
 sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
 
 
-# modules in bin-path
+# #################################################
+# external modules
+
+# enums
 from enum import Enum
-
-# external libs
-# python-lxml module
-try:
-    from lxml import etree
-except ImportError:
-    print("python-lxml module not found! (python-lxml)")
-    print("see http://codespeak.net/lxml/")
-    print("programm terminating ...!")
-    sys.exit(-1)
-
-# statistics module
-try:
-    import pstat
-except ImportError:
-    print("pstat module not found! (python-stats)")
-    print("see http://www.nmr.mgh.harvard.edu/Neural_Systems_Group/gary/python.html")
-    print("programm terminating ...!")
-    sys.exit(-1)
-
+ # python-lxml module
+from lxml import etree
+ # statistics module
+from statlib import pstat
 # pyparsing module
-try:
-    pversion = sys.version_info[0]
-
-    if pversion == 2: import lib.pyparsing.pyparsing_py2 as pypa
-    else: import lib.pyparsing.pyparsing_py3 as pypa
-    pypa.ParserElement.enablePackrat()        # speed up parsing
-    sys.setrecursionlimit(8000)               # handle larger expressions
-except ImportError:
-    print("pyparsing module not found! (python-pyparsing)")
-    print("see http://pyparsing.wikispaces.com/")
-    print("programm terminating ...!")
-    sys.exit(-1)
+import pyparsing as pypa
+pypa.ParserElement.enablePackrat() # speed up parsing
+sys.setrecursionlimit(8000)        # handle larger expressions
 
 
 ##################################################

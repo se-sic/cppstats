@@ -7,9 +7,11 @@ Created on Jun 30, 2010
 @author: joliebig
 '''
 #FIXME move this script to another folder!
-from lib.cpplib.cpplib import _filterAnnotatedIfdefs
 from optparse import OptionParser
 import sys
+
+from lib.cpplib import _filterAnnotatedIfdefs
+
 
 class PartialPreprocessor:
     def __init__(self):

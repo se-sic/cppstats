@@ -17,37 +17,17 @@ __lib_subfolder = "lib"
 sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
 
 
-# modules in lib-path
+# #################################################
+# external modules
+
+# enums
 from enum import Enum
-
-# external libs
-# python-lxml module
-try:
-    from lxml import etree
-except ImportError:
-    print("python-lxml module not found! (python-lxml)")
-    print("see http://codespeak.net/lxml/")
-    print("programm terminating ...!")
-    sys.exit(-1)
-
+ # python-lxml module
+from lxml import etree
 # pyparsing module
-try:
-    pversion = sys.version_info[0]
-
-    if pversion == 2:
-        import lib.pyparsing.pyparsing_py2 as pypa
-    else:
-        import lib.pyparsing.pyparsing_py3 as pypa
-    pypa.ParserElement.enablePackrat()  # speed up parsing
-    sys.setrecursionlimit(8000)  # handle larger expressions
-except ImportError:
-    print("pyparsing module not found! (python-pyparsing)")
-    print("see http://pyparsing.wikispaces.com/")
-    print("programm terminating ...!")
-    sys.exit(-1)
-
-
-
+import pyparsing as pypa
+pypa.ParserElement.enablePackrat() # speed up parsing
+sys.setrecursionlimit(8000)        # handle larger expressions
 
 
 # #################################################
@@ -56,11 +36,8 @@ __outputfile = "cppstats_featurelocations.csv"
 __listoffeaturesfile = "listoffeatures.csv"
 
 
-
-
 # #################################################
 # constants:
-
 
 # namespace-constant for src2srcml
 _cppnscpp = 'http://www.sdml.info/srcML/cpp'

@@ -4,15 +4,15 @@
 # #################################################
 # imports from the std-library
 
-import os, sys, platform
+import os
+import sys
 import shutil  # for copying files and folders
 import errno  # for error/exception handling
-import threading  # for parallelism
 import subprocess  # for calling other commands
 import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
-from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict
+
 
 # #################################################
 # paths
@@ -55,14 +55,14 @@ _sml2s = getLib(os.path.join(__preparation_lib_srcml_subfolder, __sml2s_executab
 # #################################################
 # imports from subfolders
 
-import cppstats, cli
+import cli
 
 # for rewriting of #ifdefs to "if defined(..)"
 # for turning multiline macros to oneliners
 # for deletion of include guards in H files
 from preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
 
-from lib.cpplib import cpplib
+from lib import cpplib
 
 # #################################################
 # global constants

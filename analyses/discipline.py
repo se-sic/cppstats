@@ -7,15 +7,12 @@ import re
 import sys
 from argparse import ArgumentParser, RawTextHelpFormatter
 
-# external libs
-# python-lxml module
-try:
-    from lxml import etree
-except ImportError:
-    print("python-lxml module not found! (python-lxml)")
-    print("see http://codespeak.net/lxml/")
-    print("programm terminating ...!")
-    sys.exit(-1)
+
+# #################################################
+# external modules
+
+ # python-lxml module
+from lxml import etree
 
 
 def returnFileNames(folder, extfilt = ['.xml']):

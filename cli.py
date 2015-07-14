@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # cppstats is a suite of analyses for measuring C preprocessor-based
 # variability in software product lines.
 # Copyright (C) 2014-2015 University of Passau, Germany

@@ -15,7 +15,7 @@ do
 	fi
 	if [ -e "${file}" ]; then
 		echo "INFO: moving file ($file)"
-		mv $file $file.disabled
+		mv ${file} ${file}.disabled
 	else
 		echo "INFO: file ($file) not available"
 	fi

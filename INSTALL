@@ -16,11 +16,8 @@ In detail, cppstats was successfully tested under:
 
 Right now Python 3.x is NOT supported.
 
-Current shipped version of srcML within lib/srcml/:
+Current tested version of srcML:
 Trunk 19109c Thu May 22 09:18:31 2014 -0400
-- linux/:   Ubuntu 14.04 64-bit
-- darwin/:  OS X Mavericks
-- win/: Windows
 
 
 xUBUNTU
@@ -43,10 +40,9 @@ xUBUNTU
     $ sudo apt-get install python python-libxml2 python-lxml python-notify python-lxml  # Python and needed libraries
     $ sudo apt-get install gcc  # GNU compiler collection
 
-2.1 download srcML libraries (current shipped version of srcML is supplied above!)
+2.1 download srcML libraries
     - download a binary package that is sufficient for you from: http://www.srcml.org/lmcrs
-    - extract into subfolder lib/srcml/linux/, so that binaries are available there directly
-        > like "lib/srcml/linux/srcml2src"
+    - put the srcML binaries into your $PATH (so it can be called directly via "src2srcml" and "srcml2src")
 
 2.2 if using 32-bit srcML libraries on an 64-bit platform
 
@@ -115,8 +111,8 @@ CYGWIN
 2.2 download srcML libraries (current shipped version of srcML is supplied above!)
     - download a binary package that is sufficient for you from: http://www.srcml.org/lmcrs
         > http://www.srcml.org/lmcrs/srcML-Win.zip
-    - extract into the subfolder lib/srcml/win/, so that binaries are available there directly
-        > like "lib/srcml/win/src2srcml.exe"
+    - extract into your $PATH, so that binaries are available directly
+        > like "C:/Program Files/Windows/system32/src2srcml.exe"
 
 3. supply cppstats with the appropriate paths in cppstats_input.txt
     - use cygwin-paths like

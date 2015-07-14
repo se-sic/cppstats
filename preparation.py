@@ -19,37 +19,12 @@ from collections import OrderedDict
 
 __preparation_scripts_subfolder = "preparations"
 __preparation_lib_subfolder = "lib"
-__preparation_lib_srcml_subfolder = "srcml"
 
 def getPreparationScript(filename):
     return os.path.join(__preparation_scripts_subfolder, filename)
 
 def getLib(path):
     return os.path.abspath(os.path.join(__preparation_lib_subfolder, path))
-
-
-# #################################################
-# platform specific preliminaries
-
-# cf. https://docs.python.org/2/library/sys.html#sys.platform
-__platform = sys.platform.lower()
-
-__iscygwin = False
-if (__platform.startswith("linux")):
-    __s2sml_executable = "linux/src2srcml"
-    __sml2s_executable = "linux/srcml2src"
-elif (__platform.startswith("darwin")):
-    __s2sml_executable = "darwin/src2srcml"
-    __sml2s_executable = "darwin/srcml2src"
-elif (__platform.startswith("cygwin")) :
-    __s2sml_executable = "win/src2srcml.exe"
-    __sml2s_executable = "win/srcml2src.exe"
-    __iscygwin = True
-else:
-    print "Your system '" + __platform + "' is not supported by SrcML right now."
-
-_s2sml = getLib(os.path.join(__preparation_lib_srcml_subfolder, __s2sml_executable))
-_sml2s = getLib(os.path.join(__preparation_lib_srcml_subfolder, __sml2s_executable))
 
 
 # #################################################
@@ -78,8 +53,7 @@ _cvs_pattern = (".git", ".cvs", ".svn")
 # helper functions
 
 def notify(message):
-    if (__iscygwin):
-        return
+    pass
 
     # import pynotify  # for system notifications
     #
@@ -140,30 +114,15 @@ def silentlyRemoveFile(filename):
             raise  # re-raise exception if a different error occured
 
 
-def getCygwinPath(filename):
-    return subprocess.check_output(['cygpath', '-m', filename]).strip()
-
 def src2srcml(src, srcml):
-    global _s2sml
-
-    if (__iscygwin):
-        src = getCygwinPath(src)
-        #srcml = getCygwinPath(srcml)
-        _s2sml = getCygwinPath(_s2sml)
-
-    runBashCommand([_s2sml, src, "--language=C"], stdout = open(srcml, 'w+'))# + " -o " + srcml)
+    __s2sml = "src2srcml"
+    runBashCommand([__s2sml, src, "--language=C"], stdout = open(srcml, 'w+'))# + " -o " + srcml)
     # FIXME incorporate "|| rm ${f}.xml" from bash
 
 
 def srcml2src(srcml, src):
-
-    if (__iscygwin) :
-        global _sml2s
-        src = getCygwinPath(src)
-        srcml = getCygwinPath(srcml)
-        _sml2s = getCygwinPath(_sml2s)
-
-    runBashCommand([_sml2s, srcml], stdout = open(src, 'w+'))# + " -o " + src)
+    __sml2s = "srcml2src"
+    runBashCommand([__sml2s, srcml], stdout = open(src, 'w+'))# + " -o " + src)
 
 
 # #################################################

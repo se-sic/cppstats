@@ -38,16 +38,10 @@ from collections import OrderedDict
 # #################################################
 # paths
 
-__preparation_scripts_subfolder = "preparations"
-__preparation_lib_subfolder = "lib"
-
+import preparations
 
 def getPreparationScript(filename):
-    return os.path.join(__preparation_scripts_subfolder, filename)
-
-
-def getLib(path):
-    return os.path.abspath(os.path.join(__preparation_lib_subfolder, path))
+    return os.path.join(os.path.dirname(preparations.__file__), filename)
 
 
 # #################################################

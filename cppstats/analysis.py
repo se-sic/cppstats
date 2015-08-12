@@ -392,7 +392,7 @@ def applyFoldersAll(inputlist, options):
         applyFolders(kind, inputlist, options)
 
 
-if __name__ == '__main__':
+def main():
     kinds = getKinds()
 
     # #################################################
@@ -433,3 +433,6 @@ if __name__ == '__main__':
     else:
         print "This should not happen! No input file or list of projects given!"
         sys.exit(1)
+
+if __name__ == '__main__':
+    main()

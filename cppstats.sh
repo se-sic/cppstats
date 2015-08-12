@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#!/bin/bash
 # cppstats is a suite of analyses for measuring C preprocessor-based
 # variability in software product lines.
 # Copyright (C) 2015 University of Passau, Germany
@@ -21,28 +21,10 @@
 #     Claus Hunsen <hunsen@fim.uni-passau.de>
 
 
-from setuptools import setup, find_packages
+pushd `dirname $0` > /dev/null
+CPPSTATS=`pwd`
+popd > /dev/null
 
-setup(
-    name='cppstats',
-    version='0.8.4.5',
-    packages=find_packages(),
-    url='http://www.fosd.net/cppstats',
-    license='LGPLv3',
-    author='Claus Hunsen',
-    author_email='hunsen@fim.uni-passau.de',
-    description='toolsuite for analyzing preprocessor-based software product lines',
-
-    setup_requires=[
-        'statlib==1.1',
-        'pyparsing==2.0.3',
-        'enum==0.4.4',
-        'lxml==3.4.4'
-    ],
-
-    entry_points={'console_scripts': [
-        'cppstats = cppstats.cppstats:main',
-        'cppstats.analysis = cppstats.analysis:main',
-        'cppstats.preparation = cppstats.preparation:main'
-    ]}
-)
+cd ${CPPSTATS}
+PYTHONPATH="$PYTHONPATH:$CPPSTATS/lib"
+./cppstats/cppstats.py "$@"

@@ -41,8 +41,10 @@ from collections import OrderedDict
 __preparation_scripts_subfolder = "preparations"
 __preparation_lib_subfolder = "lib"
 
+
 def getPreparationScript(filename):
     return os.path.join(__preparation_scripts_subfolder, filename)
+
 
 def getLib(path):
     return os.path.abspath(os.path.join(__preparation_lib_subfolder, path))
@@ -86,13 +88,13 @@ def notify(message):
 # function for ignore pattern
 def filterForFiles(dirpath, contents, pattern=_filepattern):
     filesToIgnore = [filename for filename in contents if
-              not filename.endswith(pattern) and
-              not os.path.isdir(os.path.join(dirpath, filename))
-    ]
+                     not filename.endswith(pattern) and
+                     not os.path.isdir(os.path.join(dirpath, filename))
+                     ]
     foldersToIgnore = [dir for dir in contents if
-              dir in _cvs_pattern and
-              os.path.isdir(os.path.join(dirpath, dir))
-    ]
+                       dir in _cvs_pattern and
+                       os.path.isdir(os.path.join(dirpath, dir))
+                       ]
     return filesToIgnore + foldersToIgnore
 
 
@@ -102,7 +104,7 @@ def runBashCommand(command, shell=False, stdin=None, stdout=None):
         command = command.split()
 
     process = subprocess.Popen(command, shell=shell, stdin=stdin, stdout=stdout, stderr=stdout)
-    out, err = process.communicate() # TODO do something with the output
+    out, err = process.communicate()  # TODO do something with the output
     process.wait()
 
     # FIXME do something with return value of process.wait()!
@@ -137,13 +139,13 @@ def silentlyRemoveFile(filename):
 
 def src2srcml(src, srcml):
     __s2sml = "src2srcml"
-    runBashCommand([__s2sml, src, "--language=C"], stdout = open(srcml, 'w+'))# + " -o " + srcml)
+    runBashCommand([__s2sml, src, "--language=C"], stdout=open(srcml, 'w+'))  # + " -o " + srcml)
     # FIXME incorporate "|| rm ${f}.xml" from bash
 
 
 def srcml2src(srcml, src):
     __sml2s = "srcml2src"
-    runBashCommand([__sml2s, srcml], stdout = open(src, 'w+'))# + " -o " + src)
+    runBashCommand([__sml2s, srcml], stdout=open(src, 'w+'))  # + " -o " + src)
 
 
 # #################################################
@@ -515,6 +517,7 @@ if (len(__preparationkinds) == 0):
     sys.exit(1)
 __preparationkinds = OrderedDict(__preparationkinds)
 
+
 def getKinds():
     return __preparationkinds
 
@@ -541,9 +544,9 @@ def getFoldersFromInputListFile(inputlist):
 
     folders = filter(lambda f: not f.startswith("#"), folders)  # remove commented lines
     folders = filter(os.path.isdir, folders)  # remove all non-directories
-    folders = map(os.path.normpath, folders) # normalize paths for easier transformations
+    folders = map(os.path.normpath, folders)  # normalize paths for easier transformations
 
-    #TODO log removed folders
+    # TODO log removed folders
 
     return folders
 
@@ -570,13 +573,13 @@ def applyFoldersAll(inputlist, options):
         applyFolders(kind, inputlist, options)
 
 
-if __name__ == '__main__':
+def main():
     kinds = getKinds()
 
     # #################################################
     # options parsing
 
-    options = cli.getOptions(kinds, step = cli.steps.PREPARATION)
+    options = cli.getOptions(kinds, step=cli.steps.PREPARATION)
 
     # #################################################
     # main
@@ -584,8 +587,8 @@ if __name__ == '__main__':
     if (options.inputfile):
 
         # split --file argument
-        options.infile = os.path.normpath(os.path.abspath(options.inputfile[0])) # IN
-        options.outfile = os.path.normpath(os.path.abspath(options.inputfile[1])) # OUT
+        options.infile = os.path.normpath(os.path.abspath(options.inputfile[0]))  # IN
+        options.outfile = os.path.normpath(os.path.abspath(options.inputfile[1]))  # OUT
 
         # check if inputfile exists
         if (not os.path.isfile(options.infile)):
@@ -596,7 +599,7 @@ if __name__ == '__main__':
 
     elif (options.inputlist):
         # handle --list argument
-        options.inputlist = os.path.normpath(os.path.abspath(options.inputlist)) # LIST
+        options.inputlist = os.path.normpath(os.path.abspath(options.inputlist))  # LIST
 
         # check if list file exists
         if (not os.path.isfile(options.inputlist)):
@@ -611,3 +614,7 @@ if __name__ == '__main__':
     else:
         print "This should not happen! No input file or list of projects given!"
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

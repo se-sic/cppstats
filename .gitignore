@@ -22,7 +22,9 @@ cppstats_input.txt
 ### Python template
 # Distribution / packaging
 *.egg-info/
-
+.eggs/
+build/
+dist/
 
 ### JetBrains files
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm

@@ -1,7 +1,6 @@
-#!/bin/bash
 # cppstats is a suite of analyses for measuring C preprocessor-based
 # variability in software product lines.
-# Copyright (C) 2015 University of Passau, Germany
+# Copyright (C) 2014-2015 University of Passau, Germany
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published
@@ -19,12 +18,3 @@
 #
 # Contributors:
 #     Claus Hunsen <hunsen@fim.uni-passau.de>
-
-
-pushd `dirname $0` > /dev/null
-CPPSTATS=`pwd`
-popd > /dev/null
-
-cd ${CPPSTATS}
-PYTHONPATH="$PYTHONPATH:$CPPSTATS/lib"
-./cppstats.py "$@"

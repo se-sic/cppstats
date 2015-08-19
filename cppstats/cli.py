@@ -30,7 +30,8 @@ from argparse import ArgumentParser, RawTextHelpFormatter, _VersionAction  # for
 # #################################################
 # imports from subfolders
 
-import cppstats, preparation, analysis
+import preparation, analysis
+import cppstats as cstats # import cppstats.py and avoid confusion with module
 
 
 # #################################################
@@ -103,7 +104,7 @@ def getOptions(kinds, step=steps.ALL):
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
 
     # version (uses CppstatsVersionAction instead of 'version' as action)
-    parser.add_argument('--version', action=CppstatsVersionAction, version=cppstats.version())
+    parser.add_argument('--version', action=CppstatsVersionAction, version=cstats.version())
 
 
     # ADD KIND ARGUMENT

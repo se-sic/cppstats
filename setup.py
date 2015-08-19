@@ -22,10 +22,11 @@
 
 
 from setuptools import setup, find_packages
+import cppstats
 
 setup(
     name='cppstats',
-    version='0.8.4.5',
+    version=cppstats.version(),
     packages=find_packages(exclude=['scripts']),
     url='http://www.fosd.net/cppstats',
     license='LGPLv3',

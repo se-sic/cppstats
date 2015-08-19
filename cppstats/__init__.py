@@ -18,3 +18,9 @@
 #
 # Contributors:
 #     Claus Hunsen <hunsen@fim.uni-passau.de>
+
+
+# #################################################
+# make version number available in setup.py
+
+from cppstats import version

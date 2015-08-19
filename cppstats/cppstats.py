@@ -46,9 +46,12 @@ import cli, preparation, analysis
 
 
 # #################################################
-# global constants
+# version number
 
 __version__ = "v0.9.0"
+
+def version() :
+    return "cppstats " + __version__
 
 
 # #################################################
@@ -71,13 +74,6 @@ if (len(__kinds) == 0) :
     sys.exit(1)
 
 __kinds = OrderedDict(__kinds)
-
-
-# #################################################
-# version
-
-def version() :
-    return "cppstats " + __version__
 
 
 # #################################################

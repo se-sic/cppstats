@@ -66,6 +66,8 @@ Right now Python 3.x is NOT supported.
 
 ## Quick Start
 
+- Install cppstats using `sudo python setup.py install`.
+
 - Supply cppstats with the appropriate paths in `cppstats_input.txt`
 
     * use full paths like `/local/repos/mpsolve/mpsolve-2.2`
@@ -78,10 +80,10 @@ Right now Python 3.x is NOT supported.
 
 - Then run:
     ```
-    $ ./cppstats --kind <K>
+    $ cppstats --kind <K>
     ```
 
-    `<K>` must be one of the analyses listed in the introduction. Also, have a look on `./cppstats --help` for further command line options.
+    `<K>` must be one of the analyses listed in the introduction. Also, have a look on `cppstats --help` for further command line options.
 
 - The output files for each analysis are written to the folders given in the file `cppstats_input.txt`.
 

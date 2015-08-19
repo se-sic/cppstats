@@ -62,8 +62,14 @@ Current tested version of srcML:
 3. install Python package for cppstats and defined Python dependencies
 
     ```bash
-    python setup.py develop --user
+    sudo python setup.py install
     ```
+    
+    Optionally, you can install it for the current user by appending `--user` to the command.
+    
+    If you want to install the package in *development mode*, substitute `install` with `develop`.
+    
+    Run `cppstats --help` for further instructions.
 
 4. supply cppstats with the appropriate paths in `cppstats_input.txt`
 

@@ -19,6 +19,7 @@
 #
 # Contributors:
 #     Claus Hunsen <hunsen@fim.uni-passau.de>
+#     Andreas Ringlstetter <andreas.ringlstetter@gmail.com>
 
 
 from setuptools import setup, find_packages

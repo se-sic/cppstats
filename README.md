@@ -9,11 +9,14 @@ All rights reserved.
 cppstats is covered by the GNU Lesser General Public License.
 The full license text is distributed with this software. See the `LICENSE.LESSER` file.
 
-### Contributors
+### Main Developers
 
 * Jörg Liebig <joliebig@fim.uni-passau.de>, University of Passau
 * Claus Hunsen <hunsen@fim.uni-passau.de>, University of Passau
 
+### Further Contributors
+
+* Andreas Ringlstetter <andreas.ringlstetter@gmail.com>, OTH Regensburg
 
 ## What is it?
 

@@ -142,3 +142,26 @@ Right now Python 3.x is NOT supported.
       that have been used alltogether in one expression (# of constants
       involved >= 3)
     - (A, B, C) -> |(A, B)? (A, C)? (B, C)? ...|
+
+## General Notes
+
+* When cppstats computes general stats (`--kind general` parameter), the granularity
+function levels also accounts for conditional elements within an array initialization.
+Example
+
+```c
+static const struct squashfs_decompressor *decompressor[] = {
+  &squashfs_zlib_comp_ops,
+  &squashfs_lzma_unsupported_comp_ops,
+  #if defined(CONFIG_SQUASHFS_LZO)
+  &squashfs_lzo_comp_ops,
+  #else
+  &squashfs_lzo_unsupported_comp_ops,
+  #endif
+  &squashfs_unknown_comp_ops
+};
+```
+
+As the code snippet shows, `CONFIG_SQUASHFS_LZO` conditionally guards an array 
+element. This is considered to be part of the function granularity (GRANFL), as
+an array initialization can be interpreted as a constructor procedure call.

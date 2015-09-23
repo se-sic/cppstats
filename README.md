@@ -145,9 +145,9 @@ Right now Python 3.x is NOT supported.
 
 ## General Notes
 
-* When cppstats computes general stats (`--kind general` parameter), the granularity
-function levels also accounts for conditional elements within an array initialization.
-Example
+* When cppstats computes general stats (`--kind general` parameter), the reported granularity
+function level (GRANFL) also accounts for conditional elements within an array initialization 
+or conditional field initialization when creating a struct variable. Example (for array):
 
 ```c
 static const struct squashfs_decompressor *decompressor[] = {
@@ -162,6 +162,5 @@ static const struct squashfs_decompressor *decompressor[] = {
 };
 ```
 
-As the code snippet shows, `CONFIG_SQUASHFS_LZO` conditionally guards an array 
-element. This is considered to be part of the function granularity (GRANFL), as
-an array initialization can be interpreted as a constructor procedure call.
+The rationale behind such decision is that array/struct instance initializations can be interpreted 
+as constructor procedure calls.

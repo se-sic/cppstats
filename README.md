@@ -147,7 +147,7 @@ Right now Python 3.x is NOT supported.
 
 * When cppstats computes general stats (`--kind general` parameter), the reported granularity
 function level (GRANFL) also accounts for conditional elements within an array initialization 
-or conditional field initialization when creating a struct variable. Example (for array):
+or conditional field initializations when creating a struct variable. Example (for array):
 
 ```c
 static const struct squashfs_decompressor *decompressor[] = {

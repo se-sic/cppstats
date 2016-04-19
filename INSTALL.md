@@ -40,7 +40,7 @@ Current tested version of srcML:
 
     - download and install srcML libraries
 
-        - download a binary package that is sufficient for you and your platform from: http://www.srcml.org/lmcrs
+        - download a binary package that is sufficient for you and your platform from: http://www.srcml.org/downloads.html
         - put the srcML binaries into your `$PATH` (so it can be called directly via "src2srcml" and "srcml2src")
 
         - if using 32-bit srcML libraries on an 64-bit platform

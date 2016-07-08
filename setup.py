@@ -42,12 +42,12 @@ setup(
     install_requires=[
         'statlib==1.2',
         'pyparsing==2.0.3',
-        'enum==0.4.4',
+        'enum',
         'lxml==3.4.4'
     ],
 
     dependency_links=[
-        'git+https://github.com/Ext3h/python-statlib.git@release-1.2#egg=statlib-1.2'
+        'https://github.com/Ext3h/python-statlib/archive/release-1.2.tar.gz#egg=statlib-1.2'
     ],
 
     entry_points={'console_scripts': [

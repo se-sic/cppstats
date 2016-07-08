@@ -49,7 +49,7 @@ import cli, preparation, analysis
 # #################################################
 # version number
 
-__version__ = "v0.9.0"
+__version__ = "v0.9.1"
 
 def version() :
     return "cppstats " + __version__

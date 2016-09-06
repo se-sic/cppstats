@@ -151,10 +151,10 @@ CYGWIN
 
 4. supply cppstats with the appropriate paths in `cppstats_input.txt`
 
-    * use cygwin-paths like `/cygdrive/c/Users/user/data/mpsolve/mpsolve-2.2`
+    * use relative paths like `data/mpsolve/mpsolve-2.2` and call cppstats relation to these given paths
     * each project folder given in the file has to be structured as follows:
 
         ```
-        > /cygdrive/c/Users/user/data/mpsolve/mpsolve-2.2
+        > data/mpsolve/mpsolve-2.2
             > source/ (here are the C source files)
         ```

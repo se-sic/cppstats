@@ -13,12 +13,12 @@ In detail, cppstats was successfully tested under:
 
 - Ubuntu 12.04 64-bit, Python 2.7.3,
 - Ubuntu 14.04 64-bit, Python 2.7.6, and
-- Cygwin 64-bit, Python 2.7.3.
+- Cygwin 64-bit, Python 2.7.3 and Python 2.10.3.
 
 Right now, Python 3.x is NOT supported.
 
 Current tested version of srcML:
-`Trunk 19109c Thu May 22 09:18:31 2014 -0400`
+`srcML Beta (v0.9.5)`
 
 
 ## xUBUNTU

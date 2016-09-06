@@ -40,25 +40,8 @@ Current tested version of srcML:
     ```
 
     - download and install srcML libraries
-
-        - download a binary package that is sufficient for you and your platform from: http://www.srcml.org/downloads.html
-        - put the srcML binaries into your `$PATH` (so it can be called directly via "src2srcml" and "srcml2src")
-
-        - if using 32-bit srcML libraries on an 64-bit platform
-
-            ```bash
-            sudo apt-get install ia32-libs  # 32bit compatibility libs (only on 64bit system needed)
-            sudo apt-get install libarchive12:i386  # libarchive 32bit for linking with srcML libs (12.04)
-            # or libarchive13:i386 if that one is current version (14.04)
-            ```
-
-        - if using an old srcML version on an up-to-date system
-
-            - make soft links for updated libraries used by srcML, e.g.:
-
-                ```bash
-                sudo ln -s /usr/lib/i386-linux-gnu/libarchive.so.12 /usr/lib/i386-linux-gnu/libarchive.so.2
-                ```
+        - download the deb binary package that is sufficient for your platform from: http://www.srcml.org/downloads.html
+        - install the deb package; srcml is available from the command line via 'srcml'
 
 3. install Python package for cppstats and defined Python dependencies
 

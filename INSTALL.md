@@ -36,7 +36,7 @@ Current tested version of srcML:
     sudo apt-get install xsltproc  # XSLT 1.0 command line processor
     sudo apt-get install libxml2 libxml2-dev  # library for processing XML
     sudo apt-get install gcc  # GNU compiler collection
-    sudo apt-get install python-dev libxml2-dev libxslt-dev # cppstats setuptools builds some dependencies from scratch, so these development packages are required
+    sudo apt-get install python-dev libxml2-dev libxslt-dev zlib1g-dev # cppstats setuptools builds some dependencies from scratch, so these development packages are required
     ```
 
     - download and install srcML libraries
@@ -88,7 +88,7 @@ CYGWIN
         - install from internet
         - select any mirror
         - do not install any packages yet
-        - wait setup for finish
+        - wait setup to finish
 
     - **NOTE:** your Windows drives are located at `/cygdrive/`!
 

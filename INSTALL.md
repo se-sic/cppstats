@@ -101,7 +101,7 @@ CYGWIN
     - go through installation process as before, **but** add and select following download site:
 
         ```
-        http://ftp-stud.fht-esslingen.de/pub/Mirrors/sourceware.org/cygwinports/
+        ftp://ftp.cygwinports.org/pub/cygwinports
         ```
 
     - install following packages (version number, newer versions should
@@ -110,11 +110,14 @@ CYGWIN
         ```
         - All/Python/
             python (2.7.3-1)
+            python-setuptools (15.2-1)
         - All/Libs/
             libxml2 (2.9.1-1)
             libxml2-devel (2.9.1-1)
             libxslt (1.1.27-2)
             libxslt-devel (1.1.27-2)
+            zlib (1.2.8-3)
+            zlib-devel (1.2.8-3)
         - All/Utils/
             astyle (2.03-1)
         - All/Devel/

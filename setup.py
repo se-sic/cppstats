@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='cppstats',
-    version="0.9.1",
+    version="0.9.2",
     packages=find_packages(exclude=['scripts']),
     url='http://www.fosd.net/cppstats',
     license='LGPLv3',
@@ -47,7 +47,7 @@ setup(
     ],
 
     dependency_links=[
-        'https://github.com/Ext3h/python-statlib/archive/release-1.2.tar.gz#egg=statlib-1.2'
+        'https://github.com/clhunsen/python-statlib/archive/release-1.2.tar.gz#egg=statlib-1.2'
     ],
 
     entry_points={'console_scripts': [

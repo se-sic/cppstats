@@ -5,6 +5,8 @@ log/
 tmp/
 ## folder of sample projects used locally
 projects/
+## virtual environment
+virtualenv/
 
 
 ### cppstats temporary files

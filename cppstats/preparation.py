@@ -133,13 +133,13 @@ def silentlyRemoveFile(filename):
 
 
 def src2srcml(src, srcml):
-    __s2sml = "src2srcml"
+    __s2sml = "srcml"
     runBashCommand([__s2sml, src, "--language=C"], stdout=open(srcml, 'w+'))  # + " -o " + srcml)
     # FIXME incorporate "|| rm ${f}.xml" from bash
 
 
 def srcml2src(srcml, src):
-    __sml2s = "srcml2src"
+    __sml2s = "srcml"
     runBashCommand([__sml2s, srcml], stdout=open(src, 'w+'))  # + " -o " + src)
 
 

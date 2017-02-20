@@ -23,8 +23,8 @@ Contributors:
 -->
 <xsl:stylesheet version="1.0"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:cpp="http://www.sdml.info/srcML/cpp"
-	xmlns:srcml="http://www.sdml.info/srcML/src"
+	xmlns:cpp="http://www.srcML.org/srcML/cpp"
+	xmlns:srcml="http://www.srcML.org/srcML/src"
 >
 
 <!-- replace comments with empty lines -->

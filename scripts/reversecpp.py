@@ -174,7 +174,7 @@ class ReverseCPP:
     def createXMLRepresentation(self, fname):
         '''
         This method creates an xml representation from the input file using the src2srcml
-        tool (http://www.sdml.info/projects/srcml/). After the successful generation of the
+        tool (http://www.srcML.org/). After the successful generation of the
         xml representation the method returns the filename of the xml file.
         '''
         src2srcmlinvocation = [src2srcml]

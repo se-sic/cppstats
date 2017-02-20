@@ -61,8 +61,8 @@ __listoffeaturesfile = "listoffeatures.csv"
 # constants:
 
 # namespace-constant for src2srcml
-_cppnscpp = 'http://www.sdml.info/srcML/cpp'
-__cppnsdef = 'http://www.sdml.info/srcML/src'
+_cppnscpp = 'http://www.srcML.org/srcML/cpp'
+__cppnsdef = 'http://www.srcML.org/srcML/src'
 __cpprens = re.compile('{(.+)}(.+)')
 
 # conditionals - necessary for parsing the right tags

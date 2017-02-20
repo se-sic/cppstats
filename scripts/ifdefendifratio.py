@@ -43,8 +43,8 @@ except ImportError:
 ##################################################
 # constants:
 # namespace-constant for src2srcml
-__cppnscpp = 'http://www.sdml.info/srcML/cpp'
-__cppnsdef = 'http://www.sdml.info/srcML/src'
+__cppnscpp = 'http://www.srcML.org/srcML/cpp'
+__cppnsdef = 'http://www.srcML.org/srcML/src'
 __cpprens = re.compile('{(.+)}(.+)')
 
 __conditionals = ['if', 'ifdef', 'ifndef']

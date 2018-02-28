@@ -40,7 +40,7 @@ Current tested version of srcML:
     ```
 
     - download and install srcML libraries
-        - download the deb binary package that is sufficient for your platform from: http://www.srcml.org/downloads.html
+        - download the deb binary package that is sufficient for your platform from: http://www.srcml.org/#download
         - install the deb package; srcml is available from the command line via 'srcml'
 
 3. install Python package for cppstats and defined Python dependencies
@@ -126,9 +126,9 @@ CYGWIN
         ```
 
     - download and install srcML libraries
-        - download a binary package that is sufficient for you and your Windows version from: http://www.srcml.org/lmcrs
+        - download a binary package that is sufficient for you and your Windows version from: http://www.srcml.org/#download
         - extract into your `$PATH`, so that binaries are available directly
-            - e.g., `C:/Program Files/Windows/system32/src2srcml.exe`
+            - e.g., `C:/Program Files/Windows/system32/srcml.exe`
 
 3. install Python package for cppstats and defined Python dependencies
 

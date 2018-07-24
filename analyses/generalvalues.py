@@ -42,11 +42,9 @@ sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
 # #################################################
 # external modules
 
-# enums
-from enum import Enum
- # python-lxml module
+# python-lxml module
 from lxml import etree
- # statistics module
+# statistics module
 from statlib import pstat
 # pyparsing module
 import pyparsing as pypa

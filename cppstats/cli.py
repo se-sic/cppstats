@@ -49,11 +49,10 @@ __inputlist_default = "cppstats_input.txt"
 
 # #################################################
 # definition of cppstats steps
-steps = Enum(
-    'ALL',
-    'PREPARATION',
-    'ANALYSIS'
-)
+class steps(Enum):
+    ALL = 0
+    PREPARATION = 1
+    ANALYSIS = 2
 
 
 # #################################################

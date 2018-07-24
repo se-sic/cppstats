@@ -80,15 +80,14 @@ __defset = set()  # macro-objects
 __defsetf = dict()  # macro-objects per file
 
 # collected statistics
-__statsorder = Enum(
-    'FILENAME',  # name of the file
-    'LINE_START',  # starting line of an #ifdef block
-    'LINE_END',  # ending line of an #ifdef block (ends either at #else,
-    #  #elif, or #endif on same level)
-    'TYPE',  # either #if, #elif, or #else
-    'EXPRESSION',  # the presence condition stated in the #ifdef
-    'CONSTANTS',  # all configuration constants used in the presence condition
-)
+class __statsorder(Enum):
+    FILENAME = 0    # name of the file
+    LINE_START = 1  # starting line of an #ifdef block
+    LINE_END = 2    # ending line of an #ifdef block (ends either at #else,
+                    #  #elif, or #endif on same level)
+    TYPE = 3        # either #if, #elif, or #else
+    EXPRESSION = 4  # the presence condition stated in the #ifdef
+    CONSTANTS = 5   # all configuration constants used in the presence condition
 
 
 ##################################################
@@ -660,7 +659,7 @@ def apply(folder, options):
     featlocations = set()  # list of feature locations of class FeatureLocation
 
     # outputfile
-    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, __statsorder._keys)
+    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, __statsorder.__members__.keys())
 
     # list-of-features file
     loffheadings = ['FILENAME', 'CONSTANTS']

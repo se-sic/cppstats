@@ -42,7 +42,7 @@ setup(
     install_requires=[
         'statlib==1.2',
         'pyparsing==2.*',
-        'enum',
+        'enum34',
         'lxml>=3.4'
     ],
 

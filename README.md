@@ -40,7 +40,7 @@ Details of the latest version can be found on the cppstats project site at GitHu
 
 ## System Requirements
 
-* srcML (http://www.srcml.org/lmcrs) (tested with `Trunk 19109c Thu May 22 09:18:31 2014 -0400`)
+* srcML (http://www.srcml.org/)
 * astyle (http://astyle.sourceforge.net/)
 * libxml2 (http://www.xmlsoft.org/)
 * xsltproc (http://xmlsoft.org/XSLT/xsltproc2.html)
@@ -61,10 +61,10 @@ system.
 
 In detail, cppstats was successfully tested under:
 
-* Ubuntu 12.04, Python 2.7.3, and
-* Cygwin, Python 2.7.3.
+* Ubuntu 12.04, Python 2.7.*, and
+* Cygwin, Python 2.7.*.
 
-Right now Python 3.x is NOT supported.
+Right now, Python 3.x is **NOT** supported.
 
 
 ## Quick Start

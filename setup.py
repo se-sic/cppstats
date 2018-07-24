@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='cppstats',
-    version="0.9.3",
+    version="0.9.4",
     packages=find_packages(exclude=['scripts']),
     url='http://www.fosd.net/cppstats',
     license='LGPLv3',
@@ -42,7 +42,7 @@ setup(
     install_requires=[
         'statlib==1.2',
         'pyparsing==2.*',
-        'enum',
+        'enum34',
         'lxml>=3.4'
     ],
 

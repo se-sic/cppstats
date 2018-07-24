@@ -86,13 +86,13 @@ __defset = set()        # macro-objects
 __defsetf = dict()      # macro-objects per file
 
 # collected statistics
-__statsorder = Enum(
-    'FILENAME',          # name of the file
-    'NUMANNOTATIONS',    # number of all annotations
-    'NOIANNOTATIONS',    # number of interacting annotations
-                         # example: A&B&C&D --> A&B, B&C, B&D
-                         # example: A&B&C&D -/> A&B, B&C, A&C
-)
+class __statsorder(Enum):
+    FILENAME = 0          # name of the file
+    NUMANNOTATIONS = 1    # number of all annotations
+    NOIANNOTATIONS = 2    # number of interacting annotations
+                          # example: A&B&C&D --> A&B, B&C, B&D
+                          # example: A&B&C&D -/> A&B, B&C, A&C
+
 ##################################################
 
 
@@ -287,7 +287,7 @@ def _prologCSV(folder):
     no corresponding _epilogCSV."""
     fd = open(os.path.join(folder, __outputfile), 'w')
     fdcsv = csv.writer(fd, delimiter=',')
-    fdcsv.writerow(list(__statsorder._keys))
+    fdcsv.writerow(__statsorder.__members__.keys())
     return (fd, fdcsv)
 
 
@@ -1023,7 +1023,7 @@ def apply(folder, options):
     global __curfile
     fcount = 0
     files = returnFileNames(folder, ['.xml'])
-    fstats = [None]*len(__statsorder._keys)
+    fstats = [None]*len(__statsorder)
     ftotal = len(files)
 
     # get statistics for all files; write results into csv

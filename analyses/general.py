@@ -87,34 +87,34 @@ __defset = set()        # macro-objects
 __defsetf = dict()      # macro-objects per file
 
 # collected statistics
-__statsorder = Enum(
-    'FILENAME',          # name of the file
-    'LOC',               # lines of code
-    'NOFC',              # number of feature constants
-    'LOF',               # number of feature code lines
-    'ANDAVG',            # average nested ifdefs depth
-    'ANDSTDEV',          # standard deviation for ifdefs
-    'SDEGMEAN',          # shared code degree: mean
-    'SDEGSTD',           # shared code degree: standard-deviation
-    'TDEGMEAN',          # tangled code degree: mean
-    'TDEGSTD',           # tangled code degree: standard-deviation
+class __statsorder(Enum):
+    FILENAME = 0           # name of the file
+    LOC = 1                # lines of code
+    NOFC = 2               # number of feature constants
+    LOF = 3                # number of feature code lines
+    ANDAVG = 4             # average nested ifdefs depth
+    ANDSTDEV = 5           # standard deviation for ifdefs
+    SDEGMEAN = 6           # shared code degree: mean
+    SDEGSTD = 7            # shared code degree: standard-deviation
+    TDEGMEAN = 8           # tangled code degree: mean
+    TDEGSTD = 9            # tangled code degree: standard-deviation
     # type metrics
-    'HOM',               # homogenous features
-    'HET',               # heterogenous features
-    'HOHE',              # combination of het and hom features
+    HOM = 10               # homogenous features
+    HET = 11               # heterogenous features
+    HOHE = 12              # combination of het and hom features
     # gran metrics
-    'GRANGL',            # global level (compilation unit)
-    'GRANFL',            # function and type level
-    'GRANBL',            # if/while/for/do block extension
-    'GRANSL',            # statement extension - includes string concat
-    'GRANEL',            # condition block extension - includes return
-    'GRANML',            # function parameter extension
-    'GRANERR',           # not determined granularity
+    GRANGL = 13            # global level (compilation unit)
+    GRANFL = 14            # function and type level
+    GRANBL = 15            # if/while/for/do block extension
+    GRANSL = 16            # statement extension - includes string concat
+    GRANEL = 17            # condition block extension - includes return
+    GRANML = 18            # function parameter extension
+    GRANERR = 19           # not determined granularity
 
-    'NDMAX',             # maximum nesting depth in a file
-    'NOFPFCMEAN',       # average number of files per feature constant
-    'NOFPFCSTD',        # standard deviation for same data as for NOFPFCMEAN
-)
+    NDMAX = 20             # maximum nesting depth in a file
+    NOFPFCMEAN = 21        # average number of files per feature constant
+    NOFPFCSTD = 22         # standard deviation for same data as for NOFPFCMEAN
+
 ##################################################
 
 
@@ -1195,14 +1195,14 @@ def apply(folder, options):
                 sigmap[psig] = [sig]
 
     # outputfile
-    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, __statsorder._keys)
+    fd, fdcsv = _prologCSV(os.path.join(folder, os.pardir), __outputfile, __statsorder.__members__.keys())
     # fdfeat = open(os.path.join(folder, __outputfexp), 'w')
 
     global __curfile
     fcount = 0
     files = returnFileNames(folder, ['.xml'])
     files.sort()
-    fstats = [None]*len(__statsorder._keys)
+    fstats = [None]*len(__statsorder)
     ftotal = len(files)
 
     # get statistics for all files; write results into csv
@@ -1234,13 +1234,13 @@ def apply(folder, options):
         (gotopbgr, gofunbgr, gostrbrl, gostrbrg,
         goinnbgr, goexpbgr, gostmbgr, gopambgr, goerror) = \
                 _getOuterGranularityStats(grouter)
-        fstats[__statsorder.GRANGL.index] = gotopbgr
-        fstats[__statsorder.GRANFL.index] = gofunbgr+gostrbrl+gostrbrg
-        fstats[__statsorder.GRANBL.index] = goinnbgr
-        fstats[__statsorder.GRANEL.index] = goexpbgr
-        fstats[__statsorder.GRANSL.index] = gostmbgr
-        fstats[__statsorder.GRANML.index] = gopambgr
-        fstats[__statsorder.GRANERR.index] = goerror
+        fstats[__statsorder.GRANGL.value] = gotopbgr
+        fstats[__statsorder.GRANFL.value] = gofunbgr+gostrbrl+gostrbrg
+        fstats[__statsorder.GRANBL.value] = goinnbgr
+        fstats[__statsorder.GRANEL.value] = goexpbgr
+        fstats[__statsorder.GRANSL.value] = gostmbgr
+        fstats[__statsorder.GRANML.value] = gopambgr
+        fstats[__statsorder.GRANERR.value] = goerror
 
         #adjust file name if wanted
         if options.filenamesRelative : # relative file name (root is project folder (not included in path))
@@ -1252,27 +1252,27 @@ def apply(folder, options):
             file = file.replace(".xml", "").replace("/_cppstats/", "/source/", 1)
 
         # general stats
-        fstats[__statsorder.FILENAME.index] = file
+        fstats[__statsorder.FILENAME.value] = file
         (ndmax, andavg, andstdev) = _countNestedIfdefs(root)
-        fstats[__statsorder.ANDAVG.index] = andavg
-        fstats[__statsorder.ANDSTDEV.index] = andstdev
-        fstats[__statsorder.NDMAX.index] = ndmax
+        fstats[__statsorder.ANDAVG.value] = andavg
+        fstats[__statsorder.ANDSTDEV.value] = andstdev
+        fstats[__statsorder.NDMAX.value] = ndmax
         tmp = [it for it in root.iterdescendants()]
 
         if (len(tmp)): floc = tmp[-1].sourceline
         else: floc = 0
 
-        fstats[__statsorder.LOC.index] = floc
+        fstats[__statsorder.LOC.value] = floc
 
         # feature-amount
         (_, _, lof, _, _, _, _) = \
                 _getFeatureStats(features)
         if __defsetf.has_key(__curfile):
-            fstats[__statsorder.NOFC.index] = \
+            fstats[__statsorder.NOFC.value] = \
                     _getNumOfDefines(__defsetf[__curfile])
         else:
-            fstats[__statsorder.NOFC.index] = 0
-        fstats[__statsorder.LOF.index] = lof
+            fstats[__statsorder.NOFC.value] = 0
+        fstats[__statsorder.LOF.value] = lof
 
         # scattering and tangling
         # not useful to compute the scattering per file, since a feature names
@@ -1293,52 +1293,52 @@ def apply(folder, options):
             'BP', 'BQ', 'BR', 'BS', 'BT', 'BU', 'BV', 'BW', 'BX',
             'BY', 'BZ']
     # FIXME with separator line, functions must start in line 3! (other scripts, too?)
-    excelfunc = [None]*len(__statsorder._keys)
-    excelfunc[__statsorder.FILENAME.index] = "FUNCTIONS"
-    excelfunc[__statsorder.LOC.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.LOC.index], \
-            excelcols[__statsorder.LOC.index], fnum)
-    excelfunc[__statsorder.LOF.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.LOF.index], \
-            excelcols[__statsorder.LOF.index], fnum)
-    excelfunc[__statsorder.ANDAVG.index] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
-            (excelcols[__statsorder.ANDAVG.index], \
-            excelcols[__statsorder.ANDAVG.index], fnum, \
-            excelcols[__statsorder.ANDAVG.index], \
-            excelcols[__statsorder.ANDAVG.index], fnum)
-    excelfunc[__statsorder.ANDSTDEV.index] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
-            (excelcols[__statsorder.ANDSTDEV.index], \
-            excelcols[__statsorder.ANDSTDEV.index], fnum, \
-            excelcols[__statsorder.ANDAVG.index],          # it might be that mean 1 std 0
-            excelcols[__statsorder.ANDAVG.index], fnum)    # therefore we use mean here
-    excelfunc[__statsorder.GRANGL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANGL.index], \
-            excelcols[__statsorder.GRANGL.index], fnum)
-    excelfunc[__statsorder.GRANFL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANFL.index], \
-            excelcols[__statsorder.GRANFL.index], fnum)
-    excelfunc[__statsorder.GRANBL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANBL.index], \
-            excelcols[__statsorder.GRANBL.index], fnum)
-    excelfunc[__statsorder.GRANEL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANEL.index], \
-            excelcols[__statsorder.GRANEL.index], fnum)
-    excelfunc[__statsorder.GRANSL.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANSL.index], \
-            excelcols[__statsorder.GRANSL.index], fnum)
-    excelfunc[__statsorder.GRANML.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANML.index], \
-            excelcols[__statsorder.GRANML.index], fnum)
-    excelfunc[__statsorder.GRANERR.index] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANERR.index], \
-            excelcols[__statsorder.GRANERR.index], fnum)
-    excelfunc[__statsorder.NDMAX.index] = "=MAX(%s2:%s%s)" % \
-            (excelcols[__statsorder.NDMAX.index], \
-            excelcols[__statsorder.NDMAX.index], fnum)
+    excelfunc = [None]*len(__statsorder)
+    excelfunc[__statsorder.FILENAME.value] = "FUNCTIONS"
+    excelfunc[__statsorder.LOC.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.LOC.value], \
+            excelcols[__statsorder.LOC.value], fnum)
+    excelfunc[__statsorder.LOF.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.LOF.value], \
+            excelcols[__statsorder.LOF.value], fnum)
+    excelfunc[__statsorder.ANDAVG.value] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
+            (excelcols[__statsorder.ANDAVG.value], \
+            excelcols[__statsorder.ANDAVG.value], fnum, \
+            excelcols[__statsorder.ANDAVG.value], \
+            excelcols[__statsorder.ANDAVG.value], fnum)
+    excelfunc[__statsorder.ANDSTDEV.value] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
+            (excelcols[__statsorder.ANDSTDEV.value], \
+            excelcols[__statsorder.ANDSTDEV.value], fnum, \
+            excelcols[__statsorder.ANDAVG.value],          # it might be that mean 1 std 0
+            excelcols[__statsorder.ANDAVG.value], fnum)    # therefore we use mean here
+    excelfunc[__statsorder.GRANGL.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.GRANGL.value], \
+            excelcols[__statsorder.GRANGL.value], fnum)
+    excelfunc[__statsorder.GRANFL.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.GRANFL.value], \
+            excelcols[__statsorder.GRANFL.value], fnum)
+    excelfunc[__statsorder.GRANBL.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.GRANBL.value], \
+            excelcols[__statsorder.GRANBL.value], fnum)
+    excelfunc[__statsorder.GRANEL.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.GRANEL.value], \
+            excelcols[__statsorder.GRANEL.value], fnum)
+    excelfunc[__statsorder.GRANSL.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.GRANSL.value], \
+            excelcols[__statsorder.GRANSL.value], fnum)
+    excelfunc[__statsorder.GRANML.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.GRANML.value], \
+            excelcols[__statsorder.GRANML.value], fnum)
+    excelfunc[__statsorder.GRANERR.value] = "=SUM(%s2:%s%s)" % \
+            (excelcols[__statsorder.GRANERR.value], \
+            excelcols[__statsorder.GRANERR.value], fnum)
+    excelfunc[__statsorder.NDMAX.value] = "=MAX(%s2:%s%s)" % \
+            (excelcols[__statsorder.NDMAX.value], \
+            excelcols[__statsorder.NDMAX.value], fnum)
     fdcsv.writerow(excelfunc)
 
     # overall - stats
-    astats = [None]*len(__statsorder._keys)
+    astats = [None]*len(__statsorder)
 
     # LOF
     (_, _, lof, _, _, _, _) = \
@@ -1368,20 +1368,20 @@ def apply(folder, options):
     (nofpfcmean, nofpfcstd) = __getNumOfFilesPerFeatureStats(__defsetf)
 
     # write data
-    astats[__statsorder.FILENAME.index] = "ALL - MERGED"
-    astats[__statsorder.NOFC.index] = _getNumOfDefines(__defset)
-    astats[__statsorder.LOF.index] = lof
-    astats[__statsorder.ANDAVG.index] = nnimean
-    astats[__statsorder.ANDSTDEV.index] = nnistd
-    astats[__statsorder.HET.index] = len(het.keys())
-    astats[__statsorder.HOM.index] = len(hom.keys())
-    astats[__statsorder.HOHE.index] = len(hethom.keys())
-    astats[__statsorder.SDEGMEAN.index] = sdegmean
-    astats[__statsorder.SDEGSTD.index] = sdegstd
-    astats[__statsorder.TDEGMEAN.index] = tdegmean
-    astats[__statsorder.TDEGSTD.index] = tdegstd
-    astats[__statsorder.NOFPFCMEAN.index] = nofpfcmean
-    astats[__statsorder.NOFPFCSTD.index] = nofpfcstd
+    astats[__statsorder.FILENAME.value] = "ALL - MERGED"
+    astats[__statsorder.NOFC.value] = _getNumOfDefines(__defset)
+    astats[__statsorder.LOF.value] = lof
+    astats[__statsorder.ANDAVG.value] = nnimean
+    astats[__statsorder.ANDSTDEV.value] = nnistd
+    astats[__statsorder.HET.value] = len(het.keys())
+    astats[__statsorder.HOM.value] = len(hom.keys())
+    astats[__statsorder.HOHE.value] = len(hethom.keys())
+    astats[__statsorder.SDEGMEAN.value] = sdegmean
+    astats[__statsorder.SDEGSTD.value] = sdegstd
+    astats[__statsorder.TDEGMEAN.value] = tdegmean
+    astats[__statsorder.TDEGSTD.value] = tdegstd
+    astats[__statsorder.NOFPFCMEAN.value] = nofpfcmean
+    astats[__statsorder.NOFPFCSTD.value] = nofpfcstd
 
     fdcsv.writerow(astats)
     fd.close()

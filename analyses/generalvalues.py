@@ -41,8 +41,6 @@ sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
 
 # python-lxml module
 from lxml import etree
-# statistics module
-import numpy as np
 # pyparsing module
 import pyparsing as pypa
 

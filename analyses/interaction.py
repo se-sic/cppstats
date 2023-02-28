@@ -770,7 +770,7 @@ def _getFeatureStats(features):
     if len(floflist):
         lofmin = min(floflist)
         lofmax = max(floflist)
-        lof = reduce(lambda m, n: m + n, floflist)
+        lof = list(reduce(lambda m, n: m + n, floflist))
         lofmean = np.mean(floflist)
 
     if len(floflist) > 1:

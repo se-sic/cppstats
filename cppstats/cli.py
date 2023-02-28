@@ -25,21 +25,21 @@
 # imports from the std-library
 
 import sys
-from argparse import ArgumentParser, RawTextHelpFormatter, _VersionAction  # for parameters to this script
+from argparse import ArgumentParser, RawTextHelpFormatter  # , _VersionAction  # for parameters to this script
 
 # #################################################
 # imports from subfolders
 
-import preparation, analysis
-import cppstats as cstats # import cppstats.py and avoid confusion with module
-
+# TODO Are those really not needed?
+# import preparation
+# import cppstats as cstats  # import cppstats.py and avoid confusion with module
+import analysis
 
 # #################################################
 # external modules
 
 # enums
 from enum import Enum
-
 
 # #################################################
 # global constants
@@ -58,30 +58,31 @@ class steps(Enum):
 # #################################################
 # custom actions
 
-class CppstatsVersionAction(_VersionAction):
-    # FIXME not needed for Python 3.4+! see http://bugs.python.org/issue18920
-    '''
-        subclass to _VersionAction as that class prints version information
-        to ``stderr``, but this subclass prints to ``stdout`` instead.
-
-        Note: This is default in Python 3.4+.
-    '''
-
-    def __init__(self, *args, **kwargs):
-        """Initialisation method for the _VersionAction class"""
-        _VersionAction.__init__(self, *args, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        version = self.version
-        if version is None:
-            version = parser.version
-        formatter = parser._get_formatter()
-        formatter.add_text(version)
-        # parser.exit(message=formatter.format_help())
-
-        # change output to sys.stdout and exit then without a message
-        parser._print_message(message=formatter.format_help(), file=sys.stdout)
-        parser.exit(status=0)
+# TODO: _VersionAction does not seem to exist anymore
+# class CppstatsVersionAction(_VersionAction):
+#     # FIXME not needed for Python 3.4+! see http://bugs.python.org/issue18920
+#     '''
+#         subclass to _VersionAction as that class prints version information
+#         to ``stderr``, but this subclass prints to ``stdout`` instead.
+#
+#         Note: This is default in Python 3.4+.
+#     '''
+#
+#     def __init__(self, *args, **kwargs):
+#         """Initialisation method for the _VersionAction class"""
+#         _VersionAction.__init__(self, *args, **kwargs)
+#
+#     def __call__(self, parser, namespace, values, option_string=None):
+#         version = self.version
+#         if version is None:
+#             version = parser.version
+#         formatter = parser._get_formatter()
+#         formatter.add_text(version)
+#         # parser.exit(message=formatter.format_help())
+#
+#         # change output to sys.stdout and exit then without a message
+#         parser._print_message(message=formatter.format_help(), file=sys.stdout)
+#         parser.exit(status=0)
 
 
 # #################################################
@@ -102,12 +103,11 @@ def getOptions(kinds, step=steps.ALL):
 
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
 
+    # TODO see above
     # version (uses CppstatsVersionAction instead of 'version' as action)
-    parser.add_argument('--version', action=CppstatsVersionAction, version=cstats.version())
-
+    # parser.add_argument('--version', action=CppstatsVersionAction, version=cstats.version())
 
     # ADD KIND ARGUMENT
-
     # kinds
     kindgroup = parser.add_mutually_exclusive_group(required=False)
     kindgroup.add_argument("--kind", choices=kinds.keys(), dest="kind",
@@ -116,9 +116,7 @@ def getOptions(kinds, step=steps.ALL):
     kindgroup.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
                            help="perform all available kinds of preparation/analysis [default: %(default)s]")
 
-
     # ADD INPUT TYPE (list or file)
-
     # input 1
     inputgroup = parser.add_mutually_exclusive_group(required=False)  # TODO check if True is possible some time...
     inputgroup.add_argument("--list", type=str, dest="inputlist", metavar="LIST",
@@ -127,7 +125,8 @@ def getOptions(kinds, step=steps.ALL):
     # input 2
     if step == steps.ALL:
         inputgroup.add_argument("--file", type=str, dest="inputfile", nargs=2, metavar=("IN", "OUT"),
-                                help="a source file IN that is prepared and analyzed, the analysis results are written to OUT"
+                                help="a source file IN that is prepared and analyzed, "
+                                     "the analysis results are written to OUT"
                                      "\n(--list is the default)")
     elif step == steps.PREPARATION:
         inputgroup.add_argument("--file", type=str, dest="inputfile", nargs=2, metavar=("IN", "OUT"),
@@ -138,9 +137,7 @@ def getOptions(kinds, step=steps.ALL):
                                 help="a srcML file IN that is analyzed, the analysis results are written to OUT"
                                      "\n(--list is the default)")
 
-
     # ADD VARIOUS STEP-DEPENDENT ARGUMENTS
-
     # no backup files
     if step == steps.ALL or step == steps.PREPARATION:
         parser.add_argument("--nobak", action="store_true", dest="nobak", default=False,
@@ -156,9 +153,7 @@ def getOptions(kinds, step=steps.ALL):
                             help="print relative file names [default: %(default)s]\n"
                                  "e.g., '/projects/apache/_cppstats/afile.c.xml' gets 'afile.c.xml'.")
 
-
     # ADD POSSIBLE PREPARATION/ANALYSIS KINDS AND THEIR COMMAND-LINE ARGUMENTS
-
     if step == steps.ALL:
         parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(kinds.keys()))
 
@@ -178,24 +173,16 @@ def getOptions(kinds, step=steps.ALL):
         for cls in kinds.values():
             cls.addCommandLineOptions(parser)
 
-
     # PARSE OPTIONS
-
     options = parser.parse_args()
 
-
     # ADD CONSTANTS TO OPTIONS
-
     addConstants(options)
 
-
     # CHECK CONSTRAINTS ON OPTIONS
-
     checkConstraints(options)
 
-
     # RETURN
-
     return options
 
 
@@ -208,6 +195,6 @@ def addConstants(options):
 
 def checkConstraints(options):
     # constraints
-    if (options.allkinds == True and options.inputfile):
-        print "Using all kinds of preparation for a single input and output file is weird!"
+    if options.allkinds is True and options.inputfile:
+        print("Using all kinds of preparation for a single input and output file is weird!")
         sys.exit(1)

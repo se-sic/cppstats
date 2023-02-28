@@ -111,17 +111,12 @@ def returnFileNames(folder, extfilt=['.xml']):
             currentfolder = wqueue[0]
             wqueue = wqueue[1:]
             foldercontent = os.listdir(currentfolder)
-            tmpfiles = filter(lambda n: os.path.isfile(
-                os.path.join(currentfolder, n)), foldercontent)
-            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                              tmpfiles)
-            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                           tmpfiles)
+            tmpfiles = list(filter(lambda n: os.path.isfile(os.path.join(currentfolder, n)), foldercontent))
+            tmpfiles = list(filter(lambda n: os.path.splitext(n)[1] in extfilt, tmpfiles))
+            tmpfiles = list(map(lambda n: os.path.join(currentfolder, n), tmpfiles))
             filesfound += tmpfiles
-            tmpfolders = filter(lambda n: os.path.isdir(
-                os.path.join(currentfolder, n)), foldercontent)
-            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                             tmpfolders)
+            tmpfolders = list(filter(lambda n: os.path.isdir(os.path.join(currentfolder, n)), foldercontent))
+            tmpfolders = list(map(lambda n: os.path.join(currentfolder, n), tmpfolders))
             wqueue += tmpfolders
 
     return filesfound
@@ -314,7 +309,7 @@ def _countNestedIfdefs(root):
 
     if len(cnlist) > 0:
         nnimax = max(cnlist)
-        nnitmp = filter(lambda n: n > 0, cnlist)
+        nnitmp = list(filter(lambda n: n > 0, cnlist))
         nnimean = np.mean(nnitmp)
     else:
         nnimax = 0
@@ -406,7 +401,7 @@ def _parseAndAddDefine(node):
     except pypa.ParseException:
         return
 
-    iden = ''.join(map(str, res[0]))
+    iden = ''.join(list(map(str, res[0])))
     expn = res[-1]
     para = res[1:-1]
     __macrofuncs[iden] = (para, expn)
@@ -797,7 +792,7 @@ def _getFeatureStats(features):
 
 def _getFeaturesDepthOne(features):
     """This function returns all features that have the depth of one."""
-    nof1 = filter(lambda t: t[1][0] == 1, features.items())  # t = (sig, (depth, code))
+    nof1 = list(filter(lambda t: t[1][0] == 1, features.items()))  # t = (sig, (depth, code))
     return nof1
 
 
@@ -880,7 +875,7 @@ def _getNumOfDefines(defset):
     # basic operation of this function is to check __defset against
     # __macrofuncs
     funcmacros = __macrofuncs.keys()
-    funcmacros = map(lambda n: n.split('(')[0], funcmacros)
+    funcmacros = list(map(lambda n: n.split('(')[0], funcmacros))
     funcmacros = set(funcmacros)
 
     return len((defset - funcmacros))
@@ -1084,15 +1079,14 @@ def apply(folder):
 
     # filter annotations that do not have any c-code
     # filter annotations with less than 2 features
-    afeatureitems = filter(lambda t:  # t = (a, (f, d, c))
-                           t[1][2] != [''], afeatures.items())
+    afeatureitems = list(filter(lambda t: t[1][2] != [''], afeatures.items())) # t = (a, (f, d, c))
     annotations = list(map(lambda t: (t[0], t[1][0]), afeatureitems))  # t = (a, (f, b, c))
     annotations2andmore = list(filter(lambda t: len(t[1]) > 1, annotations))  # t = (a, f)
     annotationmap = dict()
     for a, f in annotations2andmore:
         annotationmap[a] = f
 
-    annotations2andmore = map(lambda s: set(s), annotationmap.values())
+    annotations2andmore = list(map(lambda s: set(s), annotationmap.values()))
 
     projectpath = os.path.dirname(folder)
     fd = open(os.path.join(projectpath, __outputfile), 'w')

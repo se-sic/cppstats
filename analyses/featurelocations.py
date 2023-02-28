@@ -27,9 +27,7 @@ import csv
 import os
 import re
 import sys
-import xmlrpclib
 from argparse import ArgumentParser, RawTextHelpFormatter
-
 
 # #################################################
 # path adjustments, so that all imports can be done relative to these paths
@@ -37,25 +35,23 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 __lib_subfolder = "lib"
 sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
 
-
 # #################################################
 # external modules
 
 # enums
 from enum import Enum
- # python-lxml module
+# python-lxml module
 from lxml import etree
 # pyparsing module
 import pyparsing as pypa
-pypa.ParserElement.enablePackrat() # speed up parsing
-sys.setrecursionlimit(8000)        # handle larger expressions
 
+pypa.ParserElement.enablePackrat()  # speed up parsing
+sys.setrecursionlimit(8000)  # handle larger expressions
 
 # #################################################
 # config:
 __outputfile = "cppstats_featurelocations.csv"
 __listoffeaturesfile = "listoffeatures.csv"
-
 
 # #################################################
 # constants:
@@ -79,15 +75,16 @@ __curfile = ''  # current processed xml-file
 __defset = set()  # macro-objects
 __defsetf = dict()  # macro-objects per file
 
+
 # collected statistics
 class __statsorder(Enum):
-    FILENAME = 0    # name of the file
+    FILENAME = 0  # name of the file
     LINE_START = 1  # starting line of an #ifdef block
-    LINE_END = 2    # ending line of an #ifdef block (ends either at #else,
-                    #  #elif, or #endif on same level)
-    TYPE = 3        # either #if, #elif, or #else
+    LINE_END = 2  # ending line of an #ifdef block (ends either at #else,
+    #  #elif, or #endif on same level)
+    TYPE = 3  # either #if, #elif, or #else
     EXPRESSION = 4  # the presence condition stated in the #ifdef
-    CONSTANTS = 5   # all configuration constants used in the presence condition
+    CONSTANTS = 5  # all configuration constants used in the presence condition
 
 
 ##################################################
@@ -104,7 +101,7 @@ class FeatureLocation:
         namespace = '{' + _cppnscpp + '}'
         typeWithoutNamespace = '#' + type.replace(namespace, "")
 
-        self.filename = filename # TODO use relative paths here!
+        self.filename = filename  # TODO use relative paths here!
         self.startline = startline
         self.endline = endline
         self.type = typeWithoutNamespace
@@ -130,7 +127,7 @@ class FeatureLocation:
             return False
 
     def __ne__(self, other):
-        return (not self.__eq__(other))
+        return not self.__eq__(other)
 
     def getCSVList(self):
         returnList = []
@@ -190,10 +187,10 @@ def _collectDefines(d):
     but not #define GLIBCVER(x,y,z) ...
     """
     __defset.add(d[0])
-    if __defsetf.has_key(__curfile):
+    if __curfile in __defsetf:
         __defsetf[__curfile].add(d[0])
     else:
-        __defsetf[__curfile] = set([d[0]])
+        __defsetf[__curfile] = {d[0]}
     return d
 
 
@@ -210,8 +207,7 @@ __string = pypa.QuotedString('\'', '\\')
 
 __hexadec = \
     pypa.Literal('0x').suppress() + \
-    pypa.Word(pypa.hexnums). \
-        setParseAction(lambda t: str(int(t[0], 16))) + \
+    pypa.Word(pypa.hexnums).setParseAction(lambda t: str(int(t[0], 16))) + \
     pypa.Optional(__numlitu) + \
     pypa.Optional(__numlitl) + \
     pypa.Optional(__numlitl)
@@ -223,14 +219,11 @@ __integer = \
     pypa.Optional(pypa.Suppress(pypa.Literal('L'))) + \
     pypa.Optional(pypa.Suppress(pypa.Literal('L')))
 
-__identifier = \
-    pypa.Word(pypa.alphanums + '_' + '-' + '@' + '$').setParseAction(_collectDefines)
+__identifier = pypa.Word(pypa.alphanums + '_' + '-' + '@' + '$').setParseAction(_collectDefines)
 __arg = pypa.Word(pypa.alphanums + '_')
-__args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + \
-                                 __arg)
+__args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + __arg)
 __fname = pypa.Word(pypa.alphas, pypa.alphanums + '_')
-__function = pypa.Group(__fname + pypa.Literal('(').suppress() + \
-                        __args + pypa.Literal(')').suppress())
+__function = pypa.Group(__fname + pypa.Literal('(').suppress() + __args + pypa.Literal(')').suppress())
 
 
 class NoEquivalentSigError(Exception):
@@ -238,12 +231,12 @@ class NoEquivalentSigError(Exception):
         pass
 
     def __str__(self):
-        return ("No equivalent signature found!")
+        return "No equivalent signature found!"
 
 
 class IfdefEndifMismatchError(Exception):
     def __str__(self):
-        return ("Ifdef and endif do not match!")
+        return "Ifdef and endif do not match!"
 
 
 def _parseFeatureSignatureAndRewrite(sig):
@@ -258,7 +251,7 @@ def _parseFeatureSignatureAndRewrite(sig):
     # if no equivalence can be found a name rewriting is done
     # e.g. 'defined'
     __pt = {
-        #'defined' : 'defined_',
+        # 'defined' : 'defined_',
         'defined': '',
         '!': '&not',
         '&&': '&and',
@@ -289,7 +282,6 @@ def _parseFeatureSignatureAndRewrite(sig):
             ret = __pt[param[0][0]] + str(param[0][1])
         return ret
 
-
     def _rewriteTwo(param):
         """This function returns each two parameter function
         representation for maple."""
@@ -304,8 +296,7 @@ def _parseFeatureSignatureAndRewrite(sig):
             ret = '(true &and ' + ret + ')'
         return ret
 
-    operand = __string | __hexadec | __integer | \
-              __function | __identifier
+    operand = __string | __hexadec | __integer | __function | __identifier
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
     expr = pypa.operatorPrecedence(operand, [
@@ -319,14 +310,14 @@ def _parseFeatureSignatureAndRewrite(sig):
 
     try:
         rsig = expr.parseString(sig)[0]
-    except pypa.ParseException, e:
+    except pypa.ParseException as e:
         print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
               (sig, e.col))
         return sig
     except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (sig))
+        print('ERROR (time): cannot parse sig (%s)' % sig)
         return sig
-    except ValueError, e:
+    except ValueError as e:
         print('ERROR (parse): cannot parse sig (%s) ~~ (%s)' %
               (sig, e))
         return sig
@@ -385,9 +376,9 @@ def _getMacroSignature(ifdefnode):
 
     # get either the expr or the name tag,
     # which is always the second descendant
-    if (tag in ['if', 'elif', 'ifdef', 'ifndef']):
+    if tag in ['if', 'elif', 'ifdef', 'ifndef']:
         nexpr = [itex for itex in ifdefnode.iterdescendants()]
-        if (len(nexpr) == 1):
+        if len(nexpr) == 1:
             res = nexpr[0].tail
         else:
             nexpr = nexpr[1]
@@ -451,7 +442,7 @@ def _getFeatures(root, featlocations):
         itouter = fouter[-1]  # feature surround tags
         fouter = fouter[:-1]
 
-        for i in xrange(0, len(itouter)):
+        for i in range(0, len(itouter)):
             sig = itouter[i][0]
             elem = itouter[i][1]
 
@@ -460,12 +451,11 @@ def _getFeatures(root, featlocations):
             end = itouter[i + 1][1] if (i < len(itouter) - 1) else eelem
 
             featuresgrouter.append((sig, elem, end))
-        return (fouter, featuresgrouter)
-
+        return fouter, featuresgrouter
 
     def _wrapFeatureUp(features, featuresgrinner, fcode, flist, finner):
         # wrap up the feature
-        if (not flist):
+        if not flist:
             raise IfdefEndifMismatchError()
         itsig = flist[-1]  # feature signature
         flist = flist[:-1]
@@ -477,14 +467,14 @@ def _getFeatures(root, featlocations):
         finner = finner[:-1]
 
         # handle the feature code
-        if (features.has_key(itsig)):
+        if itsig in features:
             features[itsig][1].append(itcode)
         else:
             features[itsig] = (len(flist) + 1, [itcode])
 
         # handle the inner granularity
         featuresgrinner.append((itsig, itinner))
-        return (features, featuresgrinner, fcode, flist, finner)
+        return features, featuresgrinner, fcode, flist, finner
 
     features = {}  # see above; return value
     featuresgrinner = []  # see above; return value
@@ -514,20 +504,20 @@ def _getFeatures(root, featlocations):
         # handling conditionals
         # hitting on conditional-macro
         if ((tag in __conditionals_all)
-            and (event == 'start')
-            and (ns == _cppnscpp)):  # check the cpp:namespace
+                and (event == 'start')
+                and (ns == _cppnscpp)):  # check the cpp:namespace
             parcon = True
 
         # hitting next conditional macro; any of ifdef, else or elif
         if ((tag in __conditionals_all)
-            and (event == 'end')
-            and (ns == _cppnscpp)):  # check the cpp:namespace
+                and (event == 'end')
+                and (ns == _cppnscpp)):  # check the cpp:namespace
             parcon = False
 
             # with else or elif we finish up the last if, therefor
             # we can applicate the wrapup
             if ((tag in __conditionals_else)
-                or (tag in __conditionals_elif)):
+                    or (tag in __conditionals_elif)):
                 (features, featuresgrinner,
                  fcode, flist, finner) = _wrapFeatureUp(features,
                                                         featuresgrinner, fcode, flist, finner)
@@ -539,7 +529,8 @@ def _getFeatures(root, featlocations):
                 condinhist.append((tag, ''))
 
             fsig = _getFeatureSignature(condinhist)
-            if (tag in __conditionals): fouter.append([])
+            if tag in __conditionals:
+                fouter.append([])
             fouter[-1] += ([(fsig, elem)])
             flist.append(fsig)
             fcode.append('')
@@ -547,14 +538,12 @@ def _getFeatures(root, featlocations):
 
         # hitting end-tag of elif-macro
         if ((tag in __conditionals_elif)
-            and (event == 'end')
-            and (ns == _cppnscpp)):
+                and (event == 'end')
+                and (ns == _cppnscpp)):
             parcon = False
 
         # hitting end-tag of define-macro
-        if ((tag in __macro_define) \
-                    and (event == 'end') \
-                    and (ns == _cppnscpp)):
+        if (tag in __macro_define) and (event == 'end') and (ns == _cppnscpp):
             _parseAndAddDefine(elem)
 
         # iterateting in subtree of conditional-node
@@ -563,22 +552,16 @@ def _getFeatures(root, featlocations):
 
         # handling endif-macro
         # hitting an endif-macro start-tag
-        if ((tag in __conditionals_endif) \
-                    and (event == "start") \
-                    and (ns == _cppnscpp)):  # check the cpp:namespace
+        if (tag in __conditionals_endif) and (event == "start") and (ns == _cppnscpp):  # check the cpp:namespace
             parend = True
 
         # hitting the endif-macro end-tag
-        if ((tag in __conditionals_endif) \
-                    and (event == "end") \
-                    and (ns == _cppnscpp)):  # check the cpp:namespace
+        if (tag in __conditionals_endif) and (event == "end") and (ns == _cppnscpp):  # check the cpp:namespace
             parend = False
 
             (features, featuresgrinner, fcode, flist, finner) = \
-                _wrapFeatureUp(features, featuresgrinner,
-                               fcode, flist, finner)
-            (fouter, featuresgrouter) = _wrapGrOuterUp(fouter,
-                                                       featuresgrouter, elem)
+                _wrapFeatureUp(features, featuresgrinner, fcode, flist, finner)
+            (fouter, featuresgrouter) = _wrapGrOuterUp(fouter, featuresgrouter, elem)
 
             # transform feature locations and append them to global list
             for (asig, aselem, aeelem) in featuresgrouter:
@@ -586,7 +569,7 @@ def _getFeatures(root, featlocations):
                                        aselem.tag, asig)
                 featlocations.add(floc)
 
-            while (condinhist[-1][0] != 'if'):
+            while condinhist[-1][0] != 'if':
                 condinhist = condinhist[:-1]
             condinhist = condinhist[:-1]
 
@@ -595,19 +578,19 @@ def _getFeatures(root, featlocations):
             continue
 
         # collect the source-code of the feature
-        if (len(flist)):
-            if ((event == "start") and (elem.text)):
+        if len(flist):
+            if (event == "start") and elem.text:
                 fcode[-1] += elem.text
-            if ((event == "end") and (elem.tail)):
+            if (event == "end") and elem.tail:
                 fcode[-1] += elem.tail
 
-            if (ns == __cppnsdef or tag not in __conditionals_all):
+            if ns == __cppnsdef or tag not in __conditionals_all:
                 finner[-1].append((tag, event, elem.sourceline))
 
-    if (flist):
+    if flist:
         raise IfdefEndifMismatchError()
 
-    return (features, featuresgrinner, featuresgrouter)
+    return features, featuresgrinner, featuresgrouter
 
 
 def _getFeaturesAtLocations(flocations, defines):
@@ -620,7 +603,7 @@ def _getFeaturesAtLocations(flocations, defines):
         vec = map(lambda s: not dre.search(s) is None, sigs)
 
         for floc, contained in zip(flocations, vec):
-            if (contained):
+            if contained:
                 floc.constants.add(d)
 
 
@@ -635,18 +618,18 @@ def _prologCSV(folder, file, headings):
     fdcsv = csv.writer(fd, delimiter=',')
     fdcsv.writerow(["sep=,"])
     fdcsv.writerow(headings)
-    return (fd, fdcsv)
+    return fd, fdcsv
 
 
 ##################################################
 # main method
 
-def resetModule() :
+def resetModule():
     global __macrofuncs, __defset, __defsetf
-    __macrofuncs = {}       # functional macros like: "GLIBVERSION(2,3,4)",
-                            # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
-    __defset = set()        # macro-objects
-    __defsetf = dict()      # macro-objects per file
+    __macrofuncs = {}  # functional macros like: "GLIBVERSION(2,3,4)",
+    # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
+    __defset = set()  # macro-objects
+    __defsetf = dict()  # macro-objects per file
 
 
 def apply(folder, options):
@@ -663,7 +646,7 @@ def apply(folder, options):
 
     # list-of-features file
     loffheadings = ['FILENAME', 'CONSTANTS']
-    loffrow = [None]*len(loffheadings)
+    loffrow = [None] * len(loffheadings)
     loffhandle, loffwriter = _prologCSV(os.path.join(folder, os.pardir), __listoffeaturesfile, loffheadings)
 
     # preparations for file-loop
@@ -673,7 +656,7 @@ def apply(folder, options):
     fcount = 0
     ftotal = len(files)
 
-    #TODO rewrite comment! get statistics for all files; write results into csv
+    # TODO rewrite comment! get statistics for all files; write results into csv
     # and merge the features
     for file in files:
         __curfile = file
@@ -701,10 +684,9 @@ def apply(folder, options):
 
         # print features for this file to list-of-features file
         featureslist = list(__defsetf[__curfile]) \
-            if __defsetf.has_key(__curfile) else '' # list of features within the current file
-        listoffeaturesstring = ';'.join(sorted(featureslist)) # sort and join
-        loffwriter.writerow([__curfile, listoffeaturesstring]) # write row to file
-
+            if __curfile in __defsetf else ''  # list of features within the current file
+        listoffeaturesstring = ';'.join(sorted(featureslist))  # sort and join
+        loffwriter.writerow([__curfile, listoffeaturesstring])  # write row to file
 
     # collect feature locations and consisting used features
     featurelocations = list(featlocations)
@@ -714,13 +696,13 @@ def apply(folder, options):
     # print each feature location as one line into output file
     for floc in featurelocations:
 
-        #adjust file name if wanted
-        if options.filenamesRelative : # relative file name (root is project folder (not included in path))
+        # adjust file name if wanted
+        if options.filenamesRelative:  # relative file name (root is project folder (not included in path))
             floc.filename = os.path.relpath(floc.filename, folder)
 
-        if options.filenames == options.FILENAME_SRCML : # cppstats file names
-            pass # nothing to do here, as the file path is the cppstats path by default
-        if options.filenames == options.FILENAME_SOURCE : # source file name
+        if options.filenames == options.FILENAME_SRCML:  # cppstats file names
+            pass  # nothing to do here, as the file path is the cppstats path by default
+        if options.filenames == options.FILENAME_SOURCE:  # source file name
             floc.filename = floc.filename.replace(".xml", "").replace("/_cppstats/", "/source/", 1)
 
         # print floc information to CSV file
@@ -728,9 +710,8 @@ def apply(folder, options):
         fdcsv.writerow(row)
 
     # close output files
-    fd.close() # __outputfile
-    loffhandle.close() # __listoffeaturesfile
-
+    fd.close()  # __outputfile
+    loffhandle.close()  # __listoffeaturesfile
 
 
 # ##################################################
@@ -739,7 +720,7 @@ def apply(folder, options):
 def addCommandLineOptionsMain(optionparser):
     ''' add command line options for a direct call of this script'''
     optionparser.add_argument("--folder", dest="folder",
-                  help="input folder [default=.]", default=".")
+                              help="input folder [default=.]", default=".")
 
 
 def addCommandLineOptions(optionparser):
@@ -766,7 +747,7 @@ if __name__ == '__main__':
 
     folder = os.path.abspath(options.folder)
 
-    if (os.path.isdir(folder)):
+    if os.path.isdir(folder):
         apply(folder)
     else:
         sys.exit(-1)

@@ -40,10 +40,10 @@ setup(
     },
 
     install_requires=[
-        'statlib==1.2',
-        'pyparsing==2.*',
-        'enum34',
-        'lxml>=3.4'
+        #'statlib==1.2',
+        #'pyparsing==2.*',
+        #'enum34',
+        #'lxml>=3.4'
     ],
 
     dependency_links=[

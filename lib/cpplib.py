@@ -98,7 +98,7 @@ def _parseIfDefExpression(ifdefexp):
 
     try:
         rsig = expr.parseString(ifdefexp)[0]
-    except pypa.ParseException, e:
+    except pypa.ParseException as e:
         print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
                 (ifdefexp, e.col))
         return ifdefexp

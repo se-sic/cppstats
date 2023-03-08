@@ -44,6 +44,7 @@ setup(
         #'pyparsing==2.*',
         #'enum34',
         #'lxml>=3.4'
+        #'cpplib' # TODO This was missing but required
     ],
 
     dependency_links=[

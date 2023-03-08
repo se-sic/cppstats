@@ -23,7 +23,7 @@
 #     Claus Hunsen <hunsen@fim.uni-passau.de>
 
 
-#FIXME move this script to another folder!
+# FIXME move this script to another folder!
 from optparse import OptionParser
 import sys
 
@@ -34,9 +34,9 @@ class PartialPreprocessor:
     def __init__(self):
         oparser = OptionParser()
         oparser.add_option('-i', '--inputfile', dest='ifile',
-                help='input file (mandatory)')
+                           help='input file (mandatory)')
         oparser.add_option('-o', '--outputfile', dest='ofile',
-                help='output file (mandatory)')
+                           help='output file (mandatory)')
         (self.opts, self.args) = oparser.parse_args()
 
         if not self.opts.ifile or not self.opts.ofile:

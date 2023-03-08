@@ -41,7 +41,9 @@
 #     line x+2:  ...
 #     line x+y: #endif
 
-import os, re, sys
+import os
+import re
+import sys
 
 __debug = False
 
@@ -91,22 +93,22 @@ def apply(fname, out=sys.stdout):
             # end of code reached and nothing found so far
             if currentitem == len(sourcecode):
                 # no include guard found
-                return (-1, -1)
+                return -1, -1
 
         # processing ifdef and define
         regres = rg.match(sifdef)
-        if (regres):
+        if regres:
             guardname = regres.groups()[0]
         else:
-            return (-1, -1)
+            return -1, -1
 
         define = taillist[1]
         regres = rd.match(define.strip())
-        if (regres):
+        if regres:
             if guardname != regres.groups()[0]:
-                return (-1, -1)
+                return -1, -1
         else:
-            return (-1, -1)
+            return -1, -1
 
         # process taillist for else and endif
         ifcount = 1
@@ -114,28 +116,26 @@ def apply(fname, out=sys.stdout):
         for item in taillist[2:]:
             currentitem += 1
             if item.startswith('#else') and ifcount == 1:
-                return (-1, -1)  # we do not support alternative include guards
+                return -1, -1  # we do not support alternative include guards
             if item.startswith('#elif') and ifcount == 1:
-                return (-1, -1)  # we do not support alternative include guards
+                return -1, -1  # we do not support alternative include guards
             if item.startswith('#if'):
                 ifcount += 1
                 continue
             if item.startswith('#endif'):
                 ifcount -= 1
                 if ifcount == 0:
-                    return (ifdefpos, currentitem + ifdefpos)
+                    return ifdefpos, currentitem + ifdefpos
                 continue
-        return (-1, -1)
+        return -1, -1
 
     (ifdef, endif) = _findCorrespondingItems(list(sourcecode))
-    if (ifdef == -1 or endif == -1):
+    if ifdef == -1 or endif == -1:
         pass
     else:
         # concat source code again and replace include guard with empty lines
-        sourcecode = sourcecode[:max(0, ifdef)] + \
-                     ["", ""] + \
-                     sourcecode[ifdef + 2:endif] + \
-                     [""] + \
+        sourcecode = sourcecode[:max(0, ifdef)] + ["", ""] + \
+                     sourcecode[ifdef + 2:endif] + [""] + \
                      sourcecode[endif + 1:]
 
     for item in sourcecode:

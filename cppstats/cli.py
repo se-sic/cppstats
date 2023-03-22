@@ -111,7 +111,7 @@ def getOptions(kinds, step=steps.ALL):
     # kinds
     kindgroup = parser.add_mutually_exclusive_group(required=False)
     kindgroup.add_argument("--kind", choices=kinds.keys(), dest="kind",
-                           default=kinds.keys()[0], metavar="<K>",
+                           default=list(kinds.keys())[0], metavar="<K>",
                            help="the preparation to be performed [default: %(default)s]")
     kindgroup.add_argument("-a", "--all", action="store_true", dest="allkinds", default=False,
                            help="perform all available kinds of preparation/analysis [default: %(default)s]")

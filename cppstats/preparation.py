@@ -108,7 +108,7 @@ def runBashCommand(command, shell=False, stdin=None, stdout=None):
 
 
 def replaceMultiplePatterns(replacements, infile, outfile):
-    with open(infile, "rb") as source:
+    with open(infile, "r") as source:
         with open(outfile, "w") as target:
             data = source.read()
             for pattern, replacement in replacements.items():
@@ -117,9 +117,9 @@ def replaceMultiplePatterns(replacements, infile, outfile):
 
 
 def stripEmptyLinesFromFile(infile, outfile):
-    with open(infile, "rb") as source:
+    with open(infile, "r") as source:
         with open(outfile, "w") as target:
-            for line in source:
+            for line in source.readlines():
                 if line.strip():
                     target.write(line)  # TODO Read bytes and write strings??
 

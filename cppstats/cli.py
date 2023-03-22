@@ -158,7 +158,7 @@ def getOptions(kinds, step=steps.ALL):
         parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(kinds.keys()))
 
         # add options for each analysis kind
-        for kind in kinds.values():
+        for kind in list(kinds.values()):
             analysisPart = kind[1]
             analysisThread = analysis.getKinds().get(analysisPart)
             analysisThread.addCommandLineOptions(parser)
@@ -170,7 +170,7 @@ def getOptions(kinds, step=steps.ALL):
         parser.add_argument_group("Possible Kinds of Analyses <K>".upper(), ", ".join(kinds.keys()))
 
         # add options for each analysis kind
-        for cls in kinds.values():
+        for cls in list(kinds.values()):
             cls.addCommandLineOptions(parser)
 
     # PARSE OPTIONS

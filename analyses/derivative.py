@@ -774,14 +774,14 @@ def _getFeatureStats(features):
     lofmean = 0
     lofstd = 0
     nof = len(features.keys())
-    tmp = [item for (_, item) in features.itervalues()]
+    tmp = [item for (_, item) in list(features.values())]
     tmp = _flatten(tmp)
     floflist = list(map(lambda n: n.count('\n'), tmp))
 
     if len(floflist):
         lofmin = min(floflist)
         lofmax = max(floflist)
-        lof = list(reduce(lambda m, n: m + n, floflist))
+        lof = reduce(lambda m, n: m + n, floflist)
         lofmean = np.mean(floflist)
 
     if len(floflist) > 1:
@@ -1086,7 +1086,7 @@ def apply(folder):
     for a, f in annotations2andmore:
         annotationmap[a] = f
 
-    annotations2andmore = list(map(lambda s: set(s), annotationmap.values()))
+    annotations2andmore = list(map(lambda s: set(s), list(annotationmap.values())))
 
     projectpath = os.path.dirname(folder)
     fd = open(os.path.join(projectpath, __outputfile), 'w')

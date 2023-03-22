@@ -763,14 +763,14 @@ def _getFeatureStats(features):
     lofmean = 0
     lofstd = 0
     nof = len(features.keys())
-    tmp = [item for (_, item) in features.itervalues()]
+    tmp = [item for (_, item) in list(features.values())]
     tmp = _flatten(tmp)
     floflist = list(map(lambda n: n.count('\n'), tmp))
 
     if len(floflist):
         lofmin = min(floflist)
         lofmax = max(floflist)
-        lof = list(reduce(lambda m, n: m + n, floflist))
+        lof = reduce(lambda m, n: m + n, floflist)
         lofmean = np.mean(floflist)
 
     if len(floflist) > 1:
@@ -781,7 +781,7 @@ def _getFeatureStats(features):
 
 def _getFeaturesDepthOne(features):
     """This function returns all features that have the depth of one."""
-    nof1 = list(filter(lambda t: t[1][0] == 1, features.iteritems()))  # t = (sig, (depth, code))
+    nof1 = list(filter(lambda t: t[1][0] == 1, features.items()))  # t = (sig, (depth, code))
     return nof1
 
 
@@ -825,7 +825,7 @@ def _distinguishFeatures(features):
     hom = {}
     hethom = {}
 
-    for (key, (_, item)) in features.iteritems():
+    for (key, (_, item)) in features.items():
         # distinguish according to feature-signature
         # shared code
         if '||' in key and ('&&' not in key):
@@ -1008,7 +1008,7 @@ def apply(folder, options):
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
-        for (sig, (depth, code)) in ffeatures.iteritems():
+        for (sig, (depth, code)) in ffeatures.items():
             (mal, psig) = _parseFeatureSignature(sig)
 
             try:

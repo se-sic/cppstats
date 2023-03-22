@@ -675,7 +675,7 @@ def apply(folder, options):
             continue
 
         # parse features and get all defined configuration constants
-        for (sig, (depth, code)) in features.iteritems():
+        for (sig, (depth, code)) in features.items():
             psig = _parseFeatureSignatureAndRewrite(sig)
 
         # file successfully parsed

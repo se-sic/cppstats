@@ -166,7 +166,7 @@ def dictinvert(d):
     values into a dictionary that maps the values to the corresponding
     set of former keys."""
     inv = dict()
-    for (k, v) in d.iteritems():
+    for k, v in d.items():
         for value in v:
             keys = inv.setdefault(value, [])
             keys.append(k)
@@ -380,7 +380,7 @@ def _parseFeatureSignatureAndRewrite(sig):
     operand = __string | __hexadec | __integer | __function | __identifier
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
-    expr = pypa.operatorPrecedence(operand, [
+    expr = pypa.infixNotation(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
@@ -921,14 +921,14 @@ def _getFeatureStats(features):
     lofmean = 0
     lofstd = 0
     nof = len(features.keys())
-    tmp = [item for (_, item) in features.itervalues()]
+    tmp = [item for (_, item) in list(features.values())]
     tmp = _flatten(tmp)
     floflist = list(map(lambda n: n.count('\n'), tmp))
 
     if len(floflist):
         lofmin = min(floflist)
         lofmax = max(floflist)
-        lof = list(reduce(lambda m, n: m + n, floflist))
+        lof = reduce(lambda m, n: m + n, floflist)
         lofmean = np.mean(floflist)
 
     if len(floflist) > 1:
@@ -939,7 +939,7 @@ def _getFeatureStats(features):
 
 def _getFeaturesDepthOne(features):
     """This function returns all features that have the depth of one."""
-    nof1 = list(filter(lambda t: t[1][0] == 1, features.iteritems()))  # t = (sig, (depth, code))
+    nof1 = list(filter(lambda t: t[1][0] == 1, features.items()))  # t = (sig, (depth, code))
     return nof1
 
 
@@ -983,7 +983,7 @@ def _distinguishFeatures(features):
     hom = {}
     hethom = {}
 
-    for (key, (_, item)) in features.iteritems():
+    for (key, (_, item)) in features.items():
         # distinguish according to feature-signature
         # shared code
         if '||' in key and ('&&' not in key):
@@ -1123,7 +1123,7 @@ def _getGranularityStats(fcodetags):
 
 def __getNumOfFilesPerFeatureStats(filetofeatureconstants):
     featureconstantstofiles = dictinvert(filetofeatureconstants)
-    numbers = list(map(lambda v: len(v), featureconstantstofiles.values()))
+    numbers = list(map(lambda v: len(v), list(featureconstantstofiles.values())))
 
     # mean
     if len(numbers) > 0:
@@ -1184,7 +1184,7 @@ def apply(folder, options):
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
-        for (sig, (depth, code)) in ffeatures.iteritems():
+        for (sig, (depth, code)) in ffeatures.items():
             psig = _parseFeatureSignatureAndRewrite(sig)
 
             try:
@@ -1340,7 +1340,7 @@ def apply(folder, options):
         _getFeatureStats(afeatures)
 
     # SDEG + TDEG
-    sigs = _flatten(sigmap.values())
+    sigs = _flatten(list(sigmap.values()))
     defs = list(__defset)
     (sdegmean, sdegstd, tdegmean, tdegstd) = \
         _getScatteringTanglingDegrees(sigs, defs)

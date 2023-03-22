@@ -126,7 +126,7 @@ def _prologCSV(folder, file, headings, delimiter=","):
 
 
 def _flatten(l):
-    """This function takes a list as input and returns a flatten version
+    """This function takes a list as input and returns a flattened version
     of the list. So all nested lists are unpacked and moved up to the
     level of the list."""
     i = 0
@@ -732,7 +732,7 @@ def apply(folder, options):
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
-        for (sig, (depth, code)) in ffeatures.iteritems():
+        for (sig, (depth, code)) in ffeatures.items():
             psig = _parseFeatureSignatureAndRewrite(sig)
 
             try:
@@ -778,7 +778,7 @@ def apply(folder, options):
         # remove #else branches from list of features as there is no existing signature in the source code!
         if not options.rewriteifdefs:
             features = OrderedDict((sig, value)
-                                   for sig, value in features.iteritems()
+                                   for sig, value in features.items()
                                    if not sig.startswith(_elsePrefix))
 
         # merge features of file in the global list of features
@@ -792,7 +792,7 @@ def apply(folder, options):
         print('INFO: parsing file (%5d) of (%5d) -- (%s).' % (fcount, ftotal, os.path.join(folder, file)))
 
     # get signatures and defines
-    sigs = _flatten(sigmap.values())
+    sigs = _flatten(list(sigmap.values()))
     defs = list(__defset)
 
     # preparation: opn file for writing

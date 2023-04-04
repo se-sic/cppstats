@@ -99,17 +99,12 @@ def returnFileNames(folder, extfilt=['.xml']):
             currentfolder = wqueue[0]
             wqueue = wqueue[1:]
             foldercontent = os.listdir(currentfolder)
-            tmpfiles = filter(lambda n: os.path.isfile(
-                os.path.join(currentfolder, n)), foldercontent)
-            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                              tmpfiles)
-            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                           tmpfiles)
+            tmpfiles = list(filter(lambda n: os.path.isfile(os.path.join(currentfolder, n)), foldercontent))
+            tmpfiles = list(filter(lambda n: os.path.splitext(n)[1] in extfilt, tmpfiles))
+            tmpfiles = list(map(lambda n: os.path.join(currentfolder, n), tmpfiles))
             filesfound += tmpfiles
-            tmpfolders = filter(lambda n: os.path.isdir(
-                os.path.join(currentfolder, n)), foldercontent)
-            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                             tmpfolders)
+            tmpfolders = list(filter(lambda n: os.path.isdir(os.path.join(currentfolder, n)), foldercontent))
+            tmpfolders = list(map(lambda n: os.path.join(currentfolder, n), tmpfolders))
             wqueue += tmpfolders
 
     return filesfound
@@ -269,7 +264,7 @@ def _parseFeatureSignatureAndRewrite(sig):
             return 'modp(' + param[0][0] + ',' + param[0][2] + ')'
 
         ret = ' ' + __pt[param[0][1]] + ' '
-        ret = '(' + ret.join(map(str, param[0][0::2])) + ')'
+        ret = '(' + ret.join(list(map(str, param[0][0::2]))) + ')'
 
         if param[0][1] in ['<', '>', '<=', '>=', '!=', '==']:
             ret = '(true &and ' + ret + ')'
@@ -387,7 +382,7 @@ def _parseAndAddDefine(node):
     except pypa.ParseException:
         return
 
-    iden = ''.join(map(str, res[0]))
+    iden = ''.join(list(map(str, res[0])))
     expn = res[-1]
     para = res[1:-1]
     __macrofuncs[iden] = (para, expn)
@@ -651,7 +646,7 @@ def _getNestingDepths(root):
             # print "%s %s: %s (max: %s)" % (tag, _getMacroSignature(elem), cncur, cnmax)
 
     if 0 < len(cnlist):
-        nnitmp = filter(lambda n: n > 0, cnlist)
+        nnitmp = list(filter(lambda n: n > 0, cnlist))
         __nestedIfdefsLevels += nnitmp
 
     __nestingDepthsOfBranches += sighist
@@ -674,14 +669,14 @@ def _getScatteringTanglingValues(sigs, defines):
     tang = [0] * len(sigs)  # signatures overall
     for d in defines:
         dre = re.compile(r'\b' + d + r'\b')  # using word boundaries
-        vec = map(lambda s: not dre.search(s) is None, sigs)
+        vec = list(map(lambda s: not dre.search(s) is None, sigs))
         scat.append(vec.count(True))
-        tang = map(__add, tang, vec)
+        tang = list(map(__add, tang, vec))
 
     # create dictionaries from sigs and defines and corresponding
     # scattering and tangling values
-    scatdict = zip(defines, scat)
-    tangdict = zip(sigs, tang)
+    scatdict = list(zip(defines, scat))
+    tangdict = list(zip(sigs, tang))
 
     return scatdict, tangdict
 
@@ -808,19 +803,19 @@ def apply(folder, options):
     tangs = sorted([x[1] for x in tangvalues])
 
     stfrow[0] = "tangling"
-    tanglingstring = ';'.join(map(str, tangs))
+    tanglingstring = ';'.join(list(map(str, tangs)))
     stfrow[1] = tanglingstring
     stfwriter.writerow(stfrow)
 
     stfrow[0] = "scattering"
-    scatteringstring = ';'.join(map(str, scats))
+    scatteringstring = ';'.join(list(map(str, scats)))
     stfrow[1] = scatteringstring
     stfwriter.writerow(stfrow)
 
     # nesting values
 
     stfrow[0] = "nestedIfdefsLevels"
-    ndstring = ';'.join(map(str, __nestedIfdefsLevels))
+    ndstring = ';'.join(list(map(str, __nestedIfdefsLevels)))
     stfrow[1] = ndstring
     stfwriter.writerow(stfrow)
 

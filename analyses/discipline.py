@@ -112,11 +112,9 @@ class DisciplinedAnnotations:
         treeifdefs = list()
 
         for _, elem in etree.iterwalk(root):
-            ns, tag = DisciplinedAnnotations.__cpprens.match(elem.tag). \
-                groups()
+            ns, tag = DisciplinedAnnotations.__cpprens.match(elem.tag).groups()
 
-            if ns == DisciplinedAnnotations.__cppnscpp \
-                    and tag in DisciplinedAnnotations.__conditionals:
+            if ns == DisciplinedAnnotations.__cppnscpp and tag in DisciplinedAnnotations.__conditionals:
                 treeifdefs.append(elem)
 
         return treeifdefs
@@ -142,8 +140,10 @@ class DisciplinedAnnotations:
                     return -1
                 workerlist[-1].append(nifdef)
                 last = workerlist[-1]
-                getpairs = zip(last, last[1:])
-                map(lambda i: listifdefs.append(list(i)), getpairs)
+                getpairs = list(zip(last, last[1:]))
+                # calling the map function alone is not sufficient
+                # the value needs to be assigned in order for the lambda to be executed
+                _ = list(map(lambda i: listifdefs.append(list(i)), getpairs))
                 workerlist = workerlist[:-1]
             else:
                 print('[ERROR] ill-formed tag (%s) occured in line (%4s).' % (tag, nifdef.sourceline))
@@ -158,7 +158,7 @@ class DisciplinedAnnotations:
         # iterate annotated blocks by determining all siblings of the #ifdef and filter out preprocessor
         # annotated elements
         resultlist = list(filter(lambda t: t[0].getnext() != t[1], listifdefs))  # t = (ifdef, endif)
-        print('[INFO] before after: %s <-> %s' % (str(len(listifdefs)), str(len(resultlist))))
+        print(f'[INFO] before after: {len(listifdefs)} <-> {len(resultlist)}')
         return resultlist
 
     PATTLS = 0  # 1 << 0 => 1
@@ -238,7 +238,7 @@ class DisciplinedAnnotations:
             nodeendif = listcorifdef[1]
             func = nodeendif.getparent()
 
-            if func is not None and func.tag.split('}')[1] == 'function':
+            if func and func.tag.split('}')[1] == 'function':
                 nodefuncsibs = [sib for sib in func.itersiblings(preceding=True)]
                 if nodeifdef == nodefuncsibs[0]:
                     if self.opts.verbose:
@@ -407,7 +407,7 @@ class DisciplinedAnnotations:
             # else parent -> #ifdef
             nodeendif = listcorifdef[-1]
             thensib = nodeendif.getprevious()
-            if thensib is None:
+            if not thensib:
                 listundisciplinedunknown.append(listcorifdef)
                 continue
             if thensib.tag.split('}')[1] not in ['then']:
@@ -538,61 +538,61 @@ class DisciplinedAnnotations:
         # check TLS pattern, subset of sibling pattern
         if self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATTLS):
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkStrictTLSCUPattern__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkStrictTLSCUPattern__(listifdefs)
             self.compilationunit += len(listdisciplined)
             self.disciplined += len(listdisciplined)
 
             # checking fd pattern (part of tls)
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkStrictTLSFDPattern__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkStrictTLSFDPattern__(listifdefs)
             self.functiontype += len(listdisciplined)
             self.disciplined += len(listdisciplined)
 
             # checking ill-formed compilation unit pattern
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkStrictPattern__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkStrictPattern__(listifdefs)
             self.compilationunit += len(listdisciplined)
             self.disciplined += len(listdisciplined)
 
         # check if-then pattern
         if self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATIFTHEN):
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkIfThenPattern__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkIfThenPattern__(listifdefs)
             self.wrapperif += len(listdisciplined)
             self.undisciplinedknown += len(listdisciplined)
 
         # check case pattern
         if self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATCASE):
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkCasePattern__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkCasePattern__(listifdefs)
             self.conditionalcase += len(listdisciplined)
             self.undisciplinedknown += len(listdisciplined)
 
         # check else-if pattern
         if self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATELSEIF):
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkElseIfPattern__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkElseIfPattern__(listifdefs)
             self.conditionalelif += len(listdisciplined)
             self.undisciplinedknown += len(listdisciplined)
 
         # check param pattern
         if self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATPARAM):
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkParameter__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkParameter__(listifdefs)
             self.parameter += len(listdisciplined)
             self.undisciplinedknown += len(listdisciplined)
 
         # check expression pattern
         if self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATEXP):
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkExpression__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkExpression__(listifdefs)
             self.expression += len(listdisciplined)
             self.undisciplinedknown += len(listdisciplined)
 
         # check sibling pattern; check this late because pattern might match for others as well
         if self.opts.disc_all or self.opts.check & (1 << DisciplinedAnnotations.PATSIB):
             listifdefs = list(listundisciplined)
-            (listdisciplined, listundisciplined) = self.__checkSiblingPattern__(listifdefs)
+            listdisciplined, listundisciplined = self.__checkSiblingPattern__(listifdefs)
             self.siblings += len(listdisciplined)
             self.disciplined += len(listdisciplined)
 
@@ -614,6 +614,7 @@ class DisciplinedAnnotations:
         # get root of the xml and iterate over it
         root = tree.getroot()
         treeifdefs = self.__getIfdefAnnotations__(root)
+
         try:
             self.__checkDiscipline__(treeifdefs, file)
         except:

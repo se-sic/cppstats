@@ -447,7 +447,7 @@ def _getFeatures(root):
         finner = finner[:-1]
 
         # handle the feature code
-        if features.has_key(itsig):
+        if itsig in features:
             features[itsig][1].append(itcode)
         else:
             features[itsig] = (len(flist) + 1, [itcode])

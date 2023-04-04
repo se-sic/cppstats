@@ -124,8 +124,11 @@ def returnFileNames(folder, extfilt=['.xml']):
 
 
 def uniqueItems(l):
-    l = sorted(l)
-    return list(k for k, _ in itertools.groupby(l))
+    r = []
+    for i in l:
+        if i not in r:
+            r.append(i)
+    return r
 
 
 def _flatten(l):
@@ -781,7 +784,7 @@ def _getFeatureStats(features):
 
 def _getFeaturesDepthOne(features):
     """This function returns all features that have the depth of one."""
-    nof1 = list(filter(lambda t: t[1][0] == 1, features.items()))  # t = (sig, (depth, code))
+    nof1 = list(filter(lambda t: t[1][0] == 1, list(features.items())))  # t = (sig, (depth, code))
     return nof1
 
 
@@ -825,7 +828,7 @@ def _distinguishFeatures(features):
     hom = {}
     hethom = {}
 
-    for (key, (_, item)) in features.items():
+    for (key, (_, item)) in list(features.items()):
         # distinguish according to feature-signature
         # shared code
         if '||' in key and ('&&' not in key):
@@ -863,7 +866,7 @@ def _getNumOfDefines(defset):
     """
     # basic operation of this function is to check __defset against
     # __macrofuncs
-    funcmacros = __macrofuncs.keys()
+    funcmacros = list(__macrofuncs.keys())
     funcmacros = list(map(lambda n: n.split('(')[0], funcmacros))
     funcmacros = set(funcmacros)
 
@@ -1008,11 +1011,11 @@ def apply(folder, options):
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
-        for (sig, (depth, code)) in ffeatures.items():
+        for (sig, (depth, code)) in list(ffeatures.items()):
             (mal, psig) = _parseFeatureSignature(sig)
 
             try:
-                sigmatch = _checkForEquivalentSig(sigmap.keys(), psig)
+                sigmatch = _checkForEquivalentSig(list(sigmap.keys()), psig)
                 (tmpflag, tmpdepth, tmpcode) = \
                     afeatures[sigmap[sigmatch][0]]
                 tmpdepth = min(tmpdepth, depth)
@@ -1058,7 +1061,7 @@ def apply(folder, options):
 
     # filter annotations that do not have any c-code
     # filter annotations with less than 3 features
-    afeatureitems = list(filter(lambda t: t[1][2] != [''], afeatures.items()))  # t = (a, (f, d, c))
+    afeatureitems = list(filter(lambda t: t[1][2] != [''], list(afeatures.items())))  # t = (a, (f, d, c))
     annotations = list(map(lambda t: t[1][0], afeatureitems))  # t = (a, (flag, b, c)) 
     annotations3andmore = list(filter(lambda a: len(a) > 2, annotations))
     annotations3andmore = uniqueItems(annotations3andmore)
@@ -1071,7 +1074,7 @@ def apply(folder, options):
     for annotation in annotations3andmore:
         combinations = list(map(lambda s: set(s), list(itertools.combinations(annotation, 2))))
         allcomb = len(combinations)
-        occcomblist = list(set())  # TODO: = [] ?
+        occcomblist = []
         for combination in combinations:
             if combination in annotations:
                 occcomblist.append(combination)

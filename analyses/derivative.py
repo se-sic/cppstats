@@ -75,8 +75,7 @@ __conditionals = ['if', 'ifdef', 'ifndef']
 __conditionals_elif = ['elif']
 __conditionals_else = ['else']
 __conditionals_endif = ['endif']
-__conditionals_all = __conditionals + __conditionals_elif + \
-                     __conditionals_else
+__conditionals_all = __conditionals + __conditionals_elif + __conditionals_else
 __macro_define = ['define']
 __macrofuncs = {}  # functional macros like: "GLIBVERSION(2,3,4)",
 # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
@@ -351,7 +350,7 @@ def _getFeatureSignature(condinhist):
         if tag == 'else':
             continue
         if tag in ['if', 'elif']:
-            fsig = '(' + fsig + ') && (' + fname + ')'
+            fsig = f'({fsig}) && ({fname})'
             continue
     return fsig
 
@@ -375,7 +374,7 @@ def _getASTFuture(node):
     node itself."""
 
     dess = []
-    while node is not None:
+    while node:
         dess += [sib for sib in node.itersiblings(preceding=False)]
         node = node.getparent()
 
@@ -774,7 +773,7 @@ def _getFeatureStats(features):
     lofmean = 0
     lofstd = 0
     nof = len(features.keys())
-    tmp = [item for (_, item) in list(features.values())]
+    tmp = list(features.values())
     tmp = _flatten(tmp)
     floflist = list(map(lambda n: n.count('\n'), tmp))
 
@@ -792,7 +791,7 @@ def _getFeatureStats(features):
 
 def _getFeaturesDepthOne(features):
     """This function returns all features that have the depth of one."""
-    nof1 = list(filter(lambda t: t[1][0] == 1, features.items()))  # t = (sig, (depth, code))
+    nof1 = list(filter(lambda t: t[1][0] == 1, list(features.items())))  # t = (sig, (depth, code))
     return nof1
 
 
@@ -836,7 +835,7 @@ def _distinguishFeatures(features):
     hom = {}
     hethom = {}
 
-    for key, (_, item) in features.items():
+    for key, (_, item) in list(features.items()):
         # distinguish according to feature-signature
         # shared code
         if '||' in key and '&&' not in key:
@@ -901,7 +900,7 @@ def _getScatteringTanglingDegrees(sigs, defines):
     tang = [0] * len(sigs)  # signatures overall
     for d in defines:
         dre = re.compile(r'\b' + d + r'\b')  # using word boundaries
-        vec = list(map(lambda s: not dre.search(s) is None, sigs))
+        vec = list(map(lambda s: dre.search(s) is not None, sigs))
         scat.append(vec.count(True))
         tang = list(map(__add, tang, vec))
 
@@ -1028,7 +1027,7 @@ def apply(folder):
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
-        for sig, (depth, code) in ffeatures.items():
+        for sig, (depth, code) in list(ffeatures.items()):
             mal, psig = _parseFeatureSignature(sig)
 
             try:
@@ -1079,7 +1078,7 @@ def apply(folder):
 
     # filter annotations that do not have any c-code
     # filter annotations with less than 2 features
-    afeatureitems = list(filter(lambda t: t[1][2] != [''], afeatures.items())) # t = (a, (f, d, c))
+    afeatureitems = list(filter(lambda t: t[1][2] != [''], list(afeatures.items()))) # t = (a, (f, d, c))
     annotations = list(map(lambda t: (t[0], t[1][0]), afeatureitems))  # t = (a, (f, b, c))
     annotations2andmore = list(filter(lambda t: len(t[1]) > 1, annotations))  # t = (a, f)
     annotationmap = dict()
@@ -1094,7 +1093,7 @@ def apply(folder):
     featurenames = set(reduce(set.union, annotations2andmore, set([])))
     for i in featurenames:
         fd.write(i + '\n')
-    for a, f in annotationmap.items():
+    for a, f in list(annotationmap.items()):
         fd.write(prettyPrintSet(f) + ';' + a + '\n')
     fd.close()
 

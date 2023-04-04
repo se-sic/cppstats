@@ -278,7 +278,7 @@ def _parseFeatureSignatureAndRewrite(sig):
     operand = __string | __hexadec | __integer | __function | __identifier
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
-    expr = pypa.operatorPrecedence(operand, [
+    expr = pypa.infixNotation(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),

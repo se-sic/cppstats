@@ -88,7 +88,7 @@ def _parseIfDefExpression(ifdefexp):
 
     operand = __string | __hexadec | __integer | __function | __identifier
     operators = pypa.oneOf('&& ||')  # extend with furhter operators
-    expr = pypa.operatorPrecedence(operand, [
+    expr = pypa.infixNotation(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         ('!', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         (operators, 2, pypa.opAssoc.LEFT, _rewriteTwo),

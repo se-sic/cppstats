@@ -153,7 +153,7 @@ def _collectDefines(d):
     if __curfile in __defsetf:
         __defsetf[__curfile].add(d[0])
     else:
-        __defsetf[__curfile] = {d[0]}
+        __defsetf[__curfile] = set([d[0]])
     return d
 
 

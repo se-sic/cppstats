@@ -158,7 +158,7 @@ def _collectDefines(d):
     if __curfile in __defsetf:
         __defsetf[__curfile].add(d[0])
     else:
-        __defsetf[__curfile] = {d[0]}
+        __defsetf[__curfile] = set([d[0]])
     return d
 
 
@@ -1062,9 +1062,12 @@ def apply(folder, options):
     # filter annotations that do not have any c-code
     # filter annotations with less than 3 features
     afeatureitems = list(filter(lambda t: t[1][2] != [''], list(afeatures.items())))  # t = (a, (f, d, c))
-    annotations = list(map(lambda t: t[1][0], afeatureitems))  # t = (a, (flag, b, c)) 
+    annotations = list(map(lambda t: t[1][0], afeatureitems))  # t = (a, (flag, b, c))
+    print("\n\n".join(list(map(lambda x: str(x), afeatureitems))))
     annotations3andmore = list(filter(lambda a: len(a) > 2, annotations))
+    print(annotations3andmore)
     annotations3andmore = uniqueItems(annotations3andmore)
+    print("\n".join(sorted(list(map(lambda x: str(sorted(list(x))), annotations3andmore)))))
     annotations3andmore = list(map(lambda s: set(s), annotations3andmore))
     relevantannotations = list()
     missingannotations = list()
@@ -1078,7 +1081,7 @@ def apply(folder, options):
         for combination in combinations:
             if combination in annotations:
                 occcomblist.append(combination)
-        combfeatset = set(reduce(set.union, occcomblist, set()))
+        combfeatset = reduce(set.union, occcomblist, set())
         if combfeatset.issuperset(annotation):
             relevantannotations.append((annotation, occcomblist))
         else:
@@ -1098,6 +1101,7 @@ def apply(folder, options):
 
     for i in relevantannotations:
         fd.write(str(i) + "\n")
+
     fd.write(f"total annotations: {len(annotations3andmore):5d}\n")
     fd.write(f"relevant pairwise annotations: {len(relevantannotations):5d}\n")
     fd.write(f"missing pairwise annotations: {len(missingannotations):5d}\n")

@@ -48,7 +48,7 @@ from enum import Enum
  # python-lxml module
 from lxml import etree
  # statistics module
-from statlib import pstat
+# from statlib import pstat
 # pyparsing module
 import pyparsing as pypa
 pypa.ParserElement.enablePackrat() # speed up parsing
@@ -1057,7 +1057,9 @@ def apply(folder, options):
             c != [''], afeatures.items())
     annotations = map(lambda (a, (flag, b, c)): flag, afeatureitems)
     annotations3andmore = filter(lambda a: len(a) > 2, annotations)
+    print(annotations3andmore)
     annotations3andmore = uniqueItems(annotations3andmore)
+    print("\n".join(sorted(list(map(lambda x: str(sorted(list(x))), annotations3andmore)))))
     annotations3andmore = map(lambda s: set(s), annotations3andmore)
     relevantannotations = list()
     missingannotations = list()

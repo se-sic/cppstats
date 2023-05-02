@@ -22,10 +22,10 @@
 #     Andreas Ringlstetter <andreas.ringlstetter@gmail.com>
 
 
+
 pushd `dirname $0` > /dev/null
 CPPSTATS=`pwd`
 popd > /dev/null
-
 cd ${CPPSTATS}
-PYTHONPATH="$PYTHONPATH:$CPPSTATS/lib"
+export PYTHONPATH="$PYTHONPATH:$CPPSTATS"
 ./cppstats/cppstats.py "$@"

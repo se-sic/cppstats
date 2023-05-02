@@ -20,6 +20,7 @@
 # Contributors:
 #     Claus Hunsen <hunsen@fim.uni-passau.de>
 #     Andreas Ringlstetter <andreas.ringlstetter@gmail.com>
+#     Niklas Schneider <s8nlschn@stud.uni-saarland.de>
 
 
 from setuptools import setup, find_packages
@@ -35,21 +36,17 @@ setup(
     description='toolsuite for analyzing preprocessor-based software product lines',
 
     package_data={
-        'scripts' : ['*.sh'],
-        'preparations' : ['*.xsl']
+        'scripts': ['*.sh'],
+        'preparations': ['*.xsl']
     },
 
     install_requires=[
-        #'statlib==1.2',
-        #'pyparsing==2.*',
-        #'enum34',
-        #'lxml>=3.4'
-        #'cpplib' # TODO This was missing but required
+        'pyparsing',
+        'enum34',
+        'lxml>=3.4'
     ],
 
-    dependency_links=[
-        'https://github.com/clhunsen/python-statlib/archive/release-1.2.tar.gz#egg=statlib-1.2'
-    ],
+    dependency_links=[],
 
     entry_points={'console_scripts': [
         'cppstats = cppstats.cppstats:main',

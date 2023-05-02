@@ -30,7 +30,7 @@ from argparse import ArgumentParser, RawTextHelpFormatter, _VersionAction  # for
 # #################################################
 # imports from subfolders
 
-import preparation, analysis
+import analysis
 import cppstats as cstats # import cppstats.py and avoid confusion with module
 
 

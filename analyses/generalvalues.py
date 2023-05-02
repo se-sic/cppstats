@@ -45,7 +45,7 @@ sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
 # python-lxml module
 from lxml import etree
 # statistics module
-from statlib import pstat
+# from statlib import pstat
 # pyparsing module
 import pyparsing as pypa
 pypa.ParserElement.enablePackrat() # speed up parsing

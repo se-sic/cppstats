@@ -29,6 +29,7 @@ import itertools
 import os
 import re
 import sys
+import numpy as np
 import xmlrpclib
 from argparse import ArgumentParser, RawTextHelpFormatter
 
@@ -47,7 +48,7 @@ from enum import Enum
  # python-lxml module
 from lxml import etree
  # statistics module
-from statlib import pstat
+# from statlib import pstat
 # pyparsing module
 import pyparsing as pypa
 pypa.ParserElement.enablePackrat() # speed up parsing
@@ -310,11 +311,11 @@ def _countNestedIfdefs(root):
     if (len(cnlist) > 0):
         nnimax = max(cnlist)
         nnitmp = filter(lambda n: n > 0, cnlist)
-        nnimean = pstat.stats.lmean(nnitmp)
+        nnimean = np.mean(nnitmp)
     else:
         nnimax = 0
         nnimean = 0
-    if (len(cnlist) > 1): nnistd = pstat.stats.lstdev(cnlist)
+    if (len(cnlist) > 1): nnistd = np.std(cnlist)
     else: nnistd = 0
     return (nnimax, nnimean, nnistd)
 
@@ -771,10 +772,10 @@ def _getFeatureStats(features):
         lofmin = min(floflist)
         lofmax = max(floflist)
         lof = reduce(lambda m,n: m+n, floflist)
-        lofmean = pstat.stats.lmean(floflist)
+        lofmean = np.mean(floflist)
 
     if (len(floflist) > 1):
-        lofstd = pstat.stats.lstdev(floflist)
+        lofstd = np.std(floflist)
 
     return (nof, nod, lof, lofmin, lofmax, lofmean, lofstd)
 
@@ -894,14 +895,14 @@ def _getScatteringTanglingDegrees(sigs, defines):
         scat.append(vec.count(True))
         tang = map(__add, tang, vec)
 
-    if (len(scat)): sdegmean = pstat.stats.lmean(scat)
+    if (len(scat)): sdegmean = np.mean(scat)
     else: sdegmean = 0
-    if (len(scat) > 1): sdegstd = pstat.stats.lstdev(scat)
+    if (len(scat) > 1): sdegstd = np.std(scat)
     else: sdegstd = 0
 
-    if (len(tang)): tdegmean = pstat.stats.lmean(tang)
+    if (len(tang)): tdegmean = np.mean(tang)
     else: tdegmean = 0
-    if (len(tang) > 1): tdegstd = pstat.stats.lstdev(tang)
+    if (len(tang) > 1): tdegstd = np.std(tang)
     else: tdegstd = 0
 
     return (sdegmean, sdegstd, tdegmean, tdegstd)
@@ -1056,7 +1057,9 @@ def apply(folder, options):
             c != [''], afeatures.items())
     annotations = map(lambda (a, (flag, b, c)): flag, afeatureitems)
     annotations3andmore = filter(lambda a: len(a) > 2, annotations)
+    print(annotations3andmore)
     annotations3andmore = uniqueItems(annotations3andmore)
+    print("\n".join(sorted(list(map(lambda x: str(sorted(list(x))), annotations3andmore)))))
     annotations3andmore = map(lambda s: set(s), annotations3andmore)
     relevantannotations = list()
     missingannotations = list()

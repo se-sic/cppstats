@@ -29,6 +29,7 @@ import os
 import re
 import sys
 import xmlrpclib
+import numpy as np
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 
@@ -47,7 +48,7 @@ from enum import Enum
  # python-lxml module
 from lxml import etree
  # statistics module
-from statlib import pstat
+# from statlib import pstat
 # pyparsing module
 import pyparsing as pypa
 pypa.ParserElement.enablePackrat() # speed up parsing
@@ -467,11 +468,11 @@ def _countNestedIfdefs(root):
         nnimax = max(cnlist)
         nnitmp = filter(lambda n: n > 0, cnlist)
         __nestedIfdefsLevels.append(nnitmp)
-        nnimean = pstat.stats.lmean(nnitmp)
+        nnimean = np.mean(nnitmp)
     else:
         nnimax = 0
         nnimean = 0
-    if (len(cnlist) > 1): nnistd = pstat.stats.lstdev(cnlist)
+    if (len(cnlist) > 1): nnistd = np.std(cnlist)
     else: nnistd = 0
     return (nnimax, nnimean, nnistd)
 
@@ -928,10 +929,10 @@ def _getFeatureStats(features):
         lofmin = min(floflist)
         lofmax = max(floflist)
         lof = reduce(lambda m,n: m+n, floflist)
-        lofmean = pstat.stats.lmean(floflist)
+        lofmean = np.mean(floflist)
 
     if (len(floflist) > 1):
-        lofstd = pstat.stats.lstdev(floflist)
+        lofstd = np.std(floflist)
 
     return (nof, nod, lof, lofmin, lofmax, lofmean, lofstd)
 
@@ -1051,14 +1052,14 @@ def _getScatteringTanglingDegrees(sigs, defines):
         scat.append(vec.count(True))
         tang = map(__add, tang, vec)
 
-    if (len(scat)): sdegmean = pstat.stats.lmean(scat)
+    if (len(scat)): sdegmean = np.mean(scat)
     else: sdegmean = 0
-    if (len(scat) > 1): sdegstd = pstat.stats.lstdev(scat)
+    if (len(scat) > 1): sdegstd = np.std(scat)
     else: sdegstd = 0
 
-    if (len(tang)): tdegmean = pstat.stats.lmean(tang)
+    if (len(tang)): tdegmean = np.mean(tang)
     else: tdegmean = 0
-    if (len(tang) > 1): tdegstd = pstat.stats.lstdev(tang)
+    if (len(tang) > 1): tdegstd = np.std(tang)
     else: tdegstd = 0
 
     return (sdegmean, sdegstd, tdegmean, tdegstd)
@@ -1118,12 +1119,12 @@ def __getNumOfFilesPerFeatureStats(filetofeatureconstants):
 
     #mean
     if (len(numbers) > 0):
-        numbersmean = pstat.stats.lmean(numbers)
+        numbersmean = np.mean(numbers)
     else:
         numbersmean = 0
     # std
     if (len(numbers) > 1):
-        numbersstd = pstat.stats.lstdev(numbers)
+        numbersstd = np.std(numbers)
     else:
         numbersstd = 0
 
@@ -1353,11 +1354,11 @@ def apply(folder, options):
     # ANDAVG + ANDSTDEV
     nestedIfdefsLevels = _flatten(__nestedIfdefsLevels)
     if (len(nestedIfdefsLevels)):
-        nnimean = pstat.stats.lmean(nestedIfdefsLevels)
+        nnimean = np.mean(nestedIfdefsLevels)
     else:
         nnimean = 0
     if (len(nestedIfdefsLevels) > 1):
-        nnistd = pstat.stats.lstdev(nestedIfdefsLevels)
+        nnistd = np.std(nestedIfdefsLevels)
     else:
         nnistd = 0
 

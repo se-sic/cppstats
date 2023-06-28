@@ -24,4 +24,4 @@
 # #################################################
 # make version number available in setup.py
 
-from cppstats import version
+#from cppstats import version

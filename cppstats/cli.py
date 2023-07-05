@@ -100,6 +100,10 @@ def getOptions(kinds, step=steps.ALL):
 
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
 
+    from . import __version__
+    parser.add_argument('--version', dest='version', action="version", help='shows the version number',
+                        version=__version__)
+
     # TODO see above
     # version (uses CppstatsVersionAction instead of 'version' as action)
     # parser.add_argument('--version', action=CppstatsVersionAction, version=cstats.version())

@@ -45,11 +45,11 @@ __inputlist_default = "cppstats_input.txt"
 
 # #################################################
 # version number
-__version__ = "v0.9.4"
+__version__ = "cppstats v0.9.4"
 
 
 def version():
-    return f"cppstats {__version__}"
+    return __version__
 
 
 # #################################################

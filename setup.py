@@ -28,10 +28,9 @@ from setuptools import setup, find_packages
 setup(
     name='cppstats',
     version="0.9.4",
-    packages=find_packages(exclude=['scripts']),
-    package_dir={
-        'cppstats': '.',
-    },
+    packages=["cppstats"],#find_packages(exclude=['scripts']),
+    package_dir={'cppstats': '.',},
+    namespace_packages=['cppstats'],
     url='http://www.fosd.net/cppstats',
     license='LGPLv3',
     author='Claus Hunsen',

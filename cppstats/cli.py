@@ -29,6 +29,7 @@ from argparse import ArgumentParser, RawTextHelpFormatter  # , _VersionAction  #
 
 # #################################################
 # imports from subfolders
+
 from .analysis import *
 
 # #################################################
@@ -156,7 +157,7 @@ def getOptions(kinds, step=steps.ALL):
         # add options for each analysis kind
         for kind in list(kinds.values()):
             analysisPart = kind[1]
-            analysisThread = analysis.getKinds().get(analysisPart)
+            analysisThread = getKinds().get(analysisPart)
             analysisThread.addCommandLineOptions(parser)
 
     elif step == steps.PREPARATION:

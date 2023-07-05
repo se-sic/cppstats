@@ -31,8 +31,6 @@ import sys
 from collections import OrderedDict  # for ordered dictionaries
 import tempfile  # for temporary files
 
-print(os.getcwd())
-
 # import different kinds of analyses
 from .cli import *
 from .preparation import *

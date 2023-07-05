@@ -38,7 +38,7 @@ from collections import OrderedDict  # for ordered dictionaries
 from .cli import *
 
 # import different kinds of analyses
-from . import general, generalvalues, discipline, featurelocations, derivative, interaction
+from . import * #general, generalvalues, discipline, featurelocations, derivative, interaction
 
 # #################################################
 # global constants

@@ -27,4 +27,5 @@ CPPSTATS=`pwd`
 popd > /dev/null
 cd ${CPPSTATS}
 export PYTHONPATH="$PYTHONPATH:$CPPSTATS"
+echo $PYTHONPATH
 ./cppstats/cppstats.py "$@"

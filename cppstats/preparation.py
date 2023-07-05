@@ -38,7 +38,7 @@ from collections import OrderedDict
 # #################################################
 # paths
 
-import preparations
+from .preparations import *
 
 
 def getPreparationScript(filename):

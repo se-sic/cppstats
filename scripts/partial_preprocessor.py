@@ -27,7 +27,7 @@
 from optparse import OptionParser
 import sys
 
-from lib.cpplib import _filterAnnotatedIfdefs
+from .lib.cpplib import _filterAnnotatedIfdefs
 
 
 class PartialPreprocessor:

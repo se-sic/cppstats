@@ -29,11 +29,7 @@ from argparse import ArgumentParser, RawTextHelpFormatter  # , _VersionAction  #
 
 # #################################################
 # imports from subfolders
-
-# TODO Are those really not needed?
-# import preparation
-# import cppstats as cstats  # import cppstats.py and avoid confusion with module
-import analysis
+from .analysis import *
 
 # #################################################
 # external modules

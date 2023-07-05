@@ -35,10 +35,10 @@ from collections import OrderedDict  # for ordered dictionaries
 # #################################################
 # imports from subfolders
 
-import cli
+from .cli import *
 
 # import different kinds of analyses
-from analyses import general, generalvalues, discipline, featurelocations, derivative, interaction
+from .analyses import general, generalvalues, discipline, featurelocations, derivative, interaction
 
 # #################################################
 # global constants

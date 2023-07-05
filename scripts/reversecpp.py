@@ -153,7 +153,7 @@ class ReverseCPP:
         for configuration in itertools.product(range(2), repeat=len(symbols)):
             configuration = list(configuration)
             pairs = zip(configuration, symbols)
-            validpairs = filter(lambda (m, n): m != 0, pairs)
+            validpairs = filter(lambda t: t[0] != 0, pairs)
 
             if len(validpairs):
                 validdefines = list(zip(*validpairs)[1])

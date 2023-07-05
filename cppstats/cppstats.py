@@ -32,9 +32,9 @@ from collections import OrderedDict  # for ordered dictionaries
 import tempfile  # for temporary files
 
 # import different kinds of analyses
-import cli
-import preparation
-import analysis
+from .cli import *
+from .preparation import *
+from .analysis import *
 
 # #################################################
 # version number

@@ -23,4 +23,3 @@
 
 # #################################################
 # make version number available in setup.py
-from . import version

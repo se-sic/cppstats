@@ -36,13 +36,6 @@ from .cli import *
 from .preparation import *
 from .analysis import *
 
-# #################################################
-# version number
-__version__ = "v0.9.4"
-
-
-def version():
-    return f"cppstats {__version__}"
 
 
 # #################################################

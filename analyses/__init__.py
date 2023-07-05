@@ -19,4 +19,3 @@
 # Contributors:
 #     Claus Hunsen <hunsen@fim.uni-passau.de>
 
-from .version import *

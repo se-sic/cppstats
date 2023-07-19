@@ -35,7 +35,7 @@ from collections import OrderedDict  # for ordered dictionaries
 # #################################################
 # imports from subfolders
 
-import cppstast.cli as cli
+import cppstats.cli as cli
 
 # import different kinds of analyses
 from analyses import general, generalvalues, discipline, featurelocations, derivative, interaction

@@ -43,7 +43,8 @@ import cppstats.preparation as preparation
 # for rewriting of #ifdefs to "if defined(..)"
 # for turning multiline macros to oneliners
 # for deletion of include guards in H files
-from .preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards, __file__
+from .preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
+import .preparations as preparations
 
 from .lib import cpplib
 

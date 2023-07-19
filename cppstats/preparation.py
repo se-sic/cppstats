@@ -38,8 +38,8 @@ from collections import OrderedDict
 # #################################################
 # paths
 
-import cppstats.preparations as preparatins
-
+import cppstats.preparation as preparation
+import preparations
 
 def getPreparationScript(filename):
     return os.path.join(os.path.dirname(preparations.__file__), filename)

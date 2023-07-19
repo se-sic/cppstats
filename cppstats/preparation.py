@@ -55,7 +55,7 @@ from .cli import *
 # for deletion of include guards in H files
 from cppstats.preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
 
-from lib import cpplib
+from cppstats.lib import cpplib
 
 # #################################################
 # global constants

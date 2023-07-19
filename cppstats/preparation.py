@@ -44,7 +44,7 @@ import cppstats.preparation as preparation
 # for turning multiline macros to oneliners
 # for deletion of include guards in H files
 from .preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
-import .preparations as preparations
+import preparations
 
 from .lib import cpplib
 

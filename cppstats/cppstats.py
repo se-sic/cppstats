@@ -33,10 +33,10 @@ import tempfile  # for temporary files
 
 # import different kinds of analyses
 from .cli import *
-from .preparation import *
-from .analysis import *
-
-
+# from .preparation import *
+# from .analysis import *
+import preparation
+import analysis
 
 # #################################################
 # collection of analyses

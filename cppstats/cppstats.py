@@ -35,7 +35,7 @@ import tempfile  # for temporary files
 from .cli import *
 # from .preparation import *
 # from .analysis import *
-import .preparation
+import preparation
 import analysis
 
 # #################################################

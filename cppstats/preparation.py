@@ -39,7 +39,13 @@ from collections import OrderedDict
 # paths
 
 import cppstats.preparation as preparation
-import preparations
+
+# for rewriting of #ifdefs to "if defined(..)"
+# for turning multiline macros to oneliners
+# for deletion of include guards in H files
+from cppstats.preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards, __file__
+
+from cppstats.lib import cpplib
 
 def getPreparationScript(filename):
     return os.path.join(os.path.dirname(preparations.__file__), filename)
@@ -50,12 +56,7 @@ def getPreparationScript(filename):
 
 from .cli import *
 
-# for rewriting of #ifdefs to "if defined(..)"
-# for turning multiline macros to oneliners
-# for deletion of include guards in H files
-from cppstats.preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
 
-from cppstats.lib import cpplib
 
 # #################################################
 # global constants

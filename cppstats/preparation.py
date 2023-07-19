@@ -38,7 +38,7 @@ from collections import OrderedDict
 # #################################################
 # paths
 
-from . import *
+import cppstats.preparations as preparatins
 
 
 def getPreparationScript(filename):

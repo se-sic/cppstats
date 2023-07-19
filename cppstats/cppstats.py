@@ -32,9 +32,7 @@ from collections import OrderedDict  # for ordered dictionaries
 import tempfile  # for temporary files
 
 # import different kinds of analyses
-from .cli import *
-# from .preparation import *
-# from .analysis import *
+import cppstats.cli
 import cppstats.preparation
 import cppstats.analysis
 

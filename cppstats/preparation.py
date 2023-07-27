@@ -35,11 +35,20 @@ import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
 from collections import OrderedDict
 
-
 # #################################################
 # paths
 
+import cppstats.preparation as preparation
+
+# for rewriting of #ifdefs to "if defined(..)"
+# for turning multiline macros to oneliners
+# for deletion of include guards in H files
+import preparations.rewriteIfdefs as rewriteIfdefs
+import preparations.rewriteMultilineMacros as rewriteMultilineMacros
+import preparations.deleteIncludeGuards as deleteIncludeGuards
 import preparations
+
+import lib.cpplib
 
 def getPreparationScript(filename):
     return os.path.join(os.path.dirname(preparations.__file__), filename)
@@ -48,14 +57,9 @@ def getPreparationScript(filename):
 # #################################################
 # imports from subfolders
 
-import cli
+from .cli import *
 
-# for rewriting of #ifdefs to "if defined(..)"
-# for turning multiline macros to oneliners
-# for deletion of include guards in H files
-from preparations import rewriteIfdefs, rewriteMultilineMacros, deleteIncludeGuards
 
-from lib import cpplib
 
 # #################################################
 # global constants
@@ -108,20 +112,20 @@ def runBashCommand(command, shell=False, stdin=None, stdout=None):
 
 
 def replaceMultiplePatterns(replacements, infile, outfile):
-    with open(infile, "rb") as source:
+    with open(infile, "r") as source:
         with open(outfile, "w") as target:
             data = source.read()
-            for pattern, replacement in replacements.iteritems():
+            for pattern, replacement in replacements.items():
                 data = re.sub(pattern, replacement, data, flags=re.MULTILINE)
             target.write(data)
 
 
 def stripEmptyLinesFromFile(infile, outfile):
-    with open(infile, "rb") as source:
+    with open(infile, "r") as source:
         with open(outfile, "w") as target:
-            for line in source:
+            for line in source.readlines():
                 if line.strip():
-                    target.write(line)
+                    target.write(line)  # TODO Read bytes and write strings??
 
 
 def silentlyRemoveFile(filename):
@@ -147,7 +151,7 @@ def srcml2src(srcml, src):
 # abstract preparation thread
 
 class AbstractPreparationThread(object):
-    '''This class prepares a single folder according to the given kind of preparations in an independent thread.'''
+    """This class prepares a single folder according to the given kind of preparations in an independent thread."""
     __metaclass__ = ABCMeta
     sourcefolder = "source"
 
@@ -155,7 +159,7 @@ class AbstractPreparationThread(object):
         self.options = options
         self.notrunnable = False
 
-        if (inputfolder):
+        if inputfolder:
             self.file = None
             self.folder = inputfolder
             self.source = os.path.join(self.folder, self.sourcefolder)
@@ -165,7 +169,7 @@ class AbstractPreparationThread(object):
             # get full path of subfolder "_cppstats"
             self.subfolder = os.path.join(self.folder, self.getSubfolder())
 
-        elif (inputfile):
+        elif inputfile:
             self.file = inputfile
             self.outfile = self.options.outfile
             self.folder = os.path.dirname(self.file)
@@ -175,36 +179,33 @@ class AbstractPreparationThread(object):
             # get full path of temp folder for
             import tempfile
             self.subfolder = tempfile.mkdtemp(suffix=self.getSubfolder())
-
-
         else:
             self.notrunnable = True
 
     def startup(self):
         # LOGGING
-        notify("starting '" + self.getPreparationName() + "' preparations:\n " + self.project)
-        print "# starting '" + self.getPreparationName() + "' preparations: " + self.project
+        notify(f"starting '{self.getPreparationName()}' preparations:\n  {self.project}")
+        print(f"# starting '{self.getPreparationName()}' preparations: {self.project}")
 
     def teardown(self):
 
         # delete temp folder for file-based preparation
-        if (self.file):
+        if self.file:
             shutil.rmtree(self.subfolder)
 
         # LOGGING
-        notify("finished '" + self.getPreparationName() + "' preparations:\n " + self.project)
-        print "# finished '" + self.getPreparationName() + "' preparations: " + self.project
+        notify(f"finished '{self.getPreparationName()}' preparations:\n{self.project}")
+        print(f"# finished '{self.getPreparationName()}' preparations: {self.project}")
 
     def run(self):
 
-        if (self.notrunnable):
-            print "ERROR: No single file or input list of projects given!"
+        if self.notrunnable:
+            print("ERROR: No single file or input list of projects given!")
             return
 
         self.startup()
 
-        if (self.file):
-
+        if self.file:
             self.currentFile = os.path.join(self.subfolder, self.project)
             shutil.copyfile(self.file, self.currentFile)
 
@@ -227,7 +228,6 @@ class AbstractPreparationThread(object):
         self.teardown()
 
     def copyToSubfolder(self):
-
         # TODO debug
         # echo '### preparing sources ...'
         # echo '### copying all-files to one folder ...'
@@ -240,8 +240,8 @@ class AbstractPreparationThread(object):
         shutil.copytree(self.source, self.subfolder, ignore=filterForFiles)
 
     def backupCurrentFile(self):
-        '''# backup file'''
-        if (not self.options.nobak):
+        """# backup file"""
+        if not self.options.nobak:
             bak = self.currentFile + ".bak" + str(self.backupCounter)
             shutil.copyfile(self.currentFile, bak)
             self.backupCounter += 1
@@ -336,7 +336,7 @@ class AbstractPreparationThread(object):
     def removeIncludeGuards(self):
         # include guards only exist in H files, otherwise return
         _, extension = os.path.splitext(self.currentFile)
-        if (extension not in _filepattern_h):
+        if extension not in _filepattern_h:
             return
 
         tmp = self.currentFile + "tmp.txt"
@@ -403,7 +403,7 @@ class GeneralPreparationThread(AbstractPreparationThread):
         # rewrite #if(n)def ... to #if (!)defined(...)
         self.rewriteIfdefsAndIfndefs()
 
-        # removes include guards from H files
+        # removes include guards against H files
         self.removeIncludeGuards()
 
         # delete empty lines
@@ -434,7 +434,7 @@ class DisciplinePreparationThread(AbstractPreparationThread):
         # rewrite #if(n)def ... to #if (!)defined(...)
         self.rewriteIfdefsAndIfndefs()
 
-        # removes include guards from H files
+        # removes include guards against H files
         self.removeIncludeGuards()
 
         # removes other preprocessor than #ifdefs
@@ -506,9 +506,9 @@ for cls in AbstractPreparationThread.__subclasses__():
     __preparationkinds.append(entry)
 
 # exit, if there are no preparation threads available
-if (len(__preparationkinds) == 0):
-    print "ERROR: No preparation tasks found! Revert your changes or call the maintainer."
-    print "Exiting now..."
+if len(__preparationkinds) == 0:
+    print("ERROR: No preparation tasks found! Revert your changes or call the maintainer.")
+    print("Exiting now...")
     sys.exit(1)
 __preparationkinds = OrderedDict(__preparationkinds)
 
@@ -531,7 +531,7 @@ def applyFile(kind, inputfile, options):
 
 
 def getFoldersFromInputListFile(inputlist):
-    ''' This method reads the given inputfile line-wise and returns the read lines without line breaks.'''
+    """ This method reads the given inputfile line-wise and returns the read lines without line breaks."""
 
     file = open(inputlist, 'r')  # open input file
     folders = file.read().splitlines()  # read lines from file without line breaks
@@ -579,35 +579,35 @@ def main():
     # #################################################
     # main
 
-    if (options.inputfile):
+    if options.inputfile:
 
         # split --file argument
         options.infile = os.path.normpath(os.path.abspath(options.inputfile[0]))  # IN
         options.outfile = os.path.normpath(os.path.abspath(options.inputfile[1]))  # OUT
 
         # check if inputfile exists
-        if (not os.path.isfile(options.infile)):
-            print "ERROR: input file '{}' cannot be found!".format(options.infile)
+        if not os.path.isfile(options.infile):
+            print(f"ERROR: input file '{options.infile}' cannot be found!")
             sys.exit(1)
 
         applyFile(options.kind, options.infile, options)
 
-    elif (options.inputlist):
+    elif options.inputlist:
         # handle --list argument
         options.inputlist = os.path.normpath(os.path.abspath(options.inputlist))  # LIST
 
         # check if list file exists
-        if (not os.path.isfile(options.inputlist)):
-            print "ERROR: input file '{}' cannot be found!".format(options.inputlist)
+        if not os.path.isfile(options.inputlist):
+            print(f"ERROR: input file '{options.inputlist}' cannot be found!")
             sys.exit(1)
 
-        if (options.allkinds):
+        if options.allkinds:
             applyFoldersAll(options.inputlist, options)
         else:
             applyFolders(options.kind, options.inputlist, options)
 
     else:
-        print "This should not happen! No input file or list of projects given!"
+        print("This should not happen! No input file or list of projects given!")
         sys.exit(1)
 
 

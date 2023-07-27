@@ -28,9 +28,9 @@ import csv
 import os
 import re
 import sys
-import xmlrpclib
+import numpy as np
+from functools import reduce
 from argparse import ArgumentParser, RawTextHelpFormatter
-
 
 # #################################################
 # path adjustments, so that all imports can be done relative to these paths
@@ -38,21 +38,20 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 __lib_subfolder = "lib"
 sys.path.append(os.path.abspath(__lib_subfolder))  # lib subfolder
 
-
 # #################################################
 # external modules
 
 # enums
 from enum import Enum
- # python-lxml module
+# python-lxml module
 from lxml import etree
- # statistics module
-from statlib import pstat
+# statistics module
+# from statlib import pstat
 # pyparsing module
 import pyparsing as pypa
-pypa.ParserElement.enablePackrat() # speed up parsing
-sys.setrecursionlimit(8000)        # handle larger expressions
 
+pypa.ParserElement.enablePackrat()  # speed up parsing
+sys.setrecursionlimit(8000)  # handle larger expressions
 
 ##################################################
 # config:
@@ -78,52 +77,53 @@ __conditionals_elif = ['elif']
 __conditionals_else = ['else']
 __conditionals_endif = ['endif']
 __conditionals_all = __conditionals + __conditionals_elif + \
-        __conditionals_else
+                     __conditionals_else
 __macro_define = ['define']
-__macrofuncs = {}       # functional macros like: "GLIBVERSION(2,3,4)",
-                        # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
-__curfile = ''          # current processed xml-file
-__defset = set()        # macro-objects
-__defsetf = dict()      # macro-objects per file
+__macrofuncs = {}  # functional macros like: "GLIBVERSION(2,3,4)",
+# used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
+__curfile = ''  # current processed xml-file
+__defset = set()  # macro-objects
+__defsetf = dict()  # macro-objects per file
+
 
 # collected statistics
 class __statsorder(Enum):
-    FILENAME = 0           # name of the file
-    LOC = 1                # lines of code
-    NOFC = 2               # number of feature constants
-    LOF = 3                # number of feature code lines
-    ANDAVG = 4             # average nested ifdefs depth
-    ANDSTDEV = 5           # standard deviation for ifdefs
-    SDEGMEAN = 6           # shared code degree: mean
-    SDEGSTD = 7            # shared code degree: standard-deviation
-    TDEGMEAN = 8           # tangled code degree: mean
-    TDEGSTD = 9            # tangled code degree: standard-deviation
+    FILENAME = 0  # name of the file
+    LOC = 1  # lines of code
+    NOFC = 2  # number of feature constants
+    LOF = 3  # number of feature code lines
+    ANDAVG = 4  # average nested ifdefs depth
+    ANDSTDEV = 5  # standard deviation for ifdefs
+    SDEGMEAN = 6  # shared code degree: mean
+    SDEGSTD = 7  # shared code degree: standard-deviation
+    TDEGMEAN = 8  # tangled code degree: mean
+    TDEGSTD = 9  # tangled code degree: standard-deviation
     # type metrics
-    HOM = 10               # homogenous features
-    HET = 11               # heterogenous features
-    HOHE = 12              # combination of het and hom features
+    HOM = 10  # homogenous features
+    HET = 11  # heterogenous features
+    HOHE = 12  # combination of het and hom features
     # gran metrics
-    GRANGL = 13            # global level (compilation unit)
-    GRANFL = 14            # function and type level
-    GRANBL = 15            # if/while/for/do block extension
-    GRANSL = 16            # statement extension - includes string concat
-    GRANEL = 17            # condition block extension - includes return
-    GRANML = 18            # function parameter extension
-    GRANERR = 19           # not determined granularity
+    GRANGL = 13  # global level (compilation unit)
+    GRANFL = 14  # function and type level
+    GRANBL = 15  # if/while/for/do block extension
+    GRANSL = 16  # statement extension - includes string concat
+    GRANEL = 17  # condition block extension - includes return
+    GRANML = 18  # function parameter extension
+    GRANERR = 19  # not determined granularity
 
-    NDMAX = 20             # maximum nesting depth in a file
-    NOFPFCMEAN = 21        # average number of files per feature constant
-    NOFPFCSTD = 22         # standard deviation for same data as for NOFPFCMEAN
+    NDMAX = 20  # maximum nesting depth in a file
+    NOFPFCMEAN = 21  # average number of files per feature constant
+    NOFPFCSTD = 22  # standard deviation for same data as for NOFPFCMEAN
+
 
 ##################################################
-
 
 
 ##################################################
 # helper functions, constants and errors
-def returnFileNames(folder, extfilt = ['.xml']):
-    '''This function returns all files of the input folder <folder>
-    and its subfolders.'''
+def returnFileNames(folder, extfilt=['.xml']):
+    """This function returns all files of the input folder <folder>
+    and its subfolders."""
     filesfound = list()
 
     if os.path.isdir(folder):
@@ -133,20 +133,16 @@ def returnFileNames(folder, extfilt = ['.xml']):
             currentfolder = wqueue[0]
             wqueue = wqueue[1:]
             foldercontent = os.listdir(currentfolder)
-            tmpfiles = filter(lambda n: os.path.isfile(
-                    os.path.join(currentfolder, n)), foldercontent)
-            tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                    tmpfiles)
-            tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                    tmpfiles)
+            tmpfiles = list(filter(lambda n: os.path.isfile(os.path.join(currentfolder, n)), foldercontent))
+            tmpfiles = list(filter(lambda n: os.path.splitext(n)[1] in extfilt, tmpfiles))
+            tmpfiles = list(map(lambda n: os.path.join(currentfolder, n), tmpfiles))
             filesfound += tmpfiles
-            tmpfolders = filter(lambda n: os.path.isdir(
-                    os.path.join(currentfolder, n)), foldercontent)
-            tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                    tmpfolders)
+            tmpfolders = list(filter(lambda n: os.path.isdir(os.path.join(currentfolder, n)), foldercontent))
+            tmpfolders = list(map(lambda n: os.path.join(currentfolder, n), tmpfolders))
             wqueue += tmpfolders
 
     return filesfound
+
 
 def _flatten(l):
     """This function takes a list as input and returns a flatten version
@@ -160,7 +156,7 @@ def _flatten(l):
                 i -= 1
                 break
             else:
-                l[i:i+1] = l[i]
+                l[i:i + 1] = l[i]
         i += 1
     return l
 
@@ -170,7 +166,7 @@ def dictinvert(d):
     values into a dictionary that maps the values to the corresponding
     set of former keys."""
     inv = dict()
-    for (k,v) in d.iteritems():
+    for k, v in d.items():
         for value in v:
             keys = inv.setdefault(value, [])
             keys.append(k)
@@ -184,10 +180,10 @@ def _collectDefines(d):
     but not #define GLIBCVER(x,y,z) ...
     """
     __defset.add(d[0])
-    if __defsetf.has_key(__curfile):
+    if __curfile in __defsetf:
         __defsetf[__curfile].add(d[0])
     else:
-        __defsetf[__curfile] = set([d[0]])
+        __defsetf[__curfile] = {d[0]}
     return d
 
 
@@ -203,41 +199,42 @@ __numlitu = pypa.Literal('u').suppress() | pypa.Literal('U').suppress()
 __string = pypa.QuotedString('\'', '\\')
 
 __hexadec = \
-        pypa.Literal('0x').suppress() + \
-        pypa.Word(pypa.hexnums).\
-        setParseAction(lambda t: str(int(t[0], 16))) + \
-        pypa.Optional(__numlitu) + \
-        pypa.Optional(__numlitl) + \
-        pypa.Optional(__numlitl)
+    pypa.Literal('0x').suppress() + \
+    pypa.Word(pypa.hexnums).setParseAction(lambda t: str(int(t[0], 16))) + \
+    pypa.Optional(__numlitu) + \
+    pypa.Optional(__numlitl) + \
+    pypa.Optional(__numlitl)
 
 __integer = \
-        pypa.Optional('~') + \
-        pypa.Word(pypa.nums+'-').setParseAction(lambda t: str(int(t[0]))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('U'))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L'))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L')))
+    pypa.Optional('~') + \
+    pypa.Word(pypa.nums + '-').setParseAction(lambda t: str(int(t[0]))) + \
+    pypa.Optional(pypa.Suppress(pypa.Literal('U'))) + \
+    pypa.Optional(pypa.Suppress(pypa.Literal('L'))) + \
+    pypa.Optional(pypa.Suppress(pypa.Literal('L')))
 
 __identifier = \
-        pypa.Word(pypa.alphanums+'_'+'-'+'@'+'$').setParseAction(_collectDefines)
-__arg = pypa.Word(pypa.alphanums+'_')
-__args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + \
-        __arg)
+    pypa.Word(pypa.alphanums + '_' + '-' + '@' + '$').setParseAction(_collectDefines)
+__arg = pypa.Word(pypa.alphanums + '_')
+__args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + __arg)
 __fname = pypa.Word(pypa.alphas, pypa.alphanums + '_')
-__function = pypa.Group(__fname + pypa.Literal('(').suppress() + \
-        __args + pypa.Literal(')').suppress())
+__function = pypa.Group(__fname + pypa.Literal('(').suppress() + __args + pypa.Literal(')').suppress())
 
 
 class NoEquivalentSigError(Exception):
     def __init__(self):
         pass
+
     def __str__(self):
-        return ("No equivalent signature found!")
+        return "No equivalent signature found!"
+
 
 class IfdefEndifMismatchError(Exception):
     def __init__(self):
         pass
+
     def __str__(self):
-        return ("Ifdef and endif do not match!")
+        return "Ifdef and endif do not match!"
+
 
 ##################################################
 
@@ -258,24 +255,24 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
     This one is used to make use of a csp solver without using
     a predicate."""
     __pt = {
-        #'defined' : 'defined_',
-        'defined' : '',
-        '!' : '!',
+        # 'defined' : 'defined_',
+        'defined': '',
+        '!': '!',
         '&&': '&',
         '||': '|',
-        '<' : '_lt_',
-        '>' : '_gt_',
+        '<': '_lt_',
+        '>': '_gt_',
         '<=': '_le_',
         '>=': '_ge_',
         '==': '_eq_',
         '!=': '_ne_',
-        '*' : '_mu_',
-        '/' : '_di_',
-        '%' : '_mo_',
-        '+' : '_pl_',
-        '-' : '_mi_',
-        '&' : '_ba_',
-        '|' : '_bo_',
+        '*': '_mu_',
+        '/': '_di_',
+        '%': '_mo_',
+        '+': '_pl_',
+        '-': '_mi_',
+        '&': '_ba_',
+        '|': '_bo_',
         '>>': '_sr_',
         '<<': '_sl_',
     }
@@ -286,25 +283,26 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
         representation for csp."""
         op, ma = param[0]
         mal.append(ma)
-        if op == '!': ret = __pt[op] + '(' + ma + ')'
-        if op == 'defined': ret = ma
-        return  ret
+        if op == '!':
+            ret = __pt[op] + '(' + ma + ')'
+        if op == 'defined':
+            ret = ma
+        return ret
 
     def _rewriteTwo(param):
         """This function returns each two parameter function
         representation for csp."""
         mal.extend(param[0][0::2])
         ret = __pt[param[0][1]]
-        ret = '(' + ret.join(map(str, param[0][0::2])) + ')'
+        ret = '(' + ret.join(list(map(str, param[0][0::2]))) + ')'
         return ret
 
-    operand = __hexadec | __integer | __string | \
-            __function | __identifier
+    operand = __hexadec | __integer | __string | __function | __identifier
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
-    expr = pypa.operatorPrecedence(operand, [
+    expr = pypa.infixNotation(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
-        ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
+        ('!', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
         (compoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
         ('&&', 2, pypa.opAssoc.LEFT, _rewriteTwo),
@@ -313,14 +311,13 @@ def _parseFeatureSignatureAndRewriteCSP(sig):
 
     try:
         rsig = expr.parseString(sig)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-                (sig, e.col))
+    except pypa.ParseException as e:
+        print(f'ERROR (parse): cannot parse sig ({sig}) -- ({e.col})')
         return sig
     except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (sig))
+        print(f'ERROR (time): cannot parse sig ({sig})')
         return sig
-    return (mal, ''.join(rsig))
+    return mal, ''.join(rsig)
 
 
 def _parseFeatureSignatureAndRewrite(sig):
@@ -335,26 +332,26 @@ def _parseFeatureSignatureAndRewrite(sig):
     # if no equivalence can be found a name rewriting is done
     # e.g. 'defined'
     __pt = {
-        #'defined' : 'defined_',
-        'defined' : '',
-        '!' : '&not',
+        # 'defined' : 'defined_',
+        'defined': '',
+        '!': '&not',
         '&&': '&and',
         '||': '&or',
-        '<' : '<',
-        '>' : '>',
+        '<': '<',
+        '>': '>',
         '<=': '<=',
         '>=': '>=',
         '==': '=',
         '!=': '!=',
-        '*' : '*',       # needs rewriting with parenthesis
-        '/' : '/',
-        '%' : '',        # needs rewriting a % b => modp(a, b)
-        '+' : '+',
-        '-' : '-',
-        '&' : '',        # needs rewriting a & b => BitAnd(a, b)
-        '|' : '',        # needs rewriting a | b => BitOr(a, b)
-        '>>': '>>',      # needs rewriting a >> b => a / (2^b)
-        '<<': '<<',      # needs rewriting a << b => a * (2^b)
+        '*': '*',  # needs rewriting with parenthesis
+        '/': '/',
+        '%': '',  # needs rewriting a % b => modp(a, b)
+        '+': '+',
+        '-': '-',
+        '&': '',  # needs rewriting a & b => BitAnd(a, b)
+        '|': '',  # needs rewriting a | b => BitOr(a, b)
+        '>>': '>>',  # needs rewriting a >> b => a / (2^b)
+        '<<': '<<',  # needs rewriting a << b => a * (2^b)
     }
 
     def _rewriteOne(param):
@@ -364,8 +361,7 @@ def _parseFeatureSignatureAndRewrite(sig):
             ret = __pt[param[0][0]] + '(' + str(param[0][1]) + ')'
         if param[0][0] == 'defined':
             ret = __pt[param[0][0]] + str(param[0][1])
-        return  ret
-
+        return ret
 
     def _rewriteTwo(param):
         """This function returns each two parameter function
@@ -375,19 +371,18 @@ def _parseFeatureSignatureAndRewrite(sig):
             return 'modp(' + param[0][0] + ',' + param[0][2] + ')'
 
         ret = ' ' + __pt[param[0][1]] + ' '
-        ret = '(' + ret.join(map(str, param[0][0::2])) + ')'
+        ret = '(' + ret.join(list(map(str, param[0][0::2]))) + ')'
 
         if param[0][1] in ['<', '>', '<=', '>=', '!=', '==']:
             ret = '(true &and ' + ret + ')'
         return ret
 
-    operand = __string | __hexadec | __integer | \
-            __function | __identifier
+    operand = __string | __hexadec | __integer | __function | __identifier
     compoperator = pypa.oneOf('< > <= >= == !=')
     calcoperator = pypa.oneOf('+ - * / & | << >> %')
-    expr = pypa.operatorPrecedence(operand, [
+    expr = pypa.infixNotation(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
-        ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
+        ('!', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         (calcoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
         (compoperator, 2, pypa.opAssoc.LEFT, _rewriteTwo),
         ('&&', 2, pypa.opAssoc.LEFT, _rewriteTwo),
@@ -396,16 +391,14 @@ def _parseFeatureSignatureAndRewrite(sig):
 
     try:
         rsig = expr.parseString(sig)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-                (sig, e.col))
+    except pypa.ParseException as e:
+        print(f'ERROR (parse): cannot parse sig ({sig}) -- ({e.col})')
         return sig
     except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (sig))
+        print(f'ERROR (time): cannot parse sig ({sig})')
         return sig
-    except ValueError, e:
-        print('ERROR (parse): cannot parse sig (%s) ~~ (%s)' %
-                (sig, e))
+    except ValueError as e:
+        print(f'ERROR (parse): cannot parse sig ({sig}) ~~ ({e})')
         return sig
     return ''.join(rsig)
 
@@ -426,9 +419,9 @@ def _getMacroSignature(ifdefnode):
 
     # get either the expr or the name tag,
     # which is always the second descendant
-    if (tag in ['if', 'elif', 'ifdef', 'ifndef']):
+    if tag in ['if', 'elif', 'ifdef', 'ifndef']:
         nexpr = [itex for itex in ifdefnode.iterdescendants()]
-        if (len(nexpr) == 1):
+        if len(nexpr) == 1:
             res = nexpr[0].tail
         else:
             nexpr = nexpr[1]
@@ -436,17 +429,19 @@ def _getMacroSignature(ifdefnode):
     return res
 
 
-def _prologCSV(folder, file, headings, delimiter = ","):
+def _prologCSV(folder, file, headings, delimiter=","):
     """prolog of the CSV-output file
     no corresponding _epilogCSV."""
     fd = open(os.path.join(folder, file), 'w')
     fdcsv = csv.writer(fd, delimiter=delimiter)
     fdcsv.writerow(["sep=" + delimiter])
     fdcsv.writerow(headings)
-    return (fd, fdcsv)
+    return fd, fdcsv
 
 
 __nestedIfdefsLevels = []
+
+
 def _countNestedIfdefs(root):
     """This function counts the number of nested ifdefs (conditionals)
     within the source-file."""
@@ -456,24 +451,25 @@ def _countNestedIfdefs(root):
 
     for elem in elements:
         ns, tag = __cpprens.match(elem.tag).groups()
-        if ((tag in __conditionals_endif)
-                and (ns == __cppnscpp)): cncur -= 1
-        if ((tag in __conditionals)
-                and (ns == __cppnscpp)):
+        if (tag in __conditionals_endif) and (ns == __cppnscpp):
+            cncur -= 1
+        if (tag in __conditionals) and (ns == __cppnscpp):
             cncur += 1
             cnlist.append(cncur)
 
-    if (len(cnlist) > 0):
+    if len(cnlist) > 0:
         nnimax = max(cnlist)
-        nnitmp = filter(lambda n: n > 0, cnlist)
+        nnitmp = list(filter(lambda n: n > 0, cnlist))
         __nestedIfdefsLevels.append(nnitmp)
-        nnimean = pstat.stats.lmean(nnitmp)
+        nnimean = np.mean(nnitmp)
     else:
         nnimax = 0
         nnimean = 0
-    if (len(cnlist) > 1): nnistd = pstat.stats.lstdev(cnlist)
-    else: nnistd = 0
-    return (nnimax, nnimean, nnistd)
+    if len(cnlist) > 1:
+        nnistd = np.std(cnlist)
+    else:
+        nnistd = 0
+    return nnimax, nnimean, nnistd
 
 
 def _getFeatureSignature(condinhist, options):
@@ -483,7 +479,7 @@ def _getFeatureSignature(condinhist, options):
     # signature; reason is elements like else or elif, which mean
     # basically invert the fname found before
     # rewritelist = [(tag, fname, <invert true|false>)]
-    rewritelist = [None]*len(condinhist)
+    rewritelist = [None] * len(condinhist)
     cur = -1
 
     for tag, fname in condinhist:
@@ -491,8 +487,8 @@ def _getFeatureSignature(condinhist, options):
         if tag == 'if':
             rewritelist[cur] = (tag, fname, False)
         if tag in ['elif', 'else']:
-            (t, f, _) = rewritelist[cur-1]
-            rewritelist[cur-1] = (t, f, True)
+            (t, f, _) = rewritelist[cur - 1]
+            rewritelist[cur - 1] = (t, f, True)
             rewritelist[cur] = (tag, fname, False)
 
     fsig = ''
@@ -530,7 +526,7 @@ def _getASTFuture(node):
     node itself."""
 
     dess = []
-    while (node is not None):
+    while node is not None:
         dess += [sib for sib in node.itersiblings(preceding=False)]
         node = node.getparent()
 
@@ -556,7 +552,7 @@ def _parseAndAddDefine(node):
     except pypa.ParseException:
         return
 
-    iden = ''.join(map(str, res[0]))
+    iden = ''.join(list(map(str, res[0])))
     expn = res[-1]
     para = res[1:-1]
     __macrofuncs[iden] = (para, expn)
@@ -580,58 +576,57 @@ def _getFeatures(root, options):
     """
 
     def _wrapGrOuterUp(fouter, featuresgrouter, eelem):
-        itouter = fouter[-1]                # feature surround tags
+        itouter = fouter[-1]  # feature surround tags
         fouter = fouter[:-1]
 
         selem = itouter[0][1]
         for (sig, _) in itouter:
             featuresgrouter.append((sig, selem, eelem))
-        return (fouter, featuresgrouter)
-
+        return fouter, featuresgrouter
 
     def _wrapFeatureUp(features, featuresgrinner, fcode, flist, finner):
         # wrap up the feature
-        if (not flist):
+        if not flist:
             raise IfdefEndifMismatchError()
-        itsig = flist[-1]                # feature signature
+        itsig = flist[-1]  # feature signature
         flist = flist[:-1]
-        itcode = fcode[-1]                # feature code
+        itcode = fcode[-1]  # feature code
         itcode = itcode.replace('\n\n', '\n')
-        itcode = itcode[1:]                # itcode starts with '\n'; del
+        itcode = itcode[1:]  # itcode starts with '\n'; del
         fcode = fcode[:-1]
-        itinner = finner[-1]                # feature enclosed tags
+        itinner = finner[-1]  # feature enclosed tags
         finner = finner[:-1]
 
         # handle the feature code
-        if (features.has_key(itsig)):
+        if itsig in features:
             features[itsig][1].append(itcode)
         else:
-            features[itsig] = (len(flist)+1, [itcode])
+            features[itsig] = (len(flist) + 1, [itcode])
 
         # handle the inner granularity
         featuresgrinner.append((itsig, itinner))
-        return (features, featuresgrinner, fcode, flist, finner)
+        return features, featuresgrinner, fcode, flist, finner
 
-    features = {}            # see above; return value
-    featuresgrinner = []    # see above; return value
-    featuresgrouter = []    # see above; return value
-    flist = []                # holds the features in order
-                            # list empty -> no features to parse
-                            # list used as a stack
-                            # last element = top of stack;
-                            # and the element we currently
-                            # collecting source-code lines for
-    fouter = []                # holds the xml-nodes of the ifdefs/endifs
-                            # in order like flist
-    fcode = []                # holds the code of the features in
-                            # order like flist
-    finner = []                # holds the tags of the features in
-                            # order like flist
-    condinhist = []            # order of the conditional includes
-                            # with feature names
-    parcon = False            # parse-conditional-flag
-    parend = False            # parse-endif-flag
-    _ = 0                    # else and elif depth
+    features = {}  # see above; return value
+    featuresgrinner = []  # see above; return value
+    featuresgrouter = []  # see above; return value
+    flist = []  # holds the features in order
+    # list empty -> no features to parse
+    # list used as a stack
+    # last element = top of stack;
+    # and the element we currently
+    # collecting source-code lines for
+    fouter = []  # holds the xml-nodes of the ifdefs/endifs
+    # in order like flist
+    fcode = []  # holds the code of the features in
+    # order like flist
+    finner = []  # holds the tags of the features in
+    # order like flist
+    condinhist = []  # order of the conditional includes
+    # with feature names
+    parcon = False  # parse-conditional-flag
+    parend = False  # parse-endif-flag
+    _ = 0  # else and elif depth
 
     # iterate over all tags separately <start>- and <end>-tag
     for event, elem in etree.iterwalk(root, events=("start", "end")):
@@ -641,13 +636,13 @@ def _getFeatures(root, options):
         # hitting on conditional-macro
         if ((tag in __conditionals_all)
                 and (event == 'start')
-                and (ns == __cppnscpp)):    # check the cpp:namespace
+                and (ns == __cppnscpp)):  # check the cpp:namespace
             parcon = True
 
         # hitting next conditional macro; any of ifdef, else or elif
         if ((tag in __conditionals_all)
                 and (event == 'end')
-                and (ns == __cppnscpp)):    # check the cpp:namespace
+                and (ns == __cppnscpp)):  # check the cpp:namespace
             parcon = False
 
             # with else or elif we finish up the last if, therefor
@@ -655,15 +650,18 @@ def _getFeatures(root, options):
             if ((tag in __conditionals_else)
                     or (tag in __conditionals_elif)):
                 (features, featuresgrinner,
-                        fcode, flist, finner) = _wrapFeatureUp(features,
-                        featuresgrinner, fcode, flist, finner)
+                 fcode, flist, finner) = _wrapFeatureUp(features,
+                                                        featuresgrinner, fcode, flist, finner)
 
             fname = _getMacroSignature(elem)
-            if fname: condinhist.append((tag, fname))
-            else: condinhist.append((tag, ''))
+            if fname:
+                condinhist.append((tag, fname))
+            else:
+                condinhist.append((tag, ''))
 
             fsig = _getFeatureSignature(condinhist, options)
-            if (tag in __conditionals): fouter.append([])
+            if tag in __conditionals:
+                fouter.append([])
             fouter[-1] += ([(fsig, elem)])
             flist.append(fsig)
             fcode.append('')
@@ -676,9 +674,7 @@ def _getFeatures(root, options):
             parcon = False
 
         # hitting end-tag of define-macro
-        if ((tag in __macro_define) \
-                and (event == 'end') \
-                and (ns == __cppnscpp)):
+        if (tag in __macro_define) and (event == 'end') and (ns == __cppnscpp):
             _parseAndAddDefine(elem)
 
         # iterateting in subtree of conditional-node
@@ -687,24 +683,18 @@ def _getFeatures(root, options):
 
         # handling endif-macro
         # hitting an endif-macro start-tag
-        if ((tag in __conditionals_endif) \
-                and (event == "start") \
-                and (ns == __cppnscpp)):    # check the cpp:namespace
+        if (tag in __conditionals_endif) and (event == "start") and (ns == __cppnscpp):  # check the cpp:namespace
             parend = True
 
         # hitting the endif-macro end-tag
-        if ((tag in __conditionals_endif) \
-                and (event == "end") \
-                and (ns == __cppnscpp)):    # check the cpp:namespace
+        if (tag in __conditionals_endif) and (event == "end") and (ns == __cppnscpp):  # check the cpp:namespace
             parend = False
 
             (features, featuresgrinner, fcode, flist, finner) = \
-                _wrapFeatureUp(features, featuresgrinner,
-                fcode, flist, finner)
-            (fouter, featuresgrouter) = _wrapGrOuterUp(fouter,
-            featuresgrouter, elem)
+                _wrapFeatureUp(features, featuresgrinner, fcode, flist, finner)
+            (fouter, featuresgrouter) = _wrapGrOuterUp(fouter, featuresgrouter, elem)
 
-            while (condinhist[-1][0] != 'if'):
+            while condinhist[-1][0] != 'if':
                 condinhist = condinhist[:-1]
             condinhist = condinhist[:-1]
 
@@ -713,18 +703,18 @@ def _getFeatures(root, options):
             continue
 
         # collect the source-code of the feature
-        if (len(flist)):
-            if ((event == "start") and (elem.text)):
+        if len(flist):
+            if (event == "start") and elem.text:
                 fcode[-1] += elem.text
-            if ((event == "end") and (elem.tail)):
+            if (event == "end") and elem.tail:
                 fcode[-1] += elem.tail
 
-            if (ns == __cppnsdef or tag not in __conditionals_all):
+            if ns == __cppnsdef or tag not in __conditionals_all:
                 finner[-1].append((tag, event, elem.sourceline))
 
-    if (flist):
+    if flist:
         raise IfdefEndifMismatchError()
-    return (features, featuresgrinner, featuresgrouter)
+    return features, featuresgrinner, featuresgrouter
 
 
 def _getOuterGranularity(fnodes):
@@ -735,7 +725,7 @@ def _getOuterGranularity(fnodes):
     grouter = list()
 
     for (sig, selem, _) in fnodes:
-        tags = _getASTHistory(selem)[:-1]    # cut of unit-tag
+        tags = _getASTHistory(selem)[:-1]  # cut of unit-tag
         grouter.append((sig, tags, selem.sourceline))
     return grouter
 
@@ -751,93 +741,102 @@ def _getOuterGranularityStats(lgran):
     """
     gotopbgr = 0
     gofunbgr = 0
-    gostrbrl = 0        # local
-    gostrbrg = 0        # global
+    gostrbrl = 0  # local
+    gostrbrg = 0  # global
     goinnbgr = 0
     goexpbgr = 0
     gostmbgr = 0
     gopambgr = 0
-    goerror  = 0
+    goerror = 0
 
     for (_, gran, line) in lgran:
         if len(gran) == 0:
             gotopbgr += 1
             continue
         if gran[0] in ['block']:
-            if len(gran) == 1:    # configure the method signature
+            if len(gran) == 1:  # configure the method signature
                 gofunbgr += 1
                 continue
             if gran[1] in ['function', 'extern', 'block']:
                 gofunbgr += 1
             elif gran[1] in ['struct', 'union',
-                    'enum']:    # test_struct_union_enum.c
-                if 'function' in gran[2:]: gostrbrl += 1
-                else: gostrbrg += 1
+                             'enum']:  # test_struct_union_enum.c
+                if 'function' in gran[2:]:
+                    gostrbrl += 1
+                else:
+                    gostrbrg += 1
             elif gran[1] in ['expr']:
-                if 'function' in gran[2:]: gostrbrl += 1
-                else: gostrbrg += 1
+                if 'function' in gran[2:]:
+                    gostrbrl += 1
+                else:
+                    gostrbrg += 1
             elif gran[1] in ['while', 'for', 'then', 'do',
-                    'else', 'switch', 'case', 'default']:
-                goinnbgr += 1                # test_loop.c
-            elif gran[1] in ['decl']:        # test_struct_union_enum.c
-                if 'function' in gran[3:]: gostrbrl += 1
-                else: gostrbrg += 1
+                             'else', 'switch', 'case', 'default']:
+                goinnbgr += 1  # test_loop.c
+            elif gran[1] in ['decl']:  # test_struct_union_enum.c
+                if 'function' in gran[3:]:
+                    gostrbrl += 1
+                else:
+                    gostrbrg += 1
             else:
                 print('ERROR: gran (%s) at this '
-                        'level unknown (line %s)' % (gran, line))
+                      'level unknown (line %s)' % (gran, line))
                 goerror += 1
             continue
         elif gran[0] in ['expr']:
-            if gran[1] in ['expr_stmt']:                # test_stmt.c
+            if gran[1] in ['expr_stmt']:  # test_stmt.c
                 gostmbgr += 1
-            elif gran[1] in ['condition', 'return']:    # test_condition.c
+            elif gran[1] in ['condition', 'return']:  # test_condition.c
                 goexpbgr += 1
-            elif gran[1] in ['argument']:                # test_call.c
+            elif gran[1] in ['argument']:  # test_call.c
                 gostmbgr += 1
             elif gran[1] in ['block']:
-                if 'function' in gran[2:]: gostrbrl += 1
-                else: gostrbrg += 1
-            elif gran[1] in ['init', 'index']:            # test_stmt.c
+                if 'function' in gran[2:]:
+                    gostrbrl += 1
+                else:
+                    gostrbrg += 1
+            elif gran[1] in ['init', 'index']:  # test_stmt.c
                 gostmbgr += 1
             else:
                 print('ERROR: gran (%s) at this level'
-                        'unknown (line %s)' % (gran, line))
+                      'unknown (line %s)' % (gran, line))
                 goerror += 1
             continue
-        elif gran[0] in ['while', 'do']:                # test_loop.c
+        elif gran[0] in ['while', 'do']:  # test_loop.c
             goinnbgr += 1
             continue
         elif gran[0] in ['expr_stmt'] and len(gran) == 1:
             gostmbgr += 1
             continue
         elif gran[:3] == ['expr_stmt', 'block', 'struct']:
-            if 'function' in gran[2:]: gostrbrl += 1
-            else: gostrbrg += 1
+            if 'function' in gran[2:]:
+                gostrbrl += 1
+            else:
+                gostrbrg += 1
             continue
-        elif gran[0] in ['decl_stmt']:            # test_stmt.c
+        elif gran[0] in ['decl_stmt']:  # test_stmt.c
             gostmbgr += 1
             continue
-        elif gran[0] in ['condition']:            # test_condition.c
+        elif gran[0] in ['condition']:  # test_condition.c
             goexpbgr += 1
             continue
         elif gran[0] in ['if', 'else', 'case', 'default',
-                'then', 'for']:    # test_condition.c
+                         'then', 'for']:  # test_condition.c
             goinnbgr += 1
             continue
         elif gran[0] in ['parameter_list',
-                'argument_list']:        # test_call.c
+                         'argument_list']:  # test_call.c
             gopambgr += 1
             continue
         elif gran[0] in ['argument'] and gran[1] in ['argument_list']:
             gostmbgr += 1
-        elif gran[0] in ['init'] and gran[1] in ['decl']:    # test_stmt.c
+        elif gran[0] in ['init'] and gran[1] in ['decl']:  # test_stmt.c
             gostmbgr += 1
             continue
-        elif gran[0] in ['function']:            # function prototype
+        elif gran[0] in ['function']:  # function prototype
             continue
         else:
-            print('ERROR: outer granularity (%s, %s) not recognized!' % \
-                    (gran, line))
+            print(f'ERROR: outer granularity ({gran}, {line}) not recognized!')
             goerror += 1
 
     return (gotopbgr, gofunbgr, gostrbrl, gostrbrg,
@@ -867,22 +866,23 @@ def _getInnerGranularityStats(igran):
 
     for (_, gran) in igran:
         for (tag, event, line) in gran:
-            if (skiptilltag != ''):
+            if skiptilltag != '':
                 if (tag == skiptilltag[0]
                         and event == 'end'
                         and line == skiptilltag[2]):
                     skiptilltag = ''
                 continue
 
-            if tag in ['name', 'endif']: continue
+            if tag in ['name', 'endif']:
+                continue
             elif tag in ['define', 'directive', 'include',
-                    'macro', 'undef']:
+                         'macro', 'undef']:
                 gmacrogr += 1
             elif tag in ['struct', 'union', 'enum', 'function', 'extern',
-                    'function_decl', 'decl_stmt', 'typedef']:
+                         'function_decl', 'decl_stmt', 'typedef']:
                 ginablgr += 1
             elif tag in ['if', 'while', 'return', 'then',
-                    'for', 'do', 'case', 'else', 'block']:
+                         'for', 'do', 'case', 'else', 'block']:
                 giunblgr += 1
             elif tag in ['param', 'argument']:
                 gipambgr += 1
@@ -894,12 +894,13 @@ def _getInnerGranularityStats(igran):
                 gistmbgr += 1
             else:
                 print('ERROR: inner granularity (%s, %s, %s)) '
-                        'not recognized!' % (tag, event, line))
+                      'not recognized!' % (tag, event, line))
                 gierror += 1
                 continue
-            if event == 'start': skiptilltag = (tag, event, line)
+            if event == 'start':
+                skiptilltag = (tag, event, line)
 
-    return (gmacrogr, ginablgr, giunblgr, giexpbgr, gistmbgr, gierror)
+    return gmacrogr, ginablgr, giunblgr, giexpbgr, gistmbgr, gierror
 
 
 def _getFeatureStats(features):
@@ -915,30 +916,30 @@ def _getFeatureStats(features):
     """
     lof = 0
     nod = 0
-    lofmin = -1            # feature-code can be empty
+    lofmin = -1  # feature-code can be empty
     lofmax = 0
     lofmean = 0
     lofstd = 0
     nof = len(features.keys())
-    tmp = [item for (_, item) in features.itervalues()]
+    tmp = [item for (_, item) in list(features.values())]
     tmp = _flatten(tmp)
-    floflist = map(lambda n: n.count('\n'), tmp)
+    floflist = list(map(lambda n: n.count('\n'), tmp))
 
-    if (len(floflist)):
+    if len(floflist):
         lofmin = min(floflist)
         lofmax = max(floflist)
-        lof = reduce(lambda m,n: m+n, floflist)
-        lofmean = pstat.stats.lmean(floflist)
+        lof = reduce(lambda m, n: m + n, floflist)
+        lofmean = np.mean(floflist)
 
-    if (len(floflist) > 1):
-        lofstd = pstat.stats.lstdev(floflist)
+    if len(floflist) > 1:
+        lofstd = np.std(floflist)
 
-    return (nof, nod, lof, lofmin, lofmax, lofmean, lofstd)
+    return nof, nod, lof, lofmin, lofmax, lofmean, lofstd
 
 
 def _getFeaturesDepthOne(features):
     """This function returns all features that have the depth of one."""
-    nof1 = filter(lambda (sig, (depth, code)): depth == 1, features.iteritems())
+    nof1 = list(filter(lambda t: t[1][0] == 1, features.items()))  # t = (sig, (depth, code))
     return nof1
 
 
@@ -966,13 +967,13 @@ def _distinguishFeatures(features):
         """
         fcodes = set(fcode)
 
-        if (len(fcodes) == 1 and len(fcode) > 1):
+        if len(fcodes) == 1 and len(fcode) > 1:
             return "hom"
 
-        if (len(fcode) == len(fcodes)):
+        if len(fcode) == len(fcodes):
             return "het"
 
-        if (len(fcode) > len(fcodes)):
+        if len(fcode) > len(fcodes):
             return "hethom"
 
     scode = {}
@@ -982,30 +983,30 @@ def _distinguishFeatures(features):
     hom = {}
     hethom = {}
 
-    for (key, (_, item)) in features.iteritems():
+    for (key, (_, item)) in features.items():
         # distinguish according to feature-signature
         # shared code
-        if ('||' in key and (not '&&' in key)):
+        if '||' in key and ('&&' not in key):
             scode[key] = item
 
         # derivative only &&
-        if ('&&' in key and (not '||' in key)):
+        if '&&' in key and ('||' not in key):
             deriv[key] = item
 
         # combination shared code and derivative
-        if ('&&' in key and '||' in key):
+        if '&&' in key and '||' in key:
             desc[key] = item
 
         # distinguish according to feature-code
         ret = _compareFeatureCode(item)
-        if (ret == "het"):
+        if ret == "het":
             het[key] = item
-        if (ret == "hom"):
+        if ret == "hom":
             hom[key] = item
-        if (ret == "hethom"):
+        if ret == "hethom":
             hethom[key] = item
 
-    return (scode, deriv, desc, het, hom, hethom)
+    return scode, deriv, desc, het, hom, hethom
 
 
 def _getNumOfDefines(defset):
@@ -1021,7 +1022,7 @@ def _getNumOfDefines(defset):
     # basic operation of this function is to check __defset against
     # __macrofuncs
     funcmacros = __macrofuncs.keys()
-    funcmacros = map(lambda n: n.split('(')[0], funcmacros)
+    funcmacros = list(map(lambda n: n.split('(')[0], funcmacros))
     funcmacros = set(funcmacros)
 
     return len((defset - funcmacros))
@@ -1041,27 +1042,35 @@ def _getScatteringTanglingDegrees(sigs, defines):
     def __add(x, y):
         """This method is a helper function to add values
         of lists pairwise. See below for more information."""
-        return x+y
+        return x + y
 
-    scat = list()            # relation define to signatures
-    tang = [0]*len(sigs)    # signatures overall
+    scat = list()  # relation define to signatures
+    tang = [0] * len(sigs)  # signatures overall
     for d in defines:
-        dre = re.compile(r'\b'+d+r'\b')        # using word boundaries
-        vec = map(lambda s: not dre.search(s) is None, sigs)
+        dre = re.compile(r'\b' + d + r'\b')  # using word boundaries
+        vec = list(map(lambda s: not dre.search(s) is None, sigs))
         scat.append(vec.count(True))
-        tang = map(__add, tang, vec)
+        tang = list(map(__add, tang, vec))
 
-    if (len(scat)): sdegmean = pstat.stats.lmean(scat)
-    else: sdegmean = 0
-    if (len(scat) > 1): sdegstd = pstat.stats.lstdev(scat)
-    else: sdegstd = 0
+    if len(scat):
+        sdegmean = np.mean(scat)
+    else:
+        sdegmean = 0
+    if len(scat) > 1:
+        sdegstd = np.std(scat)
+    else:
+        sdegstd = 0
 
-    if (len(tang)): tdegmean = pstat.stats.lmean(tang)
-    else: tdegmean = 0
-    if (len(tang) > 1): tdegstd = pstat.stats.lstdev(tang)
-    else: tdegstd = 0
+    if len(tang):
+        tdegmean = np.mean(tang)
+    else:
+        tdegmean = 0
+    if len(tang) > 1:
+        tdegstd = np.std(tang)
+    else:
+        tdegstd = 0
 
-    return (sdegmean, sdegstd, tdegmean, tdegstd)
+    return sdegmean, sdegstd, tdegmean, tdegstd
 
 
 def _getGranularityStats(fcodetags):
@@ -1073,20 +1082,20 @@ def _getGranularityStats(fcodetags):
     expr -> expression
     """
     _interestingtags = [
-        'define',            # define statement
-        'include',            # include statement
-        'decl_stmt',        # declaration statement
-        'expr_stmt',        # expression statement
-        'function_decl',    # function declaration
-        'parameter_list',    # parameter list
-        'param',            # parameter
+        'define',  # define statement
+        'include',  # include statement
+        'decl_stmt',  # declaration statement
+        'expr_stmt',  # expression statement
+        'function_decl',  # function declaration
+        'parameter_list',  # parameter list
+        'param',  # parameter
     ]
-    _curskiptag = None        # holds the element we are going to skip for
-    _skipedtags = []        # if we find one of the elements above, we
-                            # start skipping the following tags, until
-                            # the corresponding endtag is found; if we
-                            # do not find the endtag, we are going to
-                            # start analyzing the elements in _skipedtags
+    _curskiptag = None  # holds the element we are going to skip for
+    _skipedtags = []  # if we find one of the elements above, we
+    # start skipping the following tags, until
+    # the corresponding endtag is found; if we
+    # do not find the endtag, we are going to
+    # start analyzing the elements in _skipedtags
     granstats = dict()
 
     for tag in _interestingtags:
@@ -1096,38 +1105,38 @@ def _getGranularityStats(fcodetags):
         _curskiptag = None
         _skipedtags = []
         for (tag, _, sourceline) in ftagsl:
-            if _curskiptag == None and tag in _interestingtags:
+            if _curskiptag is None and tag in _interestingtags:
                 _curskiptag = tag
                 continue
-            if _curskiptag != None and tag == _curskiptag:
+            if _curskiptag is not None and tag == _curskiptag:
                 granstats[tag] = granstats[tag] + 1
                 _curskiptag = None
                 _skipedtags = []
                 continue
-            if _curskiptag != None:
+            if _curskiptag is not None:
                 _skipedtags.append((tag, sourceline))
                 continue
-#        if _skipedtags != []:
-#            print("ERROR: ", _skipedtags)
+    #        if _skipedtags != []:
+    #            print("ERROR: ", _skipedtags)
     return granstats
 
 
 def __getNumOfFilesPerFeatureStats(filetofeatureconstants):
     featureconstantstofiles = dictinvert(filetofeatureconstants)
-    numbers = map(lambda v: len(v), featureconstantstofiles.values())
+    numbers = list(map(lambda v: len(v), list(featureconstantstofiles.values())))
 
-    #mean
-    if (len(numbers) > 0):
-        numbersmean = pstat.stats.lmean(numbers)
+    # mean
+    if len(numbers) > 0:
+        numbersmean = np.mean(numbers)
     else:
         numbersmean = 0
     # std
-    if (len(numbers) > 1):
-        numbersstd = pstat.stats.lstdev(numbers)
+    if len(numbers) > 1:
+        numbersstd = np.std(numbers)
     else:
         numbersstd = 0
 
-    return (numbersmean,numbersstd)
+    return numbersmean, numbersstd
 
 
 def _checkForEquivalentSig(l, sig):
@@ -1140,7 +1149,7 @@ def _checkForEquivalentSig(l, sig):
         It uses an xmlrpc-call on troi.fim.uni-passau.de."""
         global __errorfexp
         global __errormatch
-        if not (sig1 and sig2):            # ommit empty signatures
+        if not (sig1 and sig2):  # ommit empty signatures
             return False
 
         # if options.str:
@@ -1153,12 +1162,12 @@ def _checkForEquivalentSig(l, sig):
     raise NoEquivalentSigError()
 
 
-def resetModule() :
+def resetModule():
     global __macrofuncs, __defset, __defsetf, __nestedIfdefsLevels
-    __macrofuncs = {}       # functional macros like: "GLIBVERSION(2,3,4)",
-                            # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
-    __defset = set()        # macro-objects
-    __defsetf = dict()      # macro-objects per file
+    __macrofuncs = {}  # functional macros like: "GLIBVERSION(2,3,4)",
+    # used as "GLIBVERSION(x,y,z) 100*x+10*y+z"
+    __defset = set()  # macro-objects
+    __defsetf = dict()  # macro-objects per file
     __nestedIfdefsLevels = []
 
 
@@ -1169,21 +1178,21 @@ def apply(folder, options):
     # overall status variables
     resetModule()
 
-    sigmap = {}                # {<converted sig>: [<equivalent sigs>]}
-    afeatures = {}            # identified features; {<sig>: (depth, [code])}
+    sigmap = {}  # {<converted sig>: [<equivalent sigs>]}
+    afeatures = {}  # identified features; {<sig>: (depth, [code])}
 
     def _mergeFeatures(ffeatures):
         """This function merges the, with the parameter given
         dictionary (ffeatures) to the afeatures (overall-features)."""
-        for (sig, (depth, code)) in ffeatures.iteritems():
+        for (sig, (depth, code)) in ffeatures.items():
             psig = _parseFeatureSignatureAndRewrite(sig)
 
             try:
                 sigmatch = _checkForEquivalentSig(sigmap.keys(), psig)
                 (tmpdepth, tmpcode) = afeatures[sigmap[sigmatch][0]]
-#                if (tmpdepth != depth):
-#                    print("INFO: depths of feature fragments do not" +
-#                            " match (%s, %s)!" % (str(tmpdepth), str(depth)))
+                #                if (tmpdepth != depth):
+                #                    print("INFO: depths of feature fragments do not" +
+                #                            " match (%s, %s)!" % (str(tmpdepth), str(depth)))
                 tmpdepth = min(tmpdepth, depth)
                 tmpcode += code
                 afeatures[sigmap[sigmatch][0]] = (tmpdepth, tmpcode)
@@ -1202,7 +1211,7 @@ def apply(folder, options):
     fcount = 0
     files = returnFileNames(folder, ['.xml'])
     files.sort()
-    fstats = [None]*len(__statsorder)
+    fstats = [None] * len(__statsorder)
     ftotal = len(files)
 
     # get statistics for all files; write results into csv
@@ -1213,14 +1222,14 @@ def apply(folder, options):
         try:
             tree = etree.parse(file)
         except etree.XMLSyntaxError:
-            print("ERROR: cannot parse (%s). Skipping this file." % os.path.join(folder, file))
+            print(f"ERROR: cannot parse ({os.path.join(folder, file)}). Skipping this file.")
             continue
 
         root = tree.getroot()
         try:
             (features, _, featuresgrouter) = _getFeatures(root, options)
         except IfdefEndifMismatchError:
-            print("ERROR: ifdef-endif mismatch in file (%s)" % (os.path.join(folder, file)))
+            print(f"ERROR: ifdef-endif mismatch in file ({os.path.join(folder, file)})")
             continue
 
         _mergeFeatures(features)
@@ -1232,23 +1241,23 @@ def apply(folder, options):
         # granularity stats
         grouter = _getOuterGranularity(featuresgrouter)
         (gotopbgr, gofunbgr, gostrbrl, gostrbrg,
-        goinnbgr, goexpbgr, gostmbgr, gopambgr, goerror) = \
-                _getOuterGranularityStats(grouter)
+         goinnbgr, goexpbgr, gostmbgr, gopambgr, goerror) = \
+            _getOuterGranularityStats(grouter)
         fstats[__statsorder.GRANGL.value] = gotopbgr
-        fstats[__statsorder.GRANFL.value] = gofunbgr+gostrbrl+gostrbrg
+        fstats[__statsorder.GRANFL.value] = gofunbgr + gostrbrl + gostrbrg
         fstats[__statsorder.GRANBL.value] = goinnbgr
         fstats[__statsorder.GRANEL.value] = goexpbgr
         fstats[__statsorder.GRANSL.value] = gostmbgr
         fstats[__statsorder.GRANML.value] = gopambgr
         fstats[__statsorder.GRANERR.value] = goerror
 
-        #adjust file name if wanted
-        if options.filenamesRelative : # relative file name (root is project folder (not included in path))
+        # adjust file name if wanted
+        if options.filenamesRelative:  # relative file name (root is project folder (not included in path))
             file = os.path.relpath(file, folder)
 
-        if options.filenames == options.FILENAME_SRCML : # cppstats file names
-            pass # nothing to do here, as the file path is the cppstats path by default
-        if options.filenames == options.FILENAME_SOURCE : # source file name
+        if options.filenames == options.FILENAME_SRCML:  # cppstats file names
+            pass  # nothing to do here, as the file path is the cppstats path by default
+        if options.filenames == options.FILENAME_SOURCE:  # source file name
             file = file.replace(".xml", "").replace("/_cppstats/", "/source/", 1)
 
         # general stats
@@ -1259,17 +1268,17 @@ def apply(folder, options):
         fstats[__statsorder.NDMAX.value] = ndmax
         tmp = [it for it in root.iterdescendants()]
 
-        if (len(tmp)): floc = tmp[-1].sourceline
-        else: floc = 0
+        if len(tmp):
+            floc = tmp[-1].sourceline
+        else:
+            floc = 0
 
         fstats[__statsorder.LOC.value] = floc
 
         # feature-amount
-        (_, _, lof, _, _, _, _) = \
-                _getFeatureStats(features)
-        if __defsetf.has_key(__curfile):
-            fstats[__statsorder.NOFC.value] = \
-                    _getNumOfDefines(__defsetf[__curfile])
+        (_, _, lof, _, _, _, _) = _getFeatureStats(features)
+        if __curfile in __defsetf:
+            fstats[__statsorder.NOFC.value] = _getNumOfDefines(__defsetf[__curfile])
         else:
             fstats[__statsorder.NOFC.value] = 0
         fstats[__statsorder.LOF.value] = lof
@@ -1280,84 +1289,70 @@ def apply(folder, options):
 
         fdcsv.writerow(fstats)
 
-
     # writing convinience functions
-    fnum = fcount + 1            # +1 for the header of the table
+    fnum = fcount + 1  # +1 for the header of the table
     excelcols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-            'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
-            'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE',
-            'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
-            'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW',
-            'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF',
-            'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO',
-            'BP', 'BQ', 'BR', 'BS', 'BT', 'BU', 'BV', 'BW', 'BX',
-            'BY', 'BZ']
+                 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
+                 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE',
+                 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
+                 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW',
+                 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF',
+                 'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO',
+                 'BP', 'BQ', 'BR', 'BS', 'BT', 'BU', 'BV', 'BW', 'BX',
+                 'BY', 'BZ']
     # FIXME with separator line, functions must start in line 3! (other scripts, too?)
-    excelfunc = [None]*len(__statsorder)
+    excelfunc = [None] * len(__statsorder)
     excelfunc[__statsorder.FILENAME.value] = "FUNCTIONS"
-    excelfunc[__statsorder.LOC.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.LOC.value], \
-            excelcols[__statsorder.LOC.value], fnum)
-    excelfunc[__statsorder.LOF.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.LOF.value], \
-            excelcols[__statsorder.LOF.value], fnum)
-    excelfunc[__statsorder.ANDAVG.value] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
-            (excelcols[__statsorder.ANDAVG.value], \
-            excelcols[__statsorder.ANDAVG.value], fnum, \
-            excelcols[__statsorder.ANDAVG.value], \
-            excelcols[__statsorder.ANDAVG.value], fnum)
-    excelfunc[__statsorder.ANDSTDEV.value] = "=SUM(%s2:%s%s)/countif(%s2:%s%s;\">0\")" % \
-            (excelcols[__statsorder.ANDSTDEV.value], \
-            excelcols[__statsorder.ANDSTDEV.value], fnum, \
-            excelcols[__statsorder.ANDAVG.value],          # it might be that mean 1 std 0
-            excelcols[__statsorder.ANDAVG.value], fnum)    # therefore we use mean here
-    excelfunc[__statsorder.GRANGL.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANGL.value], \
-            excelcols[__statsorder.GRANGL.value], fnum)
-    excelfunc[__statsorder.GRANFL.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANFL.value], \
-            excelcols[__statsorder.GRANFL.value], fnum)
-    excelfunc[__statsorder.GRANBL.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANBL.value], \
-            excelcols[__statsorder.GRANBL.value], fnum)
-    excelfunc[__statsorder.GRANEL.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANEL.value], \
-            excelcols[__statsorder.GRANEL.value], fnum)
-    excelfunc[__statsorder.GRANSL.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANSL.value], \
-            excelcols[__statsorder.GRANSL.value], fnum)
-    excelfunc[__statsorder.GRANML.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANML.value], \
-            excelcols[__statsorder.GRANML.value], fnum)
-    excelfunc[__statsorder.GRANERR.value] = "=SUM(%s2:%s%s)" % \
-            (excelcols[__statsorder.GRANERR.value], \
-            excelcols[__statsorder.GRANERR.value], fnum)
-    excelfunc[__statsorder.NDMAX.value] = "=MAX(%s2:%s%s)" % \
-            (excelcols[__statsorder.NDMAX.value], \
-            excelcols[__statsorder.NDMAX.value], fnum)
+    excelfunc[__statsorder.LOC.value] = \
+        f"=SUM({excelcols[__statsorder.LOC.value]}2:{excelcols[__statsorder.LOC.value]}{fnum})"
+    excelfunc[__statsorder.LOF.value] = \
+        f"=SUM({excelcols[__statsorder.LOF.value]}2:{excelcols[__statsorder.LOF.value]}{fnum})"
+    excelfunc[__statsorder.ANDAVG.value] = \
+        f"=SUM({excelcols[__statsorder.ANDAVG.value]}2:{excelcols[__statsorder.ANDAVG.value]}{fnum})" \
+        f"/countif({excelcols[__statsorder.ANDAVG.value]}2:{excelcols[__statsorder.ANDAVG.value]}{fnum};\">0\")"
+    excelfunc[__statsorder.ANDSTDEV.value] = \
+        f"=SUM({excelcols[__statsorder.ANDSTDEV.value]}2:{excelcols[__statsorder.ANDSTDEV.value]}{fnum})" \
+        f"/countif({excelcols[__statsorder.ANDAVG.value]}2:" \
+        f"{excelcols[__statsorder.ANDAVG.value]}{fnum};\">0\")"  # therefore we use mean here
+    excelfunc[__statsorder.GRANGL.value] = \
+        f"=SUM({excelcols[__statsorder.GRANGL.value]}2:{excelcols[__statsorder.GRANGL.value]}{fnum})"
+    excelfunc[__statsorder.GRANFL.value] = \
+        f"=SUM({excelcols[__statsorder.GRANFL.value]}2:{excelcols[__statsorder.GRANFL.value]}{fnum})"
+    excelfunc[__statsorder.GRANBL.value] = \
+        f"=SUM({excelcols[__statsorder.GRANBL.value]}2:{excelcols[__statsorder.GRANBL.value]}{fnum})"
+    excelfunc[__statsorder.GRANEL.value] = \
+        f"=SUM({excelcols[__statsorder.GRANEL.value]}2:{excelcols[__statsorder.GRANEL.value]}{fnum})"
+    excelfunc[__statsorder.GRANSL.value] = \
+        f"=SUM({excelcols[__statsorder.GRANSL.value]}2:{excelcols[__statsorder.GRANSL.value]}{fnum})"
+    excelfunc[__statsorder.GRANML.value] = \
+        f"=SUM({excelcols[__statsorder.GRANML.value]}2:{excelcols[__statsorder.GRANML.value]}{fnum})"
+    excelfunc[__statsorder.GRANERR.value] = \
+        f"=SUM({excelcols[__statsorder.GRANERR.value]}2:{excelcols[__statsorder.GRANERR.value]}{fnum})"
+    excelfunc[__statsorder.NDMAX.value] = \
+        f"=MAX({excelcols[__statsorder.NDMAX.value]}2:{excelcols[__statsorder.NDMAX.value]}{fnum})"
     fdcsv.writerow(excelfunc)
 
     # overall - stats
-    astats = [None]*len(__statsorder)
+    astats = [None] * len(__statsorder)
 
     # LOF
     (_, _, lof, _, _, _, _) = \
-            _getFeatureStats(afeatures)
+        _getFeatureStats(afeatures)
 
     # SDEG + TDEG
-    sigs = _flatten(sigmap.values())
+    sigs = _flatten(list(sigmap.values()))
     defs = list(__defset)
     (sdegmean, sdegstd, tdegmean, tdegstd) = \
-        _getScatteringTanglingDegrees(sigs,defs)
+        _getScatteringTanglingDegrees(sigs, defs)
 
     # ANDAVG + ANDSTDEV
     nestedIfdefsLevels = _flatten(__nestedIfdefsLevels)
-    if (len(nestedIfdefsLevels)):
-        nnimean = pstat.stats.lmean(nestedIfdefsLevels)
+    if len(nestedIfdefsLevels):
+        nnimean = np.mean(nestedIfdefsLevels)
     else:
         nnimean = 0
-    if (len(nestedIfdefsLevels) > 1):
-        nnistd = pstat.stats.lstdev(nestedIfdefsLevels)
+    if len(nestedIfdefsLevels) > 1:
+        nnistd = np.std(nestedIfdefsLevels)
     else:
         nnistd = 0
 
@@ -1391,12 +1386,12 @@ def apply(folder, options):
 # add command line options
 
 def addCommandLineOptionsMain(optionparser):
-    ''' add command line options for a direct call of this script'''
+    """ add command line options for a direct call of this script"""
     optionparser.add_argument("--folder", dest="folder",
-        help="input folder [default=%(default)s]", default=".")
+                              help="input folder [default=%(default)s]", default=".")
 
 
-def addCommandLineOptions(optionparser) :
+def addCommandLineOptions(optionparser):
     # TODO implement CSP solving?
     # optionparser.add_option("--csp", dest="csp", action="store_true",
     # default=False, help="make use of csp solver to check " \
@@ -1417,7 +1412,6 @@ def getResultsFile():
 ##################################################
 if __name__ == '__main__':
 
-
     ##################################################
     # options parsing
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
@@ -1430,7 +1424,7 @@ if __name__ == '__main__':
     # main
 
     folder = os.path.abspath(options.folder)
-    if (os.path.isdir(folder)):
+    if os.path.isdir(folder):
         apply(folder, options)
     else:
         sys.exit(-1)

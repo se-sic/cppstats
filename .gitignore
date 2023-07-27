@@ -7,7 +7,7 @@ tmp/
 projects/
 ## virtual environment
 virtualenv/
-
+venv/
 
 ### cppstats temporary files
 ## sample cppstats list-input

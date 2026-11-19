@@ -21,7 +21,7 @@
 #     Jörg Liebig <joliebig@fim.uni-passau.de>
 
 
-'''
+"""
 this collection of functions is dedicated to discipline undisciplined
 preprocessor annotations in the source code. the annotations covered are
 those of conditional compilation (#if, #ifdef, #ifndef, #elif, #else, and
@@ -37,7 +37,7 @@ basic strategy is:
 4. based on the line markers move undisciplined annotations to disciplined ones
    in each of the variants
 5. merge the different variants and create a single source code file
-'''
+"""
 
 import itertools
 import os
@@ -54,15 +54,17 @@ tmpfolder = './tmp_reversecpp/'
 src2srcml = os.path.join(os.path.expanduser('~'), 'bin', 'src2srcml2009')
 src2srcmloptions = ['--language', 'C']
 srcml2src = os.path.join(os.path.expanduser('~'), 'bin', 'srcml2src2009')
+
+
 ############################################################
 
 class Util:
     @classmethod
-    def returnFileNames(folder, extfilt = ['.xml']):
-        '''
+    def returnFileNames(folder, extfilt=['.xml']):
+        """
         This function returns all files of the input folder <folder>
         and its subfolders.
-        '''
+        """
         filesfound = list()
 
         if os.path.isdir(folder):
@@ -73,16 +75,16 @@ class Util:
                 wqueue = wqueue[1:]
                 foldercontent = os.listdir(currentfolder)
                 tmpfiles = filter(lambda n: os.path.isfile(
-                        os.path.join(currentfolder, n)), foldercontent)
+                    os.path.join(currentfolder, n)), foldercontent)
                 tmpfiles = filter(lambda n: os.path.splitext(n)[1] in extfilt,
-                        tmpfiles)
+                                  tmpfiles)
                 tmpfiles = map(lambda n: os.path.join(currentfolder, n),
-                        tmpfiles)
+                               tmpfiles)
                 filesfound += tmpfiles
                 tmpfolders = filter(lambda n: os.path.isdir(
-                        os.path.join(currentfolder, n)), foldercontent)
+                    os.path.join(currentfolder, n)), foldercontent)
                 tmpfolders = map(lambda n: os.path.join(currentfolder, n),
-                        tmpfolders)
+                                 tmpfolders)
                 wqueue += tmpfolders
 
             return filesfound
@@ -115,7 +117,7 @@ class ReverseCPP:
             sys.exit(-1)
 
     def addingLineMarkersToFile(self, infile, outfile):
-        '''
+        """
         This method adds line markers (comments) to the source code file (infile) and
         writes the result to the output file (outfile). Three different markers are added:
         1. a comment containing the conditional compilation macro is added before each
@@ -123,7 +125,7 @@ class ReverseCPP:
         2. each line gets a comment with the lineid at the end
         3. include macros are turned into comments so that that preprocessor omits file
            inclusion during the preprocessing step
-        '''
+        """
         fdin = open(os.path.abspath(infile), 'r')
         fdout = open(os.path.abspath(outfile), 'w')
         lineid = 0
@@ -131,10 +133,10 @@ class ReverseCPP:
         for line in fdin.xreadlines():
             # found #if{ndef|def||} or #e{ndif|lse|lif}
             if line.startswith('#if') or line.startswith('#e'):
-                fdout.write('//'+ line + str(lineid))
+                fdout.write('//' + line + str(lineid))
                 lineid += 1
             if line.startswith('#include'):
-                fdout.write('//'+ line + str(lineid))
+                fdout.write('//' + line + str(lineid))
                 lineid += 1
                 continue
             fdout.write(line.strip() + '/* lineid=' + str(lineid) + ' */\n')
@@ -143,20 +145,22 @@ class ReverseCPP:
         print('processed file ' + os.path.abspath(infile))
 
     def createVariants(self, symbols, fname):
-        '''
+        """
         Generate for each combination of symbols a variant for the inputfile fname
         and return the list of generated files.
-        '''
+        """
         generatedfiles = []
         for configuration in itertools.product(range(2), repeat=len(symbols)):
             configuration = list(configuration)
             pairs = zip(configuration, symbols)
-            validpairs = filter(lambda (m, n): m != 0, pairs)
+            validpairs = filter(lambda t: t[0] != 0, pairs)
 
-            if len(validpairs): validdefines = list(zip(*validpairs)[1])
-            else: validdefines = []
+            if len(validpairs):
+                validdefines = list(zip(*validpairs)[1])
+            else:
+                validdefines = []
 
-            validdefines = map(lambda n: '-D'+n, validdefines)
+            validdefines = map(lambda n: '-D' + n, validdefines)
             cppinvocation = [cpptool]
             cppinvocation += validdefines
             cppinvocation += [fname]
@@ -172,29 +176,28 @@ class ReverseCPP:
         return generatedfiles
 
     def createXMLRepresentation(self, fname):
-        '''
+        """
         This method creates an xml representation from the input file using the src2srcml
         tool (http://www.srcML.org/). After the successful generation of the
         xml representation the method returns the filename of the xml file.
-        '''
+        """
         src2srcmlinvocation = [src2srcml]
         src2srcmlinvocation += src2srcmloptions
-        src2srcmlinvocation += [fname] # input file
-        src2srcmlinvocation += [fname+'.xml'] # output file
+        src2srcmlinvocation += [fname]  # input file
+        src2srcmlinvocation += [fname + '.xml']  # output file
         print(src2srcmlinvocation)
         subprocess.call(src2srcmlinvocation)
-        return fname+'.xml'
+        return fname + '.xml'
 
     def createXMLRepresenations(self, flist):
-        '''
+        """
         This method creates an xml representation of each file in the input list (flist)
         and returns a list of the generated xml files.
-        '''
+        """
         generatedlist = []
         for file in flist:
             generatedlist.append(self.createXMLRepresentation(file))
         return generatedlist
-
 
     def apply(self):
         self.setup()
@@ -203,6 +206,7 @@ class ReverseCPP:
         flist = self.createXMLRepresenations(flist)
         print(flist)
         print(_collectIfdefExpressions('/home/joliebig/workspace/reverse_cpp/test/test.c'))
+
 
 ##################################################
 if __name__ == '__main__':

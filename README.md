@@ -3,6 +3,7 @@
 
 ## License & Copyright
 * Copyright (C) 2009-2015 University of Passau, Germany
+* Copyright (C) 2023-2026 Saarland University, Germany
 
 All rights reserved.
 
@@ -11,12 +12,13 @@ The full license text is distributed with this software. See the `LICENSE.LESSER
 
 ### Main Developers
 
-* Jörg Liebig <joliebig@fim.uni-passau.de>, University of Passau
-* Claus Hunsen <hunsen@fim.uni-passau.de>, University of Passau
+* Jörg Liebig, University of Passau
+* Claus Hunsen, University of Passau
 
 ### Further Contributors
 
-* Andreas Ringlstetter <andreas.ringlstetter@gmail.com>, OTH Regensburg
+* Andreas Ringlstetter, OTH Regensburg
+* Niklas Schneider, Saarland University
 
 ## What is it?
 
@@ -41,7 +43,6 @@ Details of the latest version can be found on the cppstats project site at GitHu
 ## System Requirements
 
 * srcML (http://www.srcml.org/)
-* astyle (http://astyle.sourceforge.net/)
 * libxml2 (http://www.xmlsoft.org/)
 * xsltproc (http://xmlsoft.org/XSLT/xsltproc2.html)
 * gcc (https://gcc.gnu.org/)
@@ -61,11 +62,8 @@ system.
 
 In detail, cppstats was successfully tested under:
 
-* Ubuntu 12.04, Python 2.7.*, and
-* Cygwin, Python 2.7.*.
-
-Right now, Python 3.x is **NOT** supported.
-
+* Ubuntu 22.04, Python >= 3.10, and
+* Cygwin, Python >= 3.10.
 
 ## Quick Start
 

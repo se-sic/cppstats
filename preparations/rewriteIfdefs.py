@@ -22,38 +22,43 @@
 #     Jörg Liebig <joliebig@fim.uni-passau.de>
 #     Claus Hunsen <hunsen@fim.uni-passau.de>
 
-import sys, os
+import sys
+
 
 class WrongIfdefError(Exception):
-	def __init__(self):
-		pass
-	def __str__(self):
-		return ("Didn't find \"ifdef\" or \"ifndef\" as macro")
+    def __init__(self):
+        pass
 
-def rewriteFile(fname, out = sys.stdout):
-	fd = open(fname, 'r')
+    def __str__(self):
+        return "Didn't find \"ifdef\" or \"ifndef\" as macro"
 
-	for line in fd:
-		if line.startswith('#ifdef') or line.startswith('#ifndef'):
-			ifdef, identifier = line.split(None, 1) # FIXME if there is a comment after the constant, it is incorporated into the brackets! this may lead to errors.
-			identifier = identifier.strip()
 
-			if ifdef == '#ifdef':
-				out.write('#if defined(' + identifier + ')' + '\n')
-				continue
-			if ifdef == '#ifndef':
-				out.write('#if !defined(' + identifier + ')' + '\n')
-				continue
-			raise WrongIfdefError()
-		else:
-			out.write(line)
+def rewriteFile(fname, out=sys.stdout):
+    fd = open(fname, 'r')
 
-	fd.close()
+    for line in fd:
+        if line.startswith('#ifdef') or line.startswith('#ifndef'):
+            # FIXME if there is a comment after the constant, it is incorporated into the brackets! this may lead to
+            #  errors.
+            ifdef, identifier = line.split(None, 1)
+            identifier = identifier.strip()
+
+            if ifdef == '#ifdef':
+                out.write('#if defined(' + identifier + ')' + '\n')
+                continue
+            if ifdef == '#ifndef':
+                out.write('#if !defined(' + identifier + ')' + '\n')
+                continue
+            raise WrongIfdefError()
+        else:
+            out.write(line)
+
+    fd.close()
 
 
 ##################################################
 if __name__ == '__main__':
-	if (len(sys.argv) != 2):
-		print("usage: " + sys.argv[0] + " <filename>")
-	else:
-		rewriteFile(sys.argv[1])
+    if len(sys.argv) != 2:
+        print("usage: " + sys.argv[0] + " <filename>")
+    else:
+        rewriteFile(sys.argv[1])

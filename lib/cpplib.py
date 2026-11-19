@@ -26,8 +26,9 @@ import sys
 
 # pyparsing module
 import pyparsing as pypa
-pypa.ParserElement.enablePackrat()        # speed up parsing
-sys.setrecursionlimit(2000)               # handle larger expressions
+
+pypa.ParserElement.enablePackrat()  # speed up parsing
+sys.setrecursionlimit(2000)  # handle larger expressions
 
 # possible operands:
 #   - hexadecimal number
@@ -36,31 +37,27 @@ sys.setrecursionlimit(2000)               # handle larger expressions
 #   - macro function, which is basically expanded via #define
 #     to an expression
 __string = \
-        pypa.Literal('\'').suppress() + \
-        pypa.Word(pypa.alphanums+'_\\') + \
-        pypa.Literal('\'').suppress()
+    pypa.Literal('\'').suppress() + \
+    pypa.Word(pypa.alphanums + '_\\') + \
+    pypa.Literal('\'').suppress()
 
 __hexadec = \
-        pypa.Literal('0x').suppress() + \
-        pypa.Word(pypa.hexnums).\
-        setParseAction(lambda t: str(int(t[0], 16))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L')))
+    pypa.Literal('0x').suppress() + \
+    pypa.Word(pypa.hexnums).setParseAction(lambda t: str(int(t[0], 16))) + \
+    pypa.Optional(pypa.Suppress(pypa.Literal('L')))
 
 __integer = \
-        pypa.Optional('~') + \
-        pypa.Word(pypa.nums+'-').setParseAction(lambda t: str(int(t[0]))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('U'))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L'))) + \
-        pypa.Optional(pypa.Suppress(pypa.Literal('L')))
+    pypa.Optional('~') + \
+    pypa.Word(pypa.nums + '-').setParseAction(lambda t: str(int(t[0]))) + \
+    pypa.Optional(pypa.Suppress(pypa.Literal('U'))) + \
+    pypa.Optional(pypa.Suppress(pypa.Literal('L'))) + \
+    pypa.Optional(pypa.Suppress(pypa.Literal('L')))
 
-__identifier = \
-        pypa.Word(pypa.alphanums+'_'+'-')
-__arg = pypa.Word(pypa.alphanums+'_')
-__args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + \
-        __arg)
+__identifier = pypa.Word(pypa.alphanums + '_' + '-')
+__arg = pypa.Word(pypa.alphanums + '_')
+__args = __arg + pypa.ZeroOrMore(pypa.Literal(',').suppress() + __arg)
 __fname = pypa.Word(pypa.alphas, pypa.alphanums + '_')
-__function = pypa.Group(__fname + pypa.Literal('(').suppress() + \
-        __args + pypa.Literal(')').suppress())
+__function = pypa.Group(__fname + pypa.Literal('(').suppress() + __args + pypa.Literal(')').suppress())
 
 
 def _parseIfDefExpression(ifdefexp):
@@ -75,9 +72,11 @@ def _parseIfDefExpression(ifdefexp):
         representation for csp."""
         op, ma = param[0]
         mal.append(ma)
-        if op == '!': ret = op + '(' + ma + ')'
-        if op == 'defined': ret = ma
-        return  ret
+        if op == '!':
+            ret = op + '(' + ma + ')'
+        if op == 'defined':
+            ret = ma
+        return ret
 
     def _rewriteTwo(param):
         """This function returns each two parameter function
@@ -87,55 +86,54 @@ def _parseIfDefExpression(ifdefexp):
         ret = '(' + ret.join(map(str, param[0][0::2])) + ')'
         return ret
 
-    operand = __string | __hexadec | __integer | \
-            __function | __identifier
-    operators = pypa.oneOf('&& ||') # extend with furhter operators
-    expr = pypa.operatorPrecedence(operand, [
+    operand = __string | __hexadec | __integer | __function | __identifier
+    operators = pypa.oneOf('&& ||')  # extend with furhter operators
+    expr = pypa.infixNotation(operand, [
         ('defined', 1, pypa.opAssoc.RIGHT, _rewriteOne),
-        ('!',  1, pypa.opAssoc.RIGHT, _rewriteOne),
+        ('!', 1, pypa.opAssoc.RIGHT, _rewriteOne),
         (operators, 2, pypa.opAssoc.LEFT, _rewriteTwo),
     ]) + pypa.StringEnd()
 
     try:
         rsig = expr.parseString(ifdefexp)[0]
-    except pypa.ParseException, e:
-        print('ERROR (parse): cannot parse sig (%s) -- (%s)' %
-                (ifdefexp, e.col))
+    except pypa.ParseException as e:
+        print(f'ERROR (parse): cannot parse sig ({ifdefexp}) -- ({e.col})')
         return ifdefexp
     except RuntimeError:
-        print('ERROR (time): cannot parse sig (%s)' % (ifdefexp))
+        print(f'ERROR (time): cannot parse sig ({ifdefexp})')
         return ifdefexp
-    return (mal, ''.join(rsig))
+    return mal, ''.join(rsig)
 
 
 __ifdefexplist = []
+
+
 def _collectIfdefExpressions(fname):
-    '''
+    """
     This method filters all ifdef expressions out of a file and returns them as a list.
-    '''
+    """
 
     def _extractIfdefExpression(tokens):
         global __ifdefexplist
         __ifdefexplist += tokens
 
-    __macro = pypa.Literal('#') \
-            + pypa.oneOf("if ifdef ifndef elif") \
-            + pypa.OneOrMore(pypa.Word(pypa.alphanums+"&|><=^")) \
-                    .setParseAction(_extractIfdefExpression) \
-            + pypa.StringEnd()
+    __macro = pypa.Literal('#') + pypa.oneOf("if ifdef ifndef elif") \
+          + pypa.OneOrMore(pypa.Word(pypa.alphanums + "&|><=^")).setParseAction(_extractIfdefExpression) \
+          + pypa.StringEnd()
 
     with open(fname, 'r') as fd:
-        for line in fd.xreadlines():
+        for line in fd.readlines():
             try:
                 print(__macro.parseString(line))
             except pypa.ParseException:
                 pass
     return __ifdefexplist
 
+
 def _filterAnnotatedIfdefs(fnamein, fnameout):
-    '''
+    """
     This method removes all preprocessor annotated lines from the input.
-    '''
+    """
     inifdef = 0
 
     with open(fnameout, 'w') as fdout:
@@ -152,12 +150,13 @@ def _filterAnnotatedIfdefs(fnamein, fnameout):
                         pass
                     elif directive == '#endif':
                         inifdef -= 1
-                    elif directive in ['#line', '#error', '#pragma', '#define', '#undef', '#include', '#ident', '#warning', '#include_next']:
+                    elif directive in ['#line', '#error', '#pragma', '#define', '#undef', '#include', '#ident',
+                                       '#warning', '#include_next']:
                         if inifdef:
                             fdout.write('\n')
                             continue
                     else:
-                        print("ERROR: directive (%s) not processed!" % parseddirective)
+                        print(f"ERROR: directive ({parseddirective}) not processed!")
                     fdout.write(line)
                 # found regular C code
                 else:

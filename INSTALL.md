@@ -26,13 +26,12 @@ Current tested version of srcML:
 1. checkout repo
 
     ```bash
-    git clone https://github.com/clhunsen/cppstats.git
+    git clone https://github.com/se-sic/cppstats.git
     ```
 
 2. install needed libraries (+ all dependencies)
 
     ```bash
-    sudo apt-get install astyle  # artistic style (code formatter)
     sudo apt-get install xsltproc  # XSLT 1.0 command line processor
     sudo apt-get install libxml2 libxml2-dev  # library for processing XML
     sudo apt-get install gcc  # GNU compiler collection
@@ -118,8 +117,6 @@ CYGWIN
             libxslt-devel (1.1.27-2)
             zlib (1.2.8-3)
             zlib-devel (1.2.8-3)
-        - All/Utils/
-            astyle (2.03-1)
         - All/Devel/
             gcc (4.7.3-1)
         + all dependencies you are prompted for

@@ -29,26 +29,19 @@
 import os
 import sys
 import shutil  # for copying files and folders
-import errno  # for error/exception handling
-import threading  # for parallelism
-import subprocess  # for calling other commands
-import re  # for regular expressions
 from abc import ABCMeta, abstractmethod  # abstract classes
-from argparse import ArgumentParser, RawTextHelpFormatter  # for parameters to this script
 from collections import OrderedDict  # for ordered dictionaries
 
 # #################################################
 # imports from subfolders
 
-import cppstats, cli
+import cppstats.cli as cli
 
 # import different kinds of analyses
 from analyses import general, generalvalues, discipline, featurelocations, derivative, interaction
 
-
 # #################################################
 # global constants
-
 
 
 # #################################################
@@ -58,19 +51,19 @@ from analyses import general, generalvalues, discipline, featurelocations, deriv
 __platform = sys.platform.lower()
 
 __iscygwin = False
-if (__platform.startswith("cygwin")):
+if __platform.startswith("cygwin"):
     __iscygwin = True
-elif (__platform.startswith("darwin") or __platform.startswith("linux")):
+elif __platform.startswith("darwin") or __platform.startswith("linux"):
     pass
 else:
-    print "Your system '" + __platform + "' is not supported right now."
+    print(f"Your system \'{__platform}\' is not supported right now.")
 
 
 # #################################################
 # helper functions
 
 def notify(message):
-    if (__iscygwin):
+    if __iscygwin:
         return
 
         # FIXME enable notifications again!
@@ -85,19 +78,19 @@ def notify(message):
 # abstract analysis thread
 
 class AbstractAnalysisThread(object):
-    '''This class analyzes a whole project according to the given kind of analysis in an independent thread.'''
+    """This class analyzes a whole project according to the given kind of analysis in an independent thread."""
     __metaclass__ = ABCMeta
 
     def __init__(self, options, inputfolder=None, inputfile=None):
         self.options = options
         self.notrunnable = False
 
-        if (inputfolder):
+        if inputfolder:
             self.file = None
             self.folder = os.path.join(inputfolder, self.getPreparationFolder())
             self.project = os.path.basename(self.folder)
 
-        elif (inputfile):
+        elif inputfile:
             self.file = inputfile
             self.outfile = self.options.outfile
             self.project = os.path.basename(self.file)
@@ -114,34 +107,32 @@ class AbstractAnalysisThread(object):
         else:
             self.notrunnable = True
 
-
     def startup(self):
         # LOGGING
-        notify("starting '" + self.getName() + "' analysis:\n " + self.project)
-        print "# starting '" + self.getName() + "' analysis: " + self.project
+        notify(f"starting '{self.getName()}' analysis:\n {self.project}")
+        print(f"# starting '{self.getName()}' analysis: {self.project}")
 
     def teardown(self):
 
         # delete temp folder for file-based preparation
-        if (self.file):
+        if self.file:
             shutil.rmtree(self.tmpfolder)
 
         # LOGGING
-        notify("finished '" + self.getName() + "' analysis:\n " + self.project)
-        print "# finished '" + self.getName() + "' analysis: " + self.project
+        notify(f"finished '{self.getName()}' analysis:\n{self.project}")
+        print(f"# finished '{self.getName()}' analysis: {self.project}")
 
     def run(self):
-
-        if (self.notrunnable):
-            print "ERROR: No single file or input list of projects given!"
+        if self.notrunnable:
+            print("ERROR: No single file or input list of projects given!")
             return
 
         self.startup()
 
         # copy srcml inputfile to tmp folder again and analyze project there!
-        if (self.file):
+        if self.file:
             currentFile = os.path.join(self.folder, self.project)
-            if (not currentFile.endswith(".xml")):
+            if not currentFile.endswith(".xml"):
                 currentFile += ".xml"
             shutil.copyfile(self.file, currentFile)
 
@@ -149,7 +140,7 @@ class AbstractAnalysisThread(object):
         self.analyze(self.folder)
 
         # copy main results file from tmp folder to destination, if given
-        if (self.file and self.resultsfile != self.outfile):
+        if self.file and self.resultsfile != self.outfile:
             shutil.copyfile(self.resultsfile, self.outfile)
 
         self.teardown()
@@ -175,7 +166,7 @@ class AbstractAnalysisThread(object):
         pass
 
     @abstractmethod
-    def analyze(self):
+    def analyze(self, folder):
         pass
 
 
@@ -330,9 +321,9 @@ for cls in AbstractAnalysisThread.__subclasses__():
     __analysiskinds.append(entry)
 
 # exit, if there are no analysis threads available
-if (len(__analysiskinds) == 0):
-    print "ERROR: No analysis tasks found! Revert your changes or call the maintainer."
-    print "Exiting now..."
+if len(__analysiskinds) == 0:
+    print("ERROR: No analysis tasks found! Revert your changes or call the maintainer.")
+    print("Exiting now...")
     sys.exit(1)
 
 __analysiskinds = OrderedDict(__analysiskinds)
@@ -356,7 +347,7 @@ def applyFile(kind, inputfile, options):
 
 
 def getFoldersFromInputListFile(inputlist):
-    ''' This method reads the given inputfile line-wise and returns the read lines without line breaks.'''
+    """ This method reads the given inputfile line-wise and returns the read lines without line breaks."""
 
     file = open(inputlist, 'r')  # open input file
     folders = file.read().splitlines()  # read lines from file without line breaks
@@ -364,9 +355,9 @@ def getFoldersFromInputListFile(inputlist):
 
     folders = filter(lambda f: not f.startswith("#"), folders)  # remove commented lines
     folders = filter(os.path.isdir, folders)  # remove all non-directories
-    folders = map(os.path.normpath, folders) # normalize paths for easier transformations
+    folders = map(os.path.normpath, folders)  # normalize paths for easier transformations
 
-    #TODO log removed folders
+    # TODO log removed folders
 
     return folders
 
@@ -404,36 +395,37 @@ def main():
     # #################################################
     # main
 
-    if (options.inputfile):
+    if options.inputfile:
 
         # split --file argument
         options.infile = os.path.normpath(os.path.abspath(options.inputfile[0]))  # IN
         options.outfile = os.path.normpath(os.path.abspath(options.inputfile[1]))  # OUT
 
         # check if inputfile exists
-        if (not os.path.isfile(options.infile)):
-            print "ERROR: input file '{}' cannot be found!".format(options.infile)
+        if not os.path.isfile(options.infile):
+            print(f"ERROR: input file '{options.infile}' cannot be found!")
             sys.exit(1)
 
         applyFile(options.kind, options.infile, options)
 
-    elif (options.inputlist):
+    elif options.inputlist:
         # handle --list argument
         options.inputlist = os.path.normpath(os.path.abspath(options.inputlist))  # LIST
 
         # check if list file exists
-        if (not os.path.isfile(options.inputlist)):
-            print "ERROR: input file '{}' cannot be found!".format(options.inputlist)
+        if not os.path.isfile(options.inputlist):
+            print(f"ERROR: input file '{options.inputlist}' cannot be found!")
             sys.exit(1)
 
-        if (options.allkinds):
+        if options.allkinds:
             applyFoldersAll(options.inputlist, options)
         else:
             applyFolders(options.kind, options.inputlist, options)
 
     else:
-        print "This should not happen! No input file or list of projects given!"
+        print("This should not happen! No input file or list of projects given!")
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
